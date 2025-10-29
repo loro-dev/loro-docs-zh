@@ -1,13 +1,13 @@
 ---
-keywords: "map crdt, last write win, key value, conflict"
-description: "how to use loro map crdt and show all APIs of loro map crdt."
+keywords: "map crdt, 最后写入生效, 键值对, 冲突"
+description: "如何使用 Loro 的 Map CRDT，并展示全部 API。"
 ---
 
 # Map
 
-Loro's Map uses LWW (Last-Write-Wins) semantics. When concurrent edits conflict, it compares Lamport logic timestamps to determine the winner.
+Loro 的 Map 采用 LWW（Last-Write-Wins）语义。当并发修改发生冲突时，会比较 Lamport 逻辑时间戳以决定最终值。
 
-Here is how to use it:
+示例：
 
 ```ts twoslash
 import { LoroDoc, LoroText } from "loro-crdt";
@@ -24,15 +24,15 @@ mapA.set("a", 1);
 const textB = mapB.setContainer("a", new LoroText());
 textB.insert(0, "Hi");
 
-console.log(docA.toJSON()); // OUTPUT: { map: { a: 1 } }
-console.log(docB.toJSON()); // OUTPUT: { map: { a: "Hi" } }
+console.log(docA.toJSON()); // { map: { a: 1 } }
+console.log(docB.toJSON()); // { map: { a: "Hi" } }
 
 docA.import(docB.export({ mode: "snapshot" }));
 docB.import(docA.export({ mode: "snapshot" }));
 
-// docB wins because it has the larger peerId, thus the larger logical timestamp
-console.log(docA.toJSON()); // OUTPUT: { map: { a: "Hi" } }
-console.log(docB.toJSON()); // OUTPUT: { map: { a: "Hi" } }
+// docB 的 peerId 更大，对应的逻辑时间更晚，因此获胜
+console.log(docA.toJSON()); // { map: { a: "Hi" } }
+console.log(docB.toJSON()); // { map: { a: "Hi" } }
 ```
 
-> **Note**: When calling `map.set(key, value)` on a LoroMap, if `map.get(key)` already returns `value`, the operation will be a no-op (no operation recorded).
+> **提示**：当调用 `map.set(key, value)` 时，如果 `map.get(key)` 已经等于该值，将不会记录新操作。

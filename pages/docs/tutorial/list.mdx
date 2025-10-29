@@ -1,33 +1,19 @@
 ---
-keywords: "list crdt, movable list, move element, cursor, awareness"
-description: "how to use loro list and movable list crdt and show all APIs of loro list and movable crdt."
+keywords: "list crdt, movable list, 元素移动, 光标, awareness"
+description: "如何使用 Loro 的 List 与 MovableList CRDT，并展示相关 API。"
 ---
 
-# List and Movable List
+# List 与 MovableList
 
-Loro supports two types of lists: `List` and `MovableList`. The `List` is a
-standard list that supports Insert and Delete operations. In contrast, the
-`MovableList` supports additional Set and Move operations.
+Loro 提供两种列表：`List` 与 `MovableList`。`List` 支持插入、删除；`MovableList` 额外支持 `set` 与 `move`。
 
-Using a combination of insert and delete operations, one can simulate set and
-move operations on a `List`. However, this approach fails in concurrent editing
-scenarios. For example, if the same element is set or moved concurrently, the
-simulation would result in the deletion of the original element and the
-insertion of two new elements, which does not meet expectations.
+使用插入/删除可在 `List` 中模拟 set/move，但在并发场景会失效：同一元素被同时 set 或 move 时，模拟方案会删除原元素并插入两个新元素，结果不符合预期。
 
-The `MovableList` addresses these issues by ensuring that set and move
-operations do not lead to such problems, though it incurs additional overheads.
-Specifically, when performing only insertions/deletions, the `MovableList` is
-approximately 80% slower in encode/decode and consumes about 50% more memory
-compared to the `List`.
+`MovableList` 可以正确处理这些情况，不过需要额外开销：仅执行插入/删除时，它在编解码上大约慢 80%，内存开销约高 50%。
 
-Both `List` and `MovableList` utilize the
-[_Fugue_](https://arxiv.org/abs/2305.00583) to achieve _maximal
-non-interleaving_. Additionally, `MovableList` uses the algorithm from
-[_Moving Elements in List CRDTs_](https://martin.kleppmann.com/2020/04/27/papoc-list-move.html)
-to implement the move operation.
+两者都基于 [_Fugue_](https://arxiv.org/abs/2305.00583) 实现最大非交错性；`MovableList` 的移动能力额外使用 [_Moving Elements in List CRDTs_](https://martin.kleppmann.com/2020/04/27/papoc-list-move.html) 算法。
 
-## Basic Usage
+## 基本用法
 
 ### List
 
@@ -47,11 +33,7 @@ const docB = Loro.fromSnapshot(bytes);
 docB.setPeerId("2");
 const listB = docB.getList("list");
 {
-  // Concurrently docA and docB update element at index 2
-  // docA updates it to 8
-  // docB updates it to 9
-  // docA.toJSON() should return { list: [0, 1, 8] }
-  // docB.toJSON() should return { list: [0, 1, 9] }
+  // docA、docB 并发修改索引 2
   listB.delete(2, 1);
   listB.insert(2, 9);
   expect(docB.toJSON()).toStrictEqual({ list: [0, 1, 9] });
@@ -61,7 +43,6 @@ const listB = docB.getList("list");
 }
 
 {
-  // Merge docA and docB
   docA.import(docB.export({ mode: "update", from: docA.version() }));
   docB.import(docA.export({ mode: "update", from: docB.version() }));
 }
@@ -88,11 +69,6 @@ const docB = Loro.fromSnapshot(bytes);
 docB.setPeerId("2");
 const listB = docB.getMovableList("list");
 {
-  // Concurrently docA and docB update element at index 2
-  // docA updates it to 8
-  // docB updates it to 9
-  // docA.toJSON() should return { list: [0, 1, 8] }
-  // docB.toJSON() should return { list: [0, 1, 9] }
   listA.set(2, 8);
   expect(docA.toJSON()).toStrictEqual({ list: [0, 1, 8] });
   listB.set(2, 9);
@@ -100,21 +76,15 @@ const listB = docB.getMovableList("list");
 }
 
 {
-  // Merge docA and docB
   docA.import(docB.export({ mode: "update", from: docA.version() }));
   docB.import(docA.export({ mode: "update", from: docB.version() }));
 }
 
-// Converge to [0, 1, 9] because docB has larger peerId thus larger logical time
+// 因 docB 的 peerId 更大，最终收敛为 [0, 1, 9]
 expect(docA.toJSON()).toStrictEqual({ list: [0, 1, 9] });
 expect(docB.toJSON()).toStrictEqual({ list: [0, 1, 9] });
 
 {
-  // Concurrently docA and docB move element at index 0
-  // docA moves it to 2
-  // docB moves it to 1
-  // docA.toJSON() should return { list: [1, 9, 0] }
-  // docB.toJSON() should return { list: [1, 0, 9] }
   listA.move(0, 2);
   listB.move(0, 1);
   expect(docA.toJSON()).toStrictEqual({ list: [1, 9, 0] });
@@ -122,25 +92,17 @@ expect(docB.toJSON()).toStrictEqual({ list: [0, 1, 9] });
 }
 
 {
-  // Merge docA and docB
   docA.import(docB.export({ mode: "update", from: docA.version() }));
   docB.import(docA.export({ mode: "update", from: docB.version() }));
 }
 
-// Converge to [1, 0, 9] because docB has larger peerId thus larger logical time
 expect(docA.toJSON()).toStrictEqual({ list: [1, 0, 9] });
 expect(docB.toJSON()).toStrictEqual({ list: [1, 0, 9] });
 ```
 
-## Using Cursor on List
+## List 上的光标
 
-The Cursor on a List changes with the list's modifications. If new elements are
-inserted in front of it, it moves to the right. If elements in front are
-deleted, it moves to the left. If elements are inserted or deleted behind it, it
-remains stationary.
-
-If you use a List to represent paragraphs in an article, you can use a Cursor to
-stably represent the selection range on the paragraph.
+List 的光标会随列表变动：前方插入 → 光标右移；前方删除 → 左移；后方改动则不受影响。可用于稳定表示段落等结构的选区。
 
 ```ts twoslash
 import {
@@ -157,61 +119,39 @@ const list = doc.getList("list");
 list.push("Hello");
 list.push("World");
 const cursor = list.getCursor(1)!;
-console.log(cursor.pos()); // OUTPUT: { peer: "1", counter: 1 }
+console.log(cursor.pos()); // { peer: "1", counter: 1 }
 
 const encodedCursor: Uint8Array = cursor.encode();
 const exported: Uint8Array = doc.export({ mode: "snapshot" });
-
-// Sending the exported snapshot and the encoded cursor to peer 2
-// Peer 2 will decode the cursor and get the position of the cursor in the list
-// Peer 2 will then insert "Hello" at the beginning of the list
 
 const docB = new LoroDoc();
 docB.setPeerId("2");
 const listB = docB.getList("list");
 docB.import(exported);
 listB.insert(0, "Foo");
-console.log(docB.toJSON()); // OUTPUT: { list: ["Foo", "Hello", "World"] }
+console.log(docB.toJSON()); // { list: ["Foo", "Hello", "World"] }
 const cursorB = Cursor.decode(encodedCursor);
 {
-  // The cursor position is shifted to the right by 1
   const pos = docB.getCursorPos(cursorB);
-  console.log(pos.offset); // OUTPUT: 2
+  console.log(pos.offset); // 2
 }
 listB.insert(1, "Bar");
-console.log(docB.toJSON()); // OUTPUT: { list: ["Foo", "Bar", "Hello", "World"] }
+console.log(docB.toJSON()); // { list: ["Foo", "Bar", "Hello", "World"] }
 {
-  // The cursor position is shifted to the right by 1
   const pos = docB.getCursorPos(cursorB);
-  console.log(pos.offset); // OUTPUT: 3
+  console.log(pos.offset); // 3
 }
 listB.delete(3, 1);
-console.log(docB.toJSON()); // OUTPUT: { list: ["Foo", "Bar", "Hello"] }
+console.log(docB.toJSON()); // { list: ["Foo", "Bar", "Hello"] }
 {
-  // The position the cursor points to is now deleted,
-  // but it should still get the position
   const pos = docB.getCursorPos(cursorB);
-  console.log(pos.offset); // OUTPUT: 3
-
-  // It will also offer an update on the cursor position.
-  //
-  // Because the old cursor position is deleted, `doc.getCursorPos()` will slow down over time.
-  // Internally, it needs to traverse the related history to find the correct position for a deleted
-  // cursor position.
-  //
-  // After refreshing the cursor, the performance of `doc.getCursorPos()` will improve.
-  console.log(pos.update); // OUTPUT: { peer: "2", counter: 1 }
+  console.log(pos.offset); // 3
+  console.log(pos.update); // { peer: "2", counter: 1 }
   const newCursor: Cursor = pos.update!;
-
-  // The new cursor position is undefined because the cursor is at the end of the list
-  console.log(newCursor.pos()); // OUTPUT: undefined
-  // The side is 1 because the cursor is at the right end of the list
-  console.log(newCursor.side()); // OUTPUT: 1
-
+  console.log(newCursor.pos()); // undefined（位于列表末尾）
+  console.log(newCursor.side()); // 1（位于右端）
   const newPos = docB.getCursorPos(newCursor);
-  // The offset doesn't change
-  console.log(newPos.offset); // OUTPUT: 3
-  // The update is undefined because the cursor no longer needs to be updated
-  console.log(newPos.update); // OUTPUT: undefined
+  console.log(newPos.offset); // 3
+  console.log(newPos.update); // undefined
 }
 ```

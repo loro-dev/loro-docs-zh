@@ -1,18 +1,12 @@
-## Introduction to Loro
+## Loro 简介
 
-It is well-known that syncing data/building realtime collaborative apps is
-challenging, especially when devices can be offline or part of a peer-to-peer
-network. Loro simplifies this process for you.
+众所周知，数据同步或构建实时协作应用是一项挑战，尤其是在设备可能离线或处于点对点网络时。Loro 可以让这一过程变得简单。
 
-We want to provide better DevTools to make building
-[local-first apps](https://www.inkandswitch.com/local-first/) easy and
-enjoyable.
+我们希望提供更好的开发工具，帮助大家轻松愉快地打造[本地优先应用](https://www.inkandswitch.com/local-first/)。
 
-Loro uses [Conflict-free Replicated Data Types (CRDTs)](/docs/concepts/crdt) to
-resolve parallel edits. By utilizing Loro's data types, your applications can be
-made collaborative and keep the editing history with low overhead.
+Loro 使用 [CRDT（Conflict-free Replicated Data Types）](/docs/concepts/crdt) 解决并行编辑问题。借助 Loro 的数据类型，你的应用既能支持协作，又能以低开销保存完整的编辑历史。
 
-After you model your app state by Loro, syncing is simple:
+当你用 Loro 建模应用状态后，同步就变得轻而易举：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -20,19 +14,19 @@ const docA = new LoroDoc();
 const docB = new LoroDoc();
 docA.getText("text").insert(0, "Hello world!");
 docB.getText("text").insert(0, "Hi!");
-// Assume docA and docB are two Loro documents in two different devices
+// 假设 docA 和 docB 位于两台不同的设备
 const bytesA = docA.export({ mode: "update" });
-// send bytes to docB by any method
+// 通过任意方式将字节发送给 docB
 docB.import(bytesA);
-// docB is now updated with all the changes from docA
+// docB 现在已同步 docA 的所有更改
 
 const bytesB = docB.export({ mode: "update" });
-// send bytes to docA by any method
+// 通过任意方式将字节发送给 docA
 docA.import(bytesB);
-// docA and docB are now in sync, they have the same state
+// docA 和 docB 此时状态一致
 ```
 
-Saving your app state is also straightforward:
+保存应用状态同样简单：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -40,10 +34,10 @@ import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 doc.getText("text").insert(0, "Hello world!");
 const bytes = doc.export({ mode: "snapshot" });
-// Bytes can be saved to local storage, database, or sent over the network
+// 可以将这些字节保存到本地存储、数据库或通过网络发送
 ```
 
-Loading your app state:
+加载应用状态：
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
@@ -53,27 +47,23 @@ const newDoc = new LoroDoc();
 newDoc.import(bytes);
 ```
 
-Loro also makes it easy for you to time travel the history and add version
-control to your app. [Learn more about time travel](/docs/tutorial/time_travel).
+Loro 还方便你回放历史，为应用添加版本控制。[深入了解时光旅行功能](/docs/tutorial/time_travel)。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const version = doc.frontiers();
 // ---cut---
-doc.checkout(version); // Checkout the doc to the given version
+doc.checkout(version); // 将文档检出到指定版本
 ```
 
-Loro is compatible with the JSON schema. If you can model your app state with
-JSON, you probably can sync your app with Loro. Because we need to adhere to the
-JSON schema, using a number as a key in a Map is not permitted, and cyclic links
-should be avoided.
+Loro 与 JSON schema 兼容。如果你的应用状态可以用 JSON 建模，大概率就能用 Loro 来同步。由于需要遵循 JSON schema，Map 中的键不能是数字，同时应避免出现循环引用。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 // ---cut---
-doc.toJSON(); // Get the JSON representation of the doc
+doc.toJSON(); // 获取文档的 JSON 表示
 ```
 
 import { Cards } from "nextra/components";
@@ -82,41 +72,40 @@ import { Cards } from "nextra/components";
   <Cards.Card
     image
     arrow
-    title="Getting Started"
+    title="快速上手"
     href="/docs/tutorial/get_started"
     style={{
       maxWidth: 400,
     }}
   >
-    <>![Getting started](/images/GettingStarted.png)</>
+    <>![快速上手](/images/GettingStarted.png)</>
   </Cards.Card>
 </Cards>
 
-## Is Loro Right for You?
+## Loro 是否适合你？
 
-### ✅ Use Loro when you need:
+### ✅ 以下场景适合使用 Loro：
 
-- Real-time collaboration on documents
-- Automatic conflict resolution for concurrent edits
-- Offline editing with later synchronization
-- Complete edit history and time travel
-- P2P synchronization capabilities
+- 文档实时协作
+- 并发编辑的自动冲突解决
+- 离线编辑并在稍后同步
+- 完整编辑历史与时光穿梭
+- 点对点同步能力
 
-### ⚠️ Consider alternatives when:
+### ⚠️ 以下情况可考虑其他方案：
 
-- Your application requires strong consistency
-- Your data isn't JSON-like (e.g., large binary/media streaming)
-- Simple client–server sync is sufficient (e.g., basic WebSockets)
-- Your application is sensitive to bundle size (Loro WASM binary ~970KB gzipped)
+- 应用需要强一致性
+- 数据不是 JSON 结构（例如大型二进制 / 流媒体）
+- 简单的客户端-服务器同步即可满足需求（如基础 WebSocket）
+- 对包体积非常敏感（Loro WASM 压缩后约 970KB）
 
-[Learn more about when not to use CRDTs →](/docs/concepts/when_not_crdt)
+[了解更多「何时不应使用 CRDT」→](/docs/concepts/when_not_crdt)
 
-## Differences from other CRDT libraries
+## 与其他 CRDT 库的差异
 
-The table below summarizes Loro's features, which may not be present in other
-CRDT libraries.
+下表汇总了 Loro 的特性，其中有些在其他 CRDT 库中并不存在。
 
-| Features/Important design decisions                                         | Loro | Diamond-types | Yjs         | Automerge   |
+| 特性 / 重要设计决策                                                         | Loro | Diamond-types | Yjs         | Automerge   |
 | :-------------------------------------------------------------------------- | :--- | :------------ | :---------- | :---------- |
 | [Event Graph Walker](https://loro.dev/docs/advanced/replayable_event_graph) | ✅   | ✅ Inventor   | ❌          | ❌          |
 | Rich Text CRDT                                                              | ✅   | ❌            | ❌          | ✅          |
@@ -125,11 +114,9 @@ CRDT libraries.
 | Time Travel                                                                 | ✅   | ✅            | ✅[1]       | ✅          |
 | [Fugue](https://arxiv.org/abs/2305.00583) / Maximal non-interleaving        | ✅   | ✅            | ❌          | ❌          |
 | JSON Types                                                                  | ✅   | ❓            | ✅          | ✅          |
-| Merging Elements in Memory by Run Length Encoding                           | ✅   | ✅            | ✅ Inventor | ❌          |
-| Byzantine-fault-tolerance                                                   | ❌   | ❌            | ❌          | ✅          |
-| Version Control                                                             | ✅   | ❌            | ❌          | ✅          |
+| 通过游程编码在内存中合并元素                                                | ✅   | ✅            | ✅ Inventor | ❌          |
+| 拜占庭容错                                                                   | ❌   | ❌            | ❌          | ✅          |
+| 版本控制                                                                     | ✅   | ❌            | ❌          | ✅          |
 
-- [1] Unlike others, Yjs requires users to store a version vector and a delete
-  set, enabling time travel back to a specific point.
-- [Fugue](https://arxiv.org/abs/2305.00583) is a text/list CRDTs that can
-  minimize the chance of the interleaving anomalies.
+- [1] 与其他库不同，Yjs 需要用户存储版本向量和删除集合，才能回到特定时间点。
+- [Fugue](https://arxiv.org/abs/2305.00583) 是一种文本 / 列表 CRDT，可将交错异常的概率降到最低。

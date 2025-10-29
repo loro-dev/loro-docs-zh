@@ -1,100 +1,100 @@
-# Container
+# 容器
 
-Containers are the fundamental building blocks in Loro for organizing and structuring collaborative data. They provide typed data structures that automatically merge when concurrent edits occur.
+容器是 Loro 用于组织和构建协作数据的基础组件。它们提供带类型的数据结构，在发生并发编辑时会自动合并。
 
-## Container Types
+## 容器类型
 
-Loro provides several container types, each optimized for different use cases:
+Loro 提供多种容器类型，针对不同场景进行了优化：
 
-- **LoroMap**: Key-value pairs with Last-Write-Wins semantics
-- **LoroList**: Ordered sequences that merge concurrent insertions
-- **LoroText**: Text with character-level merging and rich text support
-- **LoroTree**: Hierarchical tree structures with move operations
-- **LoroMovableList**: Lists with reordering capabilities
-- **LoroCounter**: Numerical values with increment/decrement operations
+- **LoroMap**：带有最后写入生效（Last-Write-Wins）语义的键值对
+- **LoroList**：有序序列，可合并并发插入
+- **LoroText**：字符级合并并支持富文本
+- **LoroTree**：支持移动操作的层级树结构
+- **LoroMovableList**：可重新排序的列表
+- **LoroCounter**：支持增减操作的数值容器
 
-## Container States: Attached vs Detached
+## 容器状态：Attached 与 Detached
 
-Containers in Loro exist in two distinct states that affect their behavior and identity.
+在 Loro 中，容器存在两种状态，不同状态会影响行为和标识。
 
-### Detached Containers
+### Detached 容器
 
-A container is **detached** when created directly using constructors:
+通过构造函数直接创建的容器处于 **detached** 状态：
 
 ```ts twoslash
 import { LoroMap, LoroText, LoroList } from "loro-crdt";
 // ---cut---
-// These containers are all detached
+// 这些容器都处于 detached 状态
 const map = new LoroMap();
 const text = new LoroText();
 const list = new LoroList();
 ```
 
-Characteristics of detached containers:
-- Not yet part of any document
-- Have a default placeholder ContainerID
-- Can be used as templates or temporary data structures
-- Will get a proper ContainerID when inserted into a document
+Detached 容器的特点：
+- 尚未加入任何文档
+- 拥有默认的占位 ContainerID
+- 可作为模板或临时数据结构使用
+- 插入文档后才会获得正式的 ContainerID
 
-### Attached Containers
+### Attached 容器
 
-A container becomes **attached** when it's part of a document hierarchy:
+当容器成为文档层级的一部分时，即进入 **attached** 状态：
 
 ```ts twoslash
 import { LoroDoc, LoroMap, LoroText } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
 
-// Root containers are immediately attached
+// 根容器创建后立即是 attached 状态
 const rootMap = doc.getMap("myMap");
 const rootText = doc.getText("myText");
 
-// Child containers: the returned value is attached
+// 子容器：返回值是 attached 状态
 const detachedChild = new LoroText();
 const attachedChild = rootMap.setContainer("child", detachedChild);
-// Note: detachedChild remains detached
-// attachedChild is the attached version with proper ContainerID
+// 注意：detachedChild 仍然是 detached
+// attachedChild 拥有正确的 ContainerID
 ```
 
-Characteristics of attached containers:
-- Belong to a specific document
-- Have a proper ContainerID that uniquely identifies them
-- Changes are tracked in the document's history
-- Can be synchronized across peers
+Attached 容器的特点：
+- 隶属于某个具体文档
+- 拥有唯一标识它的 ContainerID
+- 变更会记录在文档历史中
+- 可以在节点之间同步
 
-## Container IDs
+## 容器 ID
 
-Every attached container has a unique ContainerID that identifies it within the distributed system. The ID generation depends on the container type:
+每个 attached 容器都会在分布式系统中拥有唯一的 ContainerID。ID 的生成取决于容器类型：
 
-- **Root containers**: ID derived from their name (e.g., "myMap" in `doc.getMap("myMap")`)
-- **Child containers**: ID based on the operation that created them (OpID)
+- **根容器**：依据名称生成（例如 `doc.getMap("myMap")` 中的 "myMap"）
+- **子容器**：基于创建它的操作（OpID）生成
 
-This deterministic ID generation ensures that:
-- The same container can be identified across all peers
-- Container IDs are not random but contextually determined
-- A detached container cannot have its final ID until insertion
+这种确定性的 ID 生成策略确保：
+- 所有节点都能识别出同一个容器
+- 容器 ID 不是随机的，而是由上下文决定
+- Detached 容器在插入前无法获得最终 ID
 
-## Working with Containers
+## 操作容器
 
-### Creating Root Containers
+### 创建根容器
 
-Root containers are created through the document API and are immediately attached:
+根容器通过文档 API 创建，创建后立即处于 attached 状态：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
 
-// These methods create or get root containers
+// 这些方法用于创建或获取根容器
 const map = doc.getMap("settings");
 const text = doc.getText("content");
 const list = doc.getList("items");
 const tree = doc.getTree("hierarchy");
 ```
 
-### Nesting Containers
+### 嵌套容器
 
-Containers can be nested to create complex data structures:
+容器可以相互嵌套，构建复杂的数据结构：
 
 ```ts twoslash
 import { LoroDoc, LoroMap, LoroList, LoroText } from "loro-crdt";
@@ -102,18 +102,17 @@ import { LoroDoc, LoroMap, LoroList, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
 const rootMap = doc.getMap("root");
 
-// Method 1: Using setContainer (returns attached container)
+// 方法 1：使用 setContainer（返回 attached 容器）
 const childText = rootMap.setContainer("description", new LoroText());
 
-// Method 2: Using insertContainer for lists
+// 方法 2：对于列表使用 insertContainer
 const list = doc.getList("items");
 const childMap = list.insertContainer(0, new LoroMap());
 ```
 
-## Container Overwrites
+## 容器覆盖
 
-When initializing child containers in parallel, overwrites can occur instead of
-automatic merging. For example:
+在并行初始化子容器时，Loro 会发生覆盖而非自动合并。例如：
 
 ```ts twoslash
 import { LoroDoc, LoroText } from "loro-crdt";
@@ -122,7 +121,7 @@ const a: string = "hello";
 const doc = new LoroDoc();
 const map = doc.getMap("map");
 
-// Parallel initialization of child containers
+// 并行初始化子容器
 const docB = doc.fork();
 const textA = doc.getMap("map").setContainer("text", new LoroText());
 textA.insert(0, "A");
@@ -130,41 +129,28 @@ const textB = docB.getMap("map").setContainer("text", new LoroText());
 textB.insert(0, "B");
 
 doc.import(docB.export({ mode: "update" }));
-// Result: Either { "meta": { "text": "A" } } or { "meta": { "text": "B" } }
+// 结果：要么 { "meta": { "text": "A" } }，要么 { "meta": { "text": "B" } }
 ```
 
-This behavior poses a significant risk of data loss if the editing history is
-not preserved. Even when the complete history is available and allows for data
-recovery, the recovery process can be complex.
+如果没有保存编辑历史，这种行为会带来严重的数据丢失风险。即便保留了完整历史能够回滚恢复，操作流程也会非常复杂。
 
 <aside>
-By default, Loro and Automerge preserve the whole editing history in a directed
-acyclic graph like Git.
+默认情况下，Loro 与 Automerge 会像 Git 一样使用有向无环图保留完整编辑历史。
 </aside>
 
-When a container holds substantial data or serves as the primary storage for
-document content, overwriting it can lead to the unintended hiding/loss of
-critical information. For this reason, it is essential to implement careful and
-systematic container initialization practices to prevent such issues.
+当容器承载大量数据，或是文档的主存储区域时，覆盖会隐藏或丢失关键信息。因此需要在容器初始化阶段采取谨慎、系统化的策略，避免出现问题。
 
-### Best Practices
+### 最佳实践
 
-1. When containers might be initialized concurrently, prefer initializing them
-   at the root level rather than as nested containers
+1. 如果可能发生并发初始化，尽量在根层级初始化容器，而不是作为嵌套容器
+2. 当使用 Map 容器时：
+   - 尽量在创建 Map 容器时一次性初始化所有子容器
+   - 避免在 Map 中并发创建同名子容器，以防止覆盖
 
-2. When using map containers:
-   - If possible, initialize all child containers during the map container's
-     initialization
-   - Avoid concurrent creation of child containers with the same key in the map
-     container to prevent overwrites
+出现覆盖是因为并行创建子容器会生成不同的 ContainerID，导致无法自动合并内容。
 
-The overwrite behavior occurs because parallel creation of child containers
-results in different container IDs, preventing automatic merging of their
-contents.
+## 相关概念
 
-
-## Related Concepts
-
-- [Container ID](/docs/advanced/cid): Deep dive into how Container IDs work
-- [Choosing CRDT Types](/docs/concepts/choose_crdt_type): Guide for selecting the right container type
-- [Composition](/docs/tutorial/composition): How to compose containers into complex structures
+- [Container ID](/docs/advanced/cid)：深入了解 ContainerID 的工作机制
+- [选择 CRDT 类型](/docs/concepts/choose_crdt_type)：如何挑选合适的容器类型
+- [组合](/docs/tutorial/composition)：如何组合容器构建复杂结构

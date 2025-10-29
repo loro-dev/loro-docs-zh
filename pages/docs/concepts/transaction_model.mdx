@@ -1,35 +1,35 @@
-# Transaction Model
+# 事务模型（Transaction Model）
 
-## Quick Reference
+## 快速概览
 
-**Loro transactions are NOT database ACID transactions.** They are operation bundling mechanisms for event emission.
+**Loro 的事务并非数据库中的 ACID 事务。** 它们用于打包操作并控制事件触发。
 
-## Key Concepts
+## 核心概念
 
-- **Purpose**: Bundle related operations and control event emission
-- **No rollback**: Failed operations don't undo previous ones
-- **Event batching**: Single event for all operations in transaction
-- **History grouping**: Operations stay together for undo/redo
+- **目的**：把相关操作打包，并控制事件何时触发
+- **不提供回滚**：操作失败不会撤销之前的变更
+- **事件批处理**：一次事务中的所有操作对应一条事件
+- **历史分组**：操作在撤销 / 重做时保持在一起
 
-## Basic Usage
+## 基本用法
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
 
-// Without transaction - multiple events
+// 未使用事务——会产生多条事件
 const text = doc.getText("text");
 text.insert(0, "Hello");
-doc.commit(); // Event emitted
+doc.commit(); // 触发事件
 text.insert(5, " World");
-doc.commit(); // Another event
+doc.commit(); // 再触发一次事件
 ```
 
-## How Transactions Work
+## 事务的运行机制
 
-### Pending Operations
-Local operations are **pending** by default and won't emit events until committed:
+### 待提交的操作
+本地操作默认处于 **pending** 状态，在提交前不会触发事件：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -37,15 +37,15 @@ import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const text = doc.getText("text");
 
-// Operation is pending, no event emitted yet
+// 操作处于 pending 状态，暂未触发事件
 text.insert(0, "Hello");
 
-// Explicit commit triggers event emission
+// 显式提交后触发事件
 doc.commit();
 ```
 
-### Implicit Commits
-Certain operations trigger implicit commits automatically:
+### 隐式提交
+某些操作会自动触发隐式提交：
 
 ```ts twoslash no_run
 import { LoroDoc } from "loro-crdt";
@@ -54,26 +54,26 @@ const update = new Uint8Array();
 const doc = new LoroDoc();
 const text = doc.getText("text");
 
-text.insert(0, "Hello"); // Pending operation
+text.insert(0, "Hello"); // Pending 操作
 
-// These operations trigger implicit commit:
-doc.import(update); // Implicit commit before import
-// or
-doc.checkout(doc.frontiers()); // Implicit commit before checkout
-// or
-doc.export({ mode: "update" }); // Implicit commit before export
+// 以下操作会触发隐式提交：
+doc.import(update); // 在导入前隐式提交
+// 或
+doc.checkout(doc.frontiers()); // 在 checkout 前隐式提交
+// 或
+doc.export({ mode: "update" }); // 在导出前隐式提交
 ```
 
-### Transaction Guarantees
+### 事务的保证
 
-- All operations share the same timestamp (if enabled)
-- Operations grouped in a single Change
-- One event emitted after transaction completes
-- Operations committed together at transaction end
-- Before committing, the local edits are not synced to other peers
+- 所有操作共享同一个时间戳（若启用）
+- 操作会被归入同一个 Change
+- 事务完成后只触发一次事件
+- 操作在事务末尾一并提交
+- 在提交之前，本地编辑不会同步给其他节点
 
-## Related Documentation
+## 相关文档
 
-- [Operations and Changes](./operations_changes) - How transactions create Changes
-- [Event System](../tutorial/event) - Understanding event emission
-- [Undo/Redo](../advanced/undo) - Using transactions for undo boundaries
+- [Operations 与 Changes](./operations_changes)——事务如何生成 Change
+- [事件系统](../tutorial/event)——理解事件触发
+- [撤销 / 重做](../advanced/undo)——利用事务定义撤销边界

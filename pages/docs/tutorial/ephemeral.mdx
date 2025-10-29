@@ -1,24 +1,24 @@
 ---
-keywords: "ephemeral, awareness, presence, collaborative"
-description: "How to use Loro's ephemeral store feature to implement user awareness and online status management in real-time collaboration."
+keywords: "ephemeral, awareness, presence, 协作"
+description: "使用 Loro 的临时存储实现在线协作中的用户感知与在线状态管理。"
 ---
 
-# Ephemeral Store
+# 临时存储（Ephemeral Store）
 
-In real-time collaborative scenarios, Presence information is just as important as maintaining document consistency across peers through CRDTs. This includes information such as the current collaborator's username, mouse pointer position, or selected objects. We need a mechanism that doesn't persist in the CRDT Document but remains ephemeral, allowing collaborators to perceive each other's presence for better coordination and to avoid conflicts when multiple users edit the same object. This is why we've introduced the Ephemeral Store.
+在实时协作场景中，除了通过 CRDT 保持文档一致性，用户状态（Presence）同样重要，例如协作者姓名、指针位置或当前选中的对象。我们需要一种不会写入 CRDT 文档、但能瞬时共享的机制，让协作者彼此感知，从而协调操作、避免冲突。这正是 Ephemeral Store 的用途。
 
 ![](/images/ephemeral.png)
 
-Since Ephemeral information is primarily used for real-time collaboration, we've chosen a simple yet effective approach. The Ephemeral Store is a timestamp-based, last-write-wins key-value store. Each entry maintains its own timestamp of the last update, enabling the system to send only the updated entry content rather than the complete current state.
+由于临时信息主要用于实时同步，我们采用了简单且高效的方案：Ephemeral Store 是基于时间戳的最终写入生效（Last-Write-Wins）键值存储。每个条目维护自身的更新时间戳，因此只需发送更新的条目，而无需广播整个状态。
 
-## Example
+## 示例
 
 ```ts twoslash
 import { EphemeralStore, EphemeralStoreEvent } from "loro-crdt";
 import { expect } from "expect";
 
 const store = new EphemeralStore();
-// Set ephemeral data
+// 写入临时数据
 store.set("loro-prosemirror", {
   anchor: { pos: 0 },
   focus: { pos: 5 },
@@ -27,64 +27,64 @@ store.set("loro-prosemirror", {
 store.set("online-users", ["Alice", "Bob"]);
 
 expect(store.get("online-users")).toEqual(["Alice", "Bob"]);
-// Encode only the data for `loro-prosemirror`
+// 只编码 `loro-prosemirror` 对应的数据
 const encoded = store.encode("loro-prosemirror");
 
 store.subscribe((e: EphemeralStoreEvent) => {
-  // Listen to changes from `local`, `remote`, or `timeout` events
+  // 监听来自 local、import 或 timeout 的事件
 });
 ```
 
 ## API
 
-- `constructor(timeout)`:
-  Creates a new EphemeralStore instance with an optional timeout parameter (default: 30000ms). The timeout determines how long ephemeral data remains valid before being automatically removed.
+- `constructor(timeout)`：
+  创建 EphemeralStore 实例，可选 `timeout`（默认 30000 毫秒）。超时后条目会自动移除。
 
-- `set(key, value)`:
-  Sets a value for the specified key in the ephemeral store. If the key already exists, its value will be updated.
+- `set(key, value)`：
+  为指定键写入值，若键已存在则覆盖。
 
-- `get(key)`:
-  Retrieves the current value for the specified key, or returns `undefined` if the key doesn't exist.
+- `get(key)`：
+  获取指定键的当前值，不存在则返回 `undefined`。
 
-- `delete(key)`:
-  Removes the specified key and its associated value from the ephemeral store.
+- `delete(key)`：
+  删除指定键及其值。
 
-- `getAllStates()`:
-  Returns all current key-value pairs in the ephemeral store.
+- `getAllStates()`：
+  返回当前所有键值对。
 
-- `keys()`:
-  Returns an array of all keys currently in the ephemeral store.
+- `keys()`：
+  返回当前所有键的数组。
 
-- `encode(key)`:
-  Encodes the value associated with the specified key into a binary format that can be transmitted to other peers.
+- `encode(key)`：
+  将指定键的值编码成可传输的二进制数据。
 
-- `encodeAll()`:
-  Encodes all key-value pairs in the ephemeral store into a binary format.
+- `encodeAll()`：
+  将全部键值对编码成二进制数据。
 
-- `apply(bytes)`:
-  Applies encoded ephemeral data received from other peers to the local ephemeral store.
+- `apply(bytes)`：
+  将其他节点发送的编码数据应用到本地临时存储。
 
-- `subscribe((event: EphemeralStoreEvent)=>void)`:
-  Registers a listener function that will be called whenever the ephemeral store is updated, either from local changes, remote changes, or timeout events.
+- `subscribe((event: EphemeralStoreEvent) => void)`：
+  注册监听器，监听本地更新、远端更新或超时事件。
 
   ```ts
   interface EphemeralStoreEvent {
-    // The source of the event: local changes, imported from remote, or timeout expiration
+    // 事件来源：本地、远端导入或超时删除
     by: "local" | "import" | "timeout";
-    // Array of keys that were newly added
+    // 新增的键
     added: string[];
-    // Array of keys that had their values updated
+    // 更新的键
     updated: string[];
-    // Array of keys that were removed
+    // 被移除的键
     removed: string[];
   }
   ```
 
-- `subscribeLocalUpdates((bytes: Uint8Array) => void)`:
-  Registers a listener that will be called only for local updates to the ephemeral store.
+- `subscribeLocalUpdates((bytes: Uint8Array) => void)`：
+  仅监听本地更新，便于直接将增量转发给其他节点。
 
   ```ts
-  // you need maintain the Subscription to avoid gc
+  // 需要保留订阅引用，避免被垃圾回收
   const _sub1 = ephemeral1.subscribeLocalUpdates((update) => {
     ephemeral2.apply(update);
   });

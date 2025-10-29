@@ -1,51 +1,51 @@
-# PeerID Management
+# PeerID 管理
 
-## Quick Reference
+## 快速概览
 
-**Peer IDs** are unique identifiers for each editing session in Loro's distributed system. They ensure operation uniqueness without coordination between peers.
+在 Loro 的分布式系统中，**PeerID** 是区分每个编辑会话的唯一标识，用于在无需协调的情况下确保操作 ID 不会冲突。
 
-## Key Concepts
+## 核心概念
 
-- **Peer ID**: A 64-bit unique identifier for each client/session
-- **Operation ID**: Combination of `(peerId, counter)` that uniquely identifies each operation
-- **Counter**: Monotonically increasing number starting at 0 for each peer
+- **PeerID**：为每个客户端 / 会话分配的 64 位唯一标识
+- **Operation ID**：由 `(peerId, counter)` 组成，用于唯一标识每个操作
+- **Counter**：每个 peer 独立维护、从 0 开始递增的计数器
 
 ```ts
 interface OpId {
-  peerId: `${number}`;  // Unique peer identifier. It's string because 64bit integers are not supported in JS.
-  counter: number;      // Monotonically increasing counter
+  peerId: `${number}`;  // 唯一的 peer 标识；用字符串表示，因为 JS 不支持 64 位整数
+  counter: number;      // 单调递增的计数器
 }
 ```
 
-## Peer ID Assignment
+## PeerID 分配
 
-### Automatic (Default)
+### 默认：自动分配
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
-const doc = new LoroDoc(); // Gets a random peer ID
-// Safe, no coordination needed
+const doc = new LoroDoc(); // 自动获取随机 PeerID
+// 安全，无需协调
 ```
 
-**Note**: New peer ID generated for each `LoroDoc` instance, even when loading same document.
+**提示**：每个 `LoroDoc` 实例都会生成新的 PeerID，即便加载的是同一份文档。
 
-### Manual
+### 手动分配
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
-doc.setPeerId("123123123");  // You can only set 64 bit integers as peer IDs
+doc.setPeerId("123123123");  // 只能设置 64 位整数（字符串表示）
 ```
 
-⚠️ **Warning**: Manual assignment requires careful conflict avoidance.
+⚠️ **警告**：手动分配需要谨慎避免冲突。
 
-If you intentionally reuse a Peer ID, persist the document's local data (snapshot, updates, or durable cache) alongside that ID and load it before fetching or applying any remote updates. This ensures the `(peerId, counter)` pairs continue to reference the same operations. Skipping this step risks generating a new operation that reuses an existing operation ID, which leads to inconsistent replicas.
+如果你要复用某个 PeerID，请确保将该文档的本地数据（快照、更新或持久缓存）与该 ID 一同保存，并在获取或应用任何远端更新之前先加载它。这样才能确保 `(peerId, counter)` 对应的是同一批操作。否则，新操作可能会复用已有的 Operation ID，导致副本出现不一致。
 
-## Counter System
+## 计数器系统
 
-Each peer maintains a monotonic counter starting at 0:
+每个 peer 都维护一个从 0 开始的单调计数器：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -55,22 +55,22 @@ doc.setPeerId("1");
 const text = doc.getText("text");
 
 text.insert(0, "H");    // Operation ("1", 0)
-text.insert(1, "i!");    // Operation ("1", 1) and Operation ("1", 2) are created
+text.insert(1, "i!");   // 产生 Operation ("1", 1) 与 ("1", 2)
 console.log(doc.version()); // { "1": 2 }
 ```
 
-**Properties**: Monotonic, continuous, per-peer, persistent.
+**特性**：单调、连续、按 peer 独立维护且可持久化。
 
-## Common Pitfalls
+## 常见误区
 
-❌ **Never**:
-- Use user IDs as peer IDs, because an user can have multiple devices
-- Use fixed IDs
-- Reuse IDs without proper management
-- Allow multiple browser tabs or processes to operate on the same reused Peer ID in parallel—coordinate access with locks so that only one session emits operations for that ID at a time
+❌ 请勿：
+- 直接使用用户 ID 作为 PeerID（同一用户可能有多台设备）
+- 使用固定不变的 ID
+- 未经管理地重复使用同一 ID
+- 允许多个浏览器标签页或进程并行复用同一个 PeerID —— 如需复用，请通过锁等机制协调，确保同一时间只有一个会话为该 ID 产生操作
 
-## Related Documentation
+## 相关文档
 
-- [Version Vector](./version_vector) - How peer IDs form version vectors
-- [Import Status](./import_status) - Handling synchronization with peer IDs
-- [Shallow Snapshots](./shallow_snapshots) - Consolidating peer history
+- [版本向量](./version_vector)——PeerID 如何构成版本向量
+- [Import 状态](./import_status)——利用 PeerID 处理同步
+- [浅快照](./shallow_snapshots)——整合 peer 历史

@@ -1,72 +1,69 @@
 ---
-keywords: "crdt, limitations, constraints, business logic, invariants"
-description: "When CRDTs are not the right tool: hard invariants, exclusivity, ordering, and validation"
+keywords: "crdt, 限制, 约束, 业务逻辑, 不变量"
+description: "何时不应使用 CRDT：当需要强不变量、排他性、顺序或即时校验时"
 ---
 
-# When Not to Use CRDTs
+# 什么时候不要使用 CRDT
 
-CRDTs shine for collaborative editing and offline-friendly applications. 
-But they are not a universal replacement for coordination, transactions, 
-or authorization. Use this guide to recognize when CRDTs are a poor fit and what to use instead.
+CRDT 在协作编辑与离线友好型应用中表现出色，但它并不能替代所有协调、事务或鉴权需求。以下指南帮助你识别 CRDT 不适合的场景，并考虑替代方案。
 
-## Quick Reference
+## 快速概览
 
-CRDTs merge; they do not reject. This clashes with requirements that demand global agreement at the time of the action:
-- **Hard invariants**: Must never be violated (e.g., balance ≥ 0)
-- **Exclusive ownership**: Only one winner per slot/resource
+CRDT 的特性是“合并”，而不是“拒绝”。只要操作发生，它就会被合并；这与需要在操作发生时就获得全局一致结论的场景相冲突：
+- **强不变量**：必须永远成立，例如余额 ≥ 0
+- **排他所有权**：某一资源只能有一个获胜者
 
-## Why CRDTs fall short here
+## 为什么 CRDT 在这些场景会失效
 
-- Merging is monotonic: remote edits cannot be “rolled back” on arrival
-- No locks or transactions across replicas
-- Check-then-set across peers needs coordination, not just convergence
+- 合并是单调的：远端编辑到达时无法“回滚”
+- 副本之间没有锁或事务
+- 在节点之间执行“检查再写入”需要协调，而不仅仅是最终一致
 
-## Common problem scenarios
+## 常见问题场景
 
-### 1) Exclusive resource management
+### 1）排他资源管理
 
-Multiple users book the same room/time concurrently.
+多名用户同时预定同一会议室 / 时间。
 
 ```ts no_run
-// With a CRDT-only model both intents exist after merge
-// The app must pick a winner out-of-band
+// 仅采用 CRDT 模型时，合并后两个意图都存在
+// 应用必须通过外部流程选择获胜者
 book("A101@2pm", { by: "A" })
 book("A101@2pm", { by: "B" })
-// After sync: both entries are present → invariant violated without coordination
+// 同步后：两个条目并存 → 若无协调则违反不变量
 ```
 
-Use instead:
-- Transactional authority (central server or database)
-- Distributed consensus (Raft/Paxos) for ownership
-- Hybrid: CRDT for UI drafts, authoritative booking via server
+替代方案：
+- 事务型权威（中心服务器或数据库）
+- 分布式一致性协议（如 Raft / Paxos）保障所有权
+- 混合模式：UI 草稿用 CRDT，最终确认由服务器裁决
 
-### 2) Financial transactions
+### 2）金融交易
 
-Two withdrawals race on a $100 account.
+两个提款操作同时发生在 100 美元账户上。
 
 ```ts no_run
-// Each client applies its own withdrawal locally
+// 每个客户端本地应用自己的提款
 withdraw(60) // A
 withdraw(60) // B
-// After merge, naive addition overdrafts without an authority
+// 合并后，简单累加会导致透支
 ```
 
-Use instead:
-- ACID transactions on an authoritative store
-- Command validation with a single writer per account
-- Event-sourced ledger with server-side checks
+替代方案：
+- 在权威存储上执行 ACID 事务
+- 单写者模型，由唯一节点负责校验命令
+- 服务器端检查的事件溯源账本
 
-### Other cases to avoid CRDT-as-the-only-source
+### 其他不宜只靠 CRDT 的情况
 
-- Uniqueness constraints (usernames, slugs, one primary per group)
-- Authorization decisions that must be enforced at write time
-- Global invariants (referential integrity, cross-document totals)
+- 唯一性约束（用户名、slug、每组 only-one 主记录）
+- 必须在写入时立即执行的授权判断
+- 全局不变量（引用完整性、跨文档求和等）
 
-## When CRDTs work well
+## CRDT 适用良好的场景
 
-CRDTs excel when merged results are meaningful and temporary inconsistency is acceptable:
+当合并后的结果有意义，并且临时不一致可接受时，CRDT 大放异彩：
 
-- ✅ Collaborative text, lists, maps, rich presence
-- ✅ Comments, reactions, drafts, annotations
-- ✅ Offline edits where convergence is enough
-
+- ✅ 协作文本文档、列表、map、在线状态
+- ✅ 评论、表情、草稿、批注
+- ✅ 离线编辑，只要最终能够收敛即可

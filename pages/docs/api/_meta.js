@@ -1,3 +1,3 @@
 export default {
-  js: "JavaScript API"
+  js: "JavaScript API 参考"
 }

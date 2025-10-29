@@ -16,12 +16,12 @@ export default function FollowOnGitHub(
       href="https://github.com/loro-dev/loro"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Follow us on GitHub"
+      aria-label="在 GitHub 上关注我们"
     >
       <div className="w-6 h-6 md:w-9.5 md:h-9.5 flex items-center justify-center mr-1">
         <GitHubIcon />
       </div>
-      <div className={classes.AdvertisingText}>Follow us on GitHub</div>
+      <div className={classes.AdvertisingText}>在 GitHub 上关注我们</div>
     </a>
   );
 }

@@ -1,38 +1,31 @@
 ---
-keywords: "text crdt, richtext, richtext editor"
-description: "how to use loro richtext crdt and show all APIs of loro text crdt."
+keywords: "text crdt, richtext, 富文本编辑"
+description: "如何使用 Loro 的富文本 CRDT，并展示全部 Text API。"
 ---
 
-# Text
+# 文本
 
-Loro supports both plain text and rich text. When rich text features (like mark
-and unmark) are not used, the text container operates as plain text without any
-rich text overhead, making it efficient for simple text operations.
+Loro 同时支持纯文本与富文本。如果不使用加标（mark/unmark）等富文本能力，文本容器就以纯文本方式工作，不会产生额外开销。
 
-LoroText offers excellent performance, particularly when handling large strings.
-It significantly outperforms native JavaScript string operations due to its
-internal B-tree structure. All basic operations like insert and delete have
-O(log N) time complexity, making it highly efficient even when working with
-documents containing several million characters.
+`LoroText` 在处理长字符串时表现出色，内部采用 B 树结构，插入、删除等基础操作都是 O(log N)，即便文档包含数百万字符也能保持高性能。
 
-> To learn how rich text CRDT in Loro works under the hood, please refer to our
-> blog: [Introduction to Loro's Rich Text CRDT](/blog/loro-richtext).
+> 想深入了解 Loro 富文本 CRDT 的原理，可阅读博客：[Introduction to Loro's Rich Text CRDT](/blog/loro-richtext)。
 
-LoroText also supports stable cursor and selection positions. Using the Cursor API (`text.getCursor`, `doc.getCursorPos`, `Side`), you can represent caret/selection endpoints that remain valid across concurrent edits—similar to Yjs's `RelativePosition`. See the [Cursor](/docs/tutorial/cursor) guide for details.
+`LoroText` 还支持稳定的光标与选区。借助 `text.getCursor`、`doc.getCursorPos`、`Side` 等 API，可以创建在并发编辑下仍然有效的光标位置，类似 Yjs 的 `RelativePosition`。详情参见[光标教程](/docs/tutorial/cursor)。
 
-## Editor Bindings
+## 编辑器绑定
 
-Loro provides official bindings for popular editors to make it easier to integrate Loro's CRDT capabilities:
+Loro 为常见编辑器提供官方绑定，方便将 CRDT 能力集成到现有项目。
 
-### ProseMirror Binding
+### ProseMirror 绑定
 
-The [loro-prosemirror](https://github.com/loro-dev/loro-prosemirror) package provides seamless integration between Loro and ProseMirror, a powerful rich text editor framework. It includes:
+[loro-prosemirror](https://github.com/loro-dev/loro-prosemirror) 提供与 ProseMirror 的无缝整合，包括：
 
-- Document state synchronization with rich text support
-- Cursor awareness and synchronization
-- Undo/Redo support in collaborative editing
+- 支持富文本的文档同步
+- 光标感知与同步
+- 协作编辑下的撤销 / 重做
 
-The ProseMirror binding can also be used with [Tiptap](https://tiptap.dev/), a popular rich text editor built on top of ProseMirror. This means you can easily add collaborative editing capabilities to your Tiptap-based applications.
+它也适用于基于 ProseMirror 的 [Tiptap](https://tiptap.dev/)，可轻松为 Tiptap 应用添加协作能力。
 
 ```ts no_run
 import {
@@ -66,13 +59,13 @@ const editor = new EditorView(editorDom, {
 });
 ```
 
-### CodeMirror Binding
+### CodeMirror 绑定
 
-The [loro-codemirror](https://github.com/loro-dev/loro-codemirror) package provides integration between Loro and CodeMirror 6, a versatile code editor. It supports:
+[loro-codemirror](https://github.com/loro-dev/loro-codemirror) 集成了 CodeMirror 6，提供：
 
-- Document state synchronization
-- Cursor awareness
-- Undo/Redo functionality
+- 文档状态同步
+- 光标感知
+- 撤销 / 重做
 
 ```ts no_run
 import { EditorState } from "@codemirror/state";
@@ -87,11 +80,11 @@ const undoManager = new UndoManager(doc, {});
 new EditorView({
   state: EditorState.create({
     extensions: [
-      // ... other extensions
+      // ... 其他扩展
       LoroExtensions(
         doc,
         {
-          awareness: awareness,
+          awareness,
           user: { name: "Bob", colorClassName: "user1" },
         },
         undoManager,
@@ -102,11 +95,11 @@ new EditorView({
 });
 ```
 
-## LoroText vs String
+## LoroText 与字符串的区别
 
-It's important to understand that LoroText is very different from using a regular string type. So the following code has different merge results:
+`LoroText` 与普通字符串的语义截然不同，合并结果也不同。
 
-Using `LoroText`:
+使用 `LoroText`：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -121,7 +114,7 @@ doc.import(doc2.export({ mode: "update" }));
 console.log(doc.getText("text").toString()); // "HelloWorld"
 ```
 
-Using `String`:
+使用字符串：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -136,40 +129,34 @@ doc.import(doc2.export({ mode: "update" }));
 console.log(doc.getMap("map").get("text")); // "World"
 ```
 
-### Merge Semantics
+### 合并语义
 
-Unlike LoroMap which uses Last-Write-Wins (LWW) semantics, LoroText is designed to preserve edits. Here's how they differ:
+与采用最后写入生效（LWW）的 LoroMap 不同，LoroText 会尽量保留双端编辑。
 
-When user A and user B make concurrent edits to the same text:
+当用户 A、B 同时编辑文本时：
 
-- LoroText will merge both users' edits in sequence, preserving both changes
-- LoroMap will use LWW semantics, keeping only one user's changes
+- LoroText 会合并并保留双方改动
+- LoroMap 由于 LWW 语义，只保留其中一方
 
-### When to Use String in LoroMap
+### 何时选择在 LoroMap 中存字符串
 
-There are specific scenarios where using a string in LoroMap (with LWW semantics) might be more appropriate than using LoroText:
+在某些场景下，使用 LWW 的字符串更合适：
 
-- **URLs**: When dealing with hyperlinks, automatic merging could result in invalid URLs. In this case, it's better to use LoroMap's LWW semantics to ensure the URL remains valid.
-- **Hash String**: When handling hash string, LWW semantics are more appropriate to maintain data accuracy and consistency.
+- **URL**：并发拼接可能导致无效链接，使用 LWW 可保证最终有效
+- **哈希字符串**：类似数据应保持准确与唯一性，适合 LWW
 
-## Rich Text Config
+## 富文本配置
 
-To use rich text in Loro, you need to specify the expanding behaviors for each
-format first. When we insert new text at the format boundaries, they define
-whether the inserted text should inherit the format.
+在使用富文本前，需要为每个格式声明“扩展行为”，以确定在格式边界插入新文本时是否继承标记。
 
-There are four kinds of expansion behaviors:
+共有四种扩展行为：
 
-- `after`(default): when inserting text right after the given range, the mark
-  will be expanded to include the inserted text
-- `before`: when inserting text right before the given range, the mark will be
-  expanded to include the inserted text
-- `none`: the mark will not be expanded to include the inserted text at the
-  boundaries
-- `both`: when inserting text either right before or right after the given
-  range, the mark will be expanded to include the inserted text
+- `after`（默认）：在范围后侧插入时继承标记
+- `before`：在范围前侧插入时继承标记
+- `none`：在边界处插入时不继承
+- `both`：前后侧插入都会继承
 
-### Example
+### 示例
 
 ```ts twoslash
 import { LoroDoc, Delta } from "loro-crdt";
@@ -195,7 +182,7 @@ expect(text.toDelta()).toStrictEqual([
   },
 ] as Delta<string>[]);
 
-// " Test" will inherit the bold style because `bold` is configured to expand forward
+// 由于 bold 指定了 forward 扩展，" Test" 会继承加粗
 text.insert(5, " Test");
 expect(text.toDelta()).toStrictEqual([
   {
@@ -210,49 +197,48 @@ expect(text.toDelta()).toStrictEqual([
 ] as Delta<string>[]);
 ```
 
-## Methods
+## 方法
 
 ### `insert(pos: number, s: string)`
 
-Insert text at the given pos.
+在指定位置插入文本。
 
 ### `delete(pos: number, len: number)`
 
-Delete text at the given range.
+删除指定区间的文本。
 
 ### `slice(start: number, end: number): string`
 
-Get a string slice.
+获取子串。
 
 ### `toString(): string`
 
-Get the plain text value.
+返回纯文本内容。
 
 ### `charAt(pos: number): char`
 
-Get the character at the given position.
+获取指定位置的字符。
 
 ### `splice(pos: number, len: number, text: string): string`
 
-Delete and return the string at the given range and insert a string at the same
-position.
+删除指定区间，并在同一位置插入新文本，返回被删除的内容。
 
 ### `length: number`
 
-Get the length of text
+文本长度。
 
 ### `getCursor(pos: number, side?: Side): Cursor | undefined`
 
-Create a stable position handle for the given logical index. This is equivalent in purpose to Yjs's `RelativePosition` and is designed to stay valid across concurrent inserts/deletes.
+为逻辑索引创建稳定位置句柄。用途类似 Yjs 的 `RelativePosition`，可跨并发编辑保持有效。
 
-- A cursor can represent a caret or one end of a selection. Store two cursors (anchor/head) to represent a selection.
-- Use `doc.getCursorPos(cursor)` to resolve the current absolute offset and side. It may also return an updated cursor you should persist to minimize future replays.
-- Offsets for Text are UTF-16 indices for the WASM binding.
-- `side` controls whether the cursor sits to the left (-1), center (0), or right (1) of the target ID at boundaries. It affects how the cursor behaves when text is inserted at its position.
+- 光标既可表示插入点，也可代表选区端点；保存两个光标即可表示选区
+- 使用 `doc.getCursorPos(cursor)` 获取当前偏移与 side，并可能返回更新后的光标以减少重放
+- 文本偏移在 WASM 绑定中使用 UTF-16 索引
+- `side` 控制光标位于目标 ID 的左侧(-1)、中间(0) 或右侧(1)，影响并发插入时的行为
 
-See the dedicated guide: [Cursor](/docs/tutorial/cursor).
+详见[光标教程](/docs/tutorial/cursor)。
 
-Example (caret):
+示例（光标）：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -262,14 +248,14 @@ const doc = new LoroDoc();
 const text = doc.getText("text");
 text.insert(0, "123");
 
-// Create a stable cursor at the beginning
+// 创建位于开头的稳定光标
 const cur = text.getCursor(0, 0);
 {
   const pos = doc.getCursorPos(cur!);
   expect(pos.offset).toBe(0);
 }
 
-// Insert before the cursor. The cursor now moves forward
+// 在光标前插入，光标会向后移动
 text.insert(0, "1");
 {
   const pos = doc.getCursorPos(cur!);
@@ -277,7 +263,7 @@ text.insert(0, "1");
 }
 ```
 
-Example (selection via two cursors):
+示例（选区）：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -286,17 +272,17 @@ const doc = new LoroDoc();
 const text = doc.getText("text");
 text.update("Hello World");
 
-// Anchor at index 0 (left side), head at index 5 (right side)
+// 锚点位于 0（左侧），头部位于 5（右侧）
 const anchor = text.getCursor(0, -1)!;
 const head = text.getCursor(5, 1)!;
 
-// Resolve to absolute positions when needed
+// 需要时再解析绝对位置
 const a = doc.getCursorPos(anchor);
 const h = doc.getCursorPos(head);
 // selection = [a.offset, h.offset)
 ```
 
-Persisting and restoring a cursor:
+持久化与恢复光标：
 
 ```ts twoslash
 import { Cursor, LoroDoc } from "loro-crdt";
@@ -306,31 +292,23 @@ const text = doc.getText("text");
 text.update("Hi");
 const cur = text.getCursor(1, 0)!;
 
-// Serialize and share
+// 序列化与共享
 const bytes = cur.encode();
 
-// Later on another peer
+// 另一节点恢复
 const restored = Cursor.decode(bytes);
 const pos = doc.getCursorPos(restored);
 ```
 
 ### `toJSON(): string`
 
-Returns the plain text content as a string. This method:
-- Returns only the text content without any formatting marks
-- Is not affected by any rich text attributes (bold, italic, links, etc.)
-- Is equivalent to `toString()` for text containers
-
-If you need rich text information including formatting, use `toDelta()` instead.
+返回纯文本内容，不包含任何格式信息，与 `toString()` 等价。若需格式数据，请使用 `toDelta()`。
 
 ### `toDelta(): Delta<string>[]`
 
-Get the rich text value with all formatting information. It's in
-[Quill's Delta format](https://quilljs.com/docs/delta/).
+返回包含富文本标记的 Delta（[Quill Delta](https://quilljs.com/docs/delta/) 格式）。
 
-Unlike `toJSON()` which returns plain text, `toDelta()` preserves all rich text attributes like bold, italic, links, and custom marks.
-
-Example comparing `toJSON()` vs `toDelta()`:
+示例：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -341,10 +319,7 @@ const text = doc.getText("text");
 text.insert(0, "Hello World!");
 text.mark({ start: 0, end: 5 }, "bold", true);
 
-// toJSON returns plain string without marks
 console.log(text.toJSON()); // "Hello World!"
-
-// toDelta returns rich text with formatting
 console.log(text.toDelta());
 // [
 //   { insert: "Hello", attributes: { bold: true } },
@@ -352,33 +327,25 @@ console.log(text.toDelta());
 // ]
 ```
 
-### `mark(range: {start: number, end: number}, key: string, value: any): void`
+### `mark(range, key, value)`
 
-Mark the given range with a key-value pair.
+在指定区间添加格式。
 
-### `unmark(range: {start: number, end: number}, key: string): void`
+### `unmark(range, key)`
 
-Remove key-value pairs in the given range with the given key.
+移除指定区间的某个格式。
 
 ### `update(text: string)`
 
-Update the current text based on the provided text.
+将当前内容替换为提供的文本。
 
-### `applyDelta(delta: Delta<string>[]): void`
+### `applyDelta(delta: Delta<string>[])`
 
-Change the state of this text by delta.
+根据 Delta 更新文本。
 
-If a delta item is `insert`, it should include all the attributes of the
-inserted text. Loro's rich text CRDT may make the inserted text inherit some
-styles when you use the `insert` method directly. However, when you use
-`applyDelta` if some attributes are inherited from CRDT but not included in the
-delta, they will be removed.
-
-Another special property of `applyDelta` is if you format an attribute for
-ranges out of the text length, Loro will insert new lines to fill the gap first.
-It's useful when you build the binding between Loro and rich text editors like
-Quill, which might assume there is always a newline at the end of the text
-implicitly.
+- 对于 `insert` 项，需要包含全部属性；否则未显式包含的属性会被移除
+- 若在文本长度之外格式化属性，Loro 会先插入换行补齐
+- 适用于与 Quill 等富文本编辑器的绑定
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -396,13 +363,11 @@ text2.applyDelta(delta);
 expect(text2.toDelta()).toStrictEqual(delta);
 ```
 
-### `subscribe(f: (event: Listener)): number`
+### `subscribe(f: (event: Listener))`
 
-This method returns a number that can be used to remove the subscription.
+订阅文本事件，返回订阅 ID，供取消订阅使用。
 
-The text event is in `Delta<string>[]` format. It can be used to bind the rich
-text editor. It has the same type as the arg of `applyDelta`, so the following
-example works:
+文本事件以 `Delta<string>[]` 表示，类型与 `applyDelta` 参数一致，可直接绑定富文本编辑器。
 
 ```ts no_run twoslash
 import { LoroDoc, TextDiff } from "loro-crdt";

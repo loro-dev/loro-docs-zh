@@ -1,11 +1,11 @@
-# Container ID
+# 容器 ID
 
-A Container ID is a unique identifier that comes in two forms:
+容器 ID（Container ID）是容器的唯一标识，分为两种形式：
 
-- Root Container: Composed of a type and root name
-- Normal Container: Created through user operations, composed of an ID and type
+- 根容器：由类型与根名称组成；
+- 普通容器：通过用户操作创建，由 ID 与类型组成。
 
-**Rust `ContainerID`**
+**Rust `ContainerID` 定义**
 
 ```rust
 pub enum ContainerID {
@@ -21,7 +21,7 @@ pub enum ContainerID {
 }
 ```
 
-**TypeScript `ContainerID`**
+**TypeScript `ContainerID` 类型**
 
 ```ts twoslash
 import type { ContainerType, PeerID } from "loro-crdt";
@@ -31,34 +31,29 @@ export type ContainerID =
   | `cid:${number}@${PeerID}:${ContainerType}`;
 ```
 
-1. **Root Containers**
-   - Created implicitly when accessing a root container for the first time
-     (e.g., calling `doc.getText("text")`). No operation is generated in the
-     history.
-   - Uniquely identified by a string name and container type
+1. **根容器（Root Containers）**
+   - 首次访问根容器时隐式创建，例如调用 `doc.getText("text")`，历史中不会生成操作记录；
+   - 由字符串名称与容器类型唯一确定。
 
-2. **Normal Containers**
-   - Created explicitly through operations like `insertContainer` or
-     `createNode`
-   - Generated automatically when applying operations that create child
-     containers
-   - Contains the Operation ID of its creation within its Container ID
+2. **普通容器（Normal Containers）**
+   - 通过 `insertContainer`、`createNode` 等操作显式创建；
+   - 在执行创建子容器的操作时自动生成；
+   - 容器 ID 中包含其创建操作的 Operation ID。
 
-## Container States and IDs
+## 容器状态与 ID
 
-The ContainerID is not a random UUID but is deterministically generated based on the container's context. To understand how ContainerIDs work, it's important to first understand container states.
+容器 ID 并非随机 UUID，而是基于容器上下文确定性生成。理解容器状态有助于掌握容器 ID 的生成方式。
 
-> For a comprehensive guide on containers, including attached vs detached states, see [Container Concepts](/docs/concepts/container).
+> 关于容器的完整介绍（包括 attached / detached 状态），请参阅[容器概念](/docs/concepts/container)。
 
-Key points about ContainerID generation:
-- **Root containers**: Derive their ID from their name (e.g., "text" in `doc.getText("text")`)
-- **Normal containers**: Derive their ID from the operation (OpID) that created them
-- **Detached containers**: Have a default placeholder ID until they're inserted into a document
+容器 ID 生成的要点：
+- **根容器**：ID 来源于名称（例如 `doc.getText("text")` 中的 "text"）；
+- **普通容器**：ID 来源于创建它的操作（OpID）；
+- **Detached 容器**：在插入文档前使用默认的占位 ID。
 
-## Container Overwrites
+## 容器覆盖
 
-When initializing child containers in parallel, overwrites can occur instead of
-automatic merging. For example:
+并行初始化子容器时，Loro 不会自动合并，而是可能发生覆盖。例如：
 
 ```ts twoslash
 import { LoroDoc, LoroText } from "loro-crdt";
@@ -67,7 +62,7 @@ const a: string = "hello";
 const doc = new LoroDoc();
 const map = doc.getMap("map");
 
-// Parallel initialization of child containers
+// 并行初始化子容器
 const docB = doc.fork();
 const textA = doc.getMap("map").setContainer("text", new LoroText());
 textA.insert(0, "A");
@@ -75,34 +70,23 @@ const textB = docB.getMap("map").setContainer("text", new LoroText());
 textB.insert(0, "B");
 
 doc.import(docB.export({ mode: "update" }));
-// Result: Either { "meta": { "text": "A" } } or { "meta": { "text": "B" } }
+// 结果可能是 { "meta": { "text": "A" } } 或 { "meta": { "text": "B" } }
 ```
 
-This behavior poses a significant risk of data loss if the editing history is
-not preserved. Even when the complete history is available and allows for data
-recovery, the recovery process can be complex.
+如果不保留编辑历史，这种行为存在较大的数据丢失风险。即便完整历史仍在、理论上可以恢复数据，恢复过程也会相当复杂。
 
 <aside>
-By default, Loro and Automerge preserve the whole editing history in a directed
-acyclic graph like Git.
+默认情况下，Loro 与 Automerge 会像 Git 一样使用有向无环图保存完整的编辑历史。
 </aside>
 
-When a container holds substantial data or serves as the primary storage for
-document content, overwriting it can lead to the unintended hiding/loss of
-critical information. For this reason, it is essential to implement careful and
-systematic container initialization practices to prevent such issues.
+当容器承载大量数据或是文档的主要存储时，被覆盖可能导致关键信息被隐藏或丢失。因此需要谨慎、系统地初始化容器，以避免此类问题。
 
-### Best Practices
+### 最佳实践
 
-1. When containers might be initialized concurrently, prefer initializing them
-   at the root level rather than as nested containers
+1. 如果容器可能被并行初始化，优先在根层级进行初始化，而不是作为嵌套容器创建。
 
-2. When using map containers:
-   - If possible, initialize all child containers during the map container's
-     initialization
-   - Avoid concurrent creation of child containers with the same key in the map
-     container to prevent overwrites
+2. 使用 Map 容器时：
+   - 尽可能在 Map 初始化阶段一次性创建所有子容器；
+   - 避免在 Map 中并发创建同名子容器，以免发生覆盖。
 
-The overwrite behavior occurs because parallel creation of child containers
-results in different container IDs, preventing automatic merging of their
-contents.
+覆盖的根源在于并发创建子容器会生成不同的容器 ID，从而无法自动合并其内容。

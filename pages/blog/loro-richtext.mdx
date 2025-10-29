@@ -1,18 +1,18 @@
 ---
-title: "Introduction to Loro's Rich Text CRDT"
+title: "Loro 富文本 CRDT 简介"
 date: 2024/01/22
 keywords: "loro, crdt, rich text, peritext, event graph walker, eg-walker, fugue"
 description:
-  This article presents the rich text CRDT algorithm implemented in Loro,
-  complying with Peritext's criteria for seamless rich text collaboration.
-  Furthermore, it can be built on top of any List CRDT algorithms and turn them
-  into rich text CRDTs.
+  本文介绍了 Loro 中实现的富文本 CRDT 算法，
+  该算法符合 Peritext 的无缝富文本协作标准。
+  此外，它可以构建在任何列表 CRDT 算法之上，并将它们
+  转化为富文本 CRDT。
 image: https://i.ibb.co/rsX5vR6/cover-long.png
 ---
 
-# Introduction to Loro's Rich Text CRDT
+# Loro 富文本 CRDT 简介
 
-import Authors, { Author } from "../../components/authors";
+import Authors, { Author } from "../../../components/authors";
 
 <Authors date="2024-01-22">
   <Author
@@ -23,84 +23,56 @@ import Authors, { Author } from "../../components/authors";
 
 ![](./loro-richtext/cover_long.png)
 
-import Caption from "../../components/caption";
+import Caption from "../../../components/caption";
 import Demo from "@components/richtextDemo";
 
-This article presents the rich text CRDT algorithm implemented in Loro,
-complying with [Peritext]'s criteria for seamless rich text collaboration.
-Furthermore, it can be built on top of any List CRDT algorithms and turn them
-into rich text CRDTs.
+本文介绍了 Loro 中实现的富文本 CRDT 算法，该算法符合 [Peritext] 的无缝富文本协作标准。此外，它可以构建在任何列表 CRDT 算法之上，并将它们转化为富文本 CRDT。
 
 <div className="mt-6" />
 <Demo />
 <Caption>
-  Above is an online demo of Loro's rich text CRDT, built with Quill. After the
-  replay, you can simulate real-time collaboration and concurrent editing while
-  offline. You can also drag on the history view to replay the editing history.
+  以上是 Loro 富文本 CRDT 的在线演示，使用 Quill 构建。重播后，您可以模拟实时协作和离线时的并发编辑。您还可以在历史视图上拖动以重播编辑历史。
 </Caption>
 
-If CRDTs are new to you, our article [What are CRDTs](/docs/concepts/crdt)
-provides a brief introduction.
+如果您对 CRDT 不熟悉，我们的文章[什么是 CRDT](/docs/concepts/crdt) 提供了简要介绍。
 
-## Background
+## 背景
 
-Loro is based on the
-[Event Graph Walker (Eg-walker)](/docs/advanced/replayable_event_graph) algorithm
-proposed by Joseph Gentle, but this algorithm cannot integrate the original
-version of Peritext. This motivates us to create a new rich text algorithm. It
-is independent of the specific List CRDTs, thus working nicely with Eg-walker, and is
-developed on top of them to establish a rich text CRDT.
+Loro 基于 Joseph Gentle 提出的 [Event Graph Walker (Eg-walker)](/docs/advanced/replayable_event_graph) 算法，但该算法无法集成 Peritext 的原始版本。这促使我们创建一种新的富文本算法。它独立于特定的列表 CRDT，因此可以很好地与 Eg-walker 配合使用，并在其之上开发以建立富文本 CRDT。
 
-Before diving into the algorithm of Loro's rich text CRDT, I'd like to briefly
-introduce Eg-walker and Peritext, and why Peritext cannot be used on Eg-walker.
+在深入研究 Loro 富文本 CRDT 的算法之前，我想简要介绍一下 Eg-walker 和 Peritext，以及为什么 Peritext 不能在 Eg-walker 上使用。
 
 <details>
-<summary>Recap on List CRDTs</summary>
+<summary>列表 CRDT 回顾</summary>
 
-### Recap on List CRDTs
+### 列表 CRDT 回顾
 
-Unlike OT, most List-oriented CRDTs assign a unique ID to each item or
-character, often corresponding to the operation ID of its insertion. With unique
-IDs for each character, we can reliably reference a character or position
-through its ID.
+与 OT 不同，大多数面向列表的 CRDT 为每个项目或字符分配一个唯一的 ID，通常对应于其插入操作的操作 ID。通过为每个字符提供唯一的 ID，我们可以通过其 ID 可靠地引用字符或位置。
 
 ![](./loro-richtext/list_crdt_ids.png)
 
-The unique ID eliminates concerns about consistent position descriptions during
-synchronization. For instance, deletions are straightforward by specifying the
-deleted character's ID, and insertions are described using the IDs of adjacent
-characters. In cases of concurrent insertions at the same location, List CRDT
-algorithms resolve the consistency issues.
+唯一的 ID 消除了同步期间对一致位置描述的担忧。例如，通过指定被删除字符的 ID，删除操作变得很简单，而插入操作则使用相邻字符的 ID 来描述。在同一位置并发插入的情况下，列表 CRDT 算法可以解决一致性问题。
 
 ![](./loro-richtext/list_crdt_insert.png)
 
 ![](./loro-richtext/list_crdt_delete.png)
 
-However, a notable limitation of List CRDTs is the use of 'tombstones'. Upon
-deletion of a character, it is not fully removed but replaced with a tombstone,
-maintaining the ID's position. Depending on the algorithm, this tombstone may be
-removed once all participating nodes acknowledge the deletion. However, it can
-be challenging to determine if all peers have received the corresponding
-deletion operation. This information often means additional overhead for many
-CRDTs. Thus, the simplest solution is not to perform any tombstone collection.
+然而，列表 CRDT 的一个显着限制是使用“墓碑”。删除字符后，它不会被完全移除，而是被一个墓碑替换，以保持 ID 的位置。根据算法，一旦所有参与节点都确认了删除，这个墓碑就可能被移除。然而，确定所有对等方是否都收到了相应的删除操作可能具有挑战性。此信息通常意味着许多 CRDT 的额外开销。因此，最简单的解决方案是不执行任何墓碑收集。
 
 ![](./loro-richtext/list_crdt_tombstone.png)
 
 </details>
 
-### Brief Introduction to Event Graph Walker
+### Event Graph Walker 简介
 
-Eg-walker is a novel CRDT algorithm introduced in:
+Eg-walker 是一种新颖的 CRDT 算法，在以下文章中介绍：
 
 > [Collaborative Text Editing with Eg-walker: Better, Faster, Smaller](https://arxiv.org/abs/2409.14252)
-> By: Joseph Gentle, Martin Kleppmann
+> 作者：Joseph Gentle, Martin Kleppmann
 
-Eg-walker is a novel CRDT algorithm that combines the strengths of both OT and CRDTs.
-It has the distributed nature of CRDT that enables P2P collaboration and data
-ownership. Moreover, it achieves minimal overhead in scenarios devoid of
-concurrent edits, similar to OT.
+Eg-walker 是一种新颖的 CRDT 算法，它结合了 OT 和 CRDT 的优点。它具有 CRDT 的分布式特性，可实现 P2P 协作和数据所有权。此外，它在没有并发编辑的场景中实现了最小的开销，类似于 OT。
 
-import { ReactPlayer } from "../../components/video";
+import { ReactPlayer } from "../../../components/video";
 
 <ReactPlayer
   url="/static/REG.mp4"
@@ -111,372 +83,241 @@ import { ReactPlayer } from "../../components/video";
   playing={true}
 />
 
-Whether in real-time collaboration or multi-end synchronization, a directed
-acyclic graph (DAG) forms over the history of these parallel edits, similar to
-Git's history. The Eg-walker algorithm records the history of user edits on the DAG.
+无论是在实时协作还是多端同步中，这些并行编辑的历史都会形成一个有向无环图 (DAG)，类似于 Git 的历史。Eg-walker 算法在 DAG 上记录用户编辑的历史。
 
-Unlike conventional CRDTs, Eg-walker can record just the original description of
-operations, not the metadata of CRDTs. For instance, in text editing scenarios,
-the [RGA algorithm] needs the op ID and [Lamport timestamp][Lamport] of the
-character to the left to determine the insertion point. [Yjs]/Fugue, however,
-requires the op ID of both the left and right characters at insertion. In
-contrast, Eg-walker simplifies this by only recording the index at the time of
-insertion. Loro, which uses [Fugue] upon Eg-walker, inherits these advantages.
+与传统的 CRDT 不同，Eg-walker 只记录操作的原始描述，而不记录 CRDT 的元数据。例如，在文本编辑场景中，[RGA 算法] 需要左侧字符的操作 ID 和 [Lamport 时间戳][Lamport] 来确定插入点。[Yjs]/Fugue 则需要插入时左右字符的操作 ID。相比之下，Eg-walker 通过只记录插入时的索引来简化了这一点。Loro 在 Eg-walker 之上使用了 [Fugue]，继承了这些优点。
 
-An index is not a stable position descriptor, as the index of an operation can
-be affected by other operations. For example, if you highlight content from
-`index=x` to `index=y`, and concurrently someone inserts n characters at
-`index=n` where `n<x`, then your highlighted range should shift to cover from
-`x+n` to `y+n`. But Eg-walker can determine the exact position of this index by
-replaying history. Thus, it can reconstruct the corresponding CRDT structure by
-replaying history.
+索引不是一个稳定的位置描述符，因为操作的索引会受到其他操作的影响。例如，如果您高亮显示从 `index=x` 到 `index=y` 的内容，而同时有人在 `index=n` 处插入 n 个字符，其中 `n<x`，那么您的高亮范围应该移动到从 `x+n` 到 `y+n`。但是 Eg-walker可以通过重播历史来确定此索引的确切位置。因此，它可以通过重播历史来重建相应的 CRDT 结构。
 
-Reconstructing history might seem time-consuming, but Eg-walker can backtrack only
-some. When merging updates from remote sources, it only needs to replay
-operations parallel to the remote update, reconstructing the local CRDTs to
-calculate the diff after applying remote operations to the current document.
+重建历史似乎很耗时，但 Eg-walker 只需要回溯一部分。在合并来自远程源的更新时，它只需要重播与远程更新并行的操作，重建本地 CRDT 以计算将远程操作应用于当前文档后的差异。
 
-The Eg-walker algorithm excels with its fast local update speeds and eliminate
-concerns about tombstone collection in CRDTs.For instance, if an operation has
-been synchronized across all endpoints, no new operations will occur
-concurrently with it, allowing it to be safely removed from the history.
+Eg-walker 算法以其快速的本地更新速度而著称，并且消除了对 CRDT 中墓碑收集的担忧。例如，如果一个操作已在所有端点之间同步，则不会有新的操作与其并发发生，从而可以安全地将其从历史中移除。
 
 <details>
-<summary>What is Fugue</summary>
+<summary>什么是 Fugue</summary>
 
-Fugue is a new CRDT text algorithm, presented in
-_[The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing](https://arxiv.org/abs/2305.00583)_
-by
-[Matthew Weidner](https://arxiv.org/search/cs?searchtype=author&query=Weidner%2C+M)
-et al., nicely solves **the interleaving problem**.
+Fugue 是一种新的 CRDT 文本算法，在 Matthew Weidner 等人的论文 *[The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing](https://arxiv.org/abs/2305.00583)* 中提出，它很好地解决了**交错问题**。
 
-The interleaving problem was proposed in the paper
-_[Interleaving anomalies in collaborative text editors](https://martin.kleppmann.com/2019/03/25/papoc-interleaving-anomalies.html)_
-by Martin Kleppmann et al.
+交错问题在 Martin Kleppmann 等人的论文 *[Interleaving anomalies in collaborative text editors](https://martin.kleppmann.com/2019/03/25/papoc-interleaving-anomalies.html)* 中提出。
 
-An example of interleaving:
+交错的一个例子：
 
-- A type "Hello " from left to right/right to left
-- B type "Hi " from left to right/right to left
-- The expected result: "Hello Hi " or "Hi Hello "
-- The interleaving result may look like: "HHeil lo"
-  - This happens when typing from right to left in RGA.
+- A 从左到右/从右到左键入“Hello ”
+- B 从左到右/从右到左键入“Hi ”
+- 预期的结果：“Hello Hi ”或“Hi Hello ”
+- 交错的结果可能看起来像：“HHeil lo”
+  - 在 RGA 中从右到左键入时会发生这种情况。
 
-![An example of an interleaving anomaly when using [fractional indexing](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT on text content.
-Source: **Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)](./images/richtext0.png)
+![在使用[分数索引](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT 处理文本内容时出现交错异常的示例。
+来源：**Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)](./images/richtext0.png)
 
-An example of an interleaving anomaly when using
-[fractional indexing](https://madebyevan.com/algos/crdt-fractional-indexing/)
-CRDT on text content. Source: \*\*Martin Kleppmann, Victor B. F. Gomes, Dominic
-P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in
-collaborative text editors.
-[https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)
+在使用[分数索引](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT 处理文本内容时出现交错异常的示例。来源：\*\*Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)
 
-The [Fugue paper](https://arxiv.org/abs/2305.00583) summarizes the current state
-of the interleaving problems in the table.
+[Fugue 论文](https://arxiv.org/abs/2305.00583)在表格中总结了交错问题的当前状态。
 
-![Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext1.png)
+![来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext1.png)
 
-Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue:
-Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
+来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
 
-The interleaving problem sometimes are unsolvable when there are more than 2
-sites. See [Fugue](https://arxiv.org/abs/2305.00583) paper Appendix B, Proof of
-Theorem 5 for detailed explanation.
+当站点超过 2 个时，交错问题有时是无法解决的。有关详细说明，请参阅 [Fugue](https://arxiv.org/abs/2305.00583) 论文附录 B，定理 5 的证明。
 
-![The case where the interleaving problem is unsolvable
-Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext2.png)
+![交错问题无法解决的情况
+来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext2.png)
 
-The case where the interleaving problem is unsolvable Source: Weidner, M.,
-Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing
-Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
+交错问题无法解决的情况 来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
 
-However, we can still minimize the chance of interleaving. Fugue introduces the
-concept of **maximal non-interleaving** and solves it with an elegant algorithm
-that is easy to optimize. The definition of _maximal non-interleaving_ makes a
-lot of sense to me and leaves little room for ambiguity. I won't reiterate the
-definition here. But the basic idea is first to solve forward interleaving by
-leftOrigin. If there is still ambiguity, then solve the backward interleaving by
-rightOrigin. (The leftOrigin and rightOrigin refer to the ids of the original
-neighbors when the character is inserted, just like Yjs)
+但是，我们仍然可以最大限度地减少交错的机会。Fugue 引入了**最大非交错**的概念，并用一种易于优化的优雅算法解决了它。*最大非交错*的定义对我来说很有意义，几乎没有歧义的余地。我不会在这里重申定义。但基本思想是首先通过 leftOrigin 解决前向交错。如果仍然存在歧义，则通过 rightOrigin 解决后向交错。（leftOrigin 和 rightOrigin 指的是插入字符时原始邻居的 id，就像 Yjs 一样）
 
 </details>
 
-### Brief Introduction to Peritext
+### Peritext 简介
 
-[Peritext] was proposed by _Geoffrey Litt et al._ It's the first paper to
-discuss rich text CRDTs. It can merge concurrent edits in rich text format while
-[preserving users' intent as much as possible](https://www.inkandswitch.com/peritext/#preserving-the-authors-intent).
-Its primary focus is merging the formats and annotations of rich text content,
-such as bold, italic, and comments. It was implemented in [Automerge] and
-[crdt-richtext].
+[Peritext] 由 _Geoffrey Litt 等人_ 提出。这是第一篇讨论富文本 CRDT 的论文。它可以在富文本格式中合并并发编辑，同时[尽可能保留用户的意图](https://www.inkandswitch.com/peritext/#preserving-the-authors-intent)。其主要关注点是合并富文本内容的格式和注释，例如粗体、斜体和评论。它在 [Automerge] 和 [crdt-richtext] 中实现。
 
-> 💡 The specific definition of user intent in the context of concurrent rich
-> text editing can't be clearly explained in a few words. It's best understood
-> through particular examples.
+> 💡 在并发富文本编辑的上下文中，用户意图的具体定义无法用几句话清楚地解释。最好通过具体的例子来理解。
 
-Peritext is designed to solve a couple of significant challenges:
+Peritext 旨在解决几个重大挑战：
 
-Firstly, it addresses the anticipated problems arising from conflicting style
-edits. For instance, consider a text example, "The quick fox jumped." If User A
-highlights "The quick" in bold and User B highlights "quick fox jumped," the
-ideal merge should result in the entire sentence, "The quick fox jumped," being
-bold. However, existing algorithms might not meet this expectation, resulting in
-either "The quick fox" or "The" and "jumped" being bold instead.
+首先，它解决了由冲突的样式编辑引起的预期问题。例如，考虑一个文本示例，“The quick fox jumped.”。如果用户 A 将“The quick”突出显示为粗体，而用户 B 将“quick fox jumped”突出显示为粗体，则理想的合并结果应该是整个句子“The quick fox jumped.”都为粗体。然而，现有的算法可能无法满足这种期望，导致“The quick fox”或“The”和“jumped”变为粗体。
 
-| Original Text                                | The quick fox jumped         |
-| -------------------------------------------- | ---------------------------- |
-| Concurrent Edit from A                       | **The quick** fox jumped     |
-| Concurrent Edit from B                       | The **quick fox jumped**     |
-| Expected Merged Result                       | **The quick fox jumped**     |
-| Bad case from merging Markdown text directly | **The** quick **fox jumped** |
-| Bad case from Yjs                            | **The quick** fox jumped     |
+| 原始文本 | The quick fox jumped |
+| --- | --- |
+| 来自 A 的并发编辑 | **The quick** fox jumped |
+| 来自 B 的并发编辑 | The **quick fox jumped** |
+| 预期的合并结果 | **The quick fox jumped** |
+| 直接合并 Markdown 文本的坏情况 | **The** quick **fox jumped** |
+| Yjs 的坏情况 | **The quick** fox jumped |
 
-Additionally, Peritext manages conflicts between style and text edits. In the
-same example, if User A highlights "The quick" in bold, but User B changes the
-text to "The fast fox jumped," the ideal merge should result in "The fast" being
-bold.
+此外，Peritext 管理样式和文本编辑之间的冲突。在同一个例子中，如果用户 A 将“The quick”突出显示为粗体，但用户 B 将文本更改为“The fast fox jumped.”，则理想的合并结果应该是“The fast”为粗体。
 
-| Original Text          | The quick fox jumped     |
-| ---------------------- | ------------------------ |
-| Concurrent Edit from A | **The quick** fox jumped |
-| Concurrent Edit from B | The fast fox jumped      |
-| Expected Merged Result | **The fast** fox jumped  |
+| 原始文本 | The quick fox jumped |
+| --- | --- |
+| 来自 A 的并发编辑 | **The quick** fox jumped |
+| 来自 B 的并发编辑 | The fast fox jumped |
+| 预期的合并结果 | **The fast** fox jumped |
 
-What’s more, Peritext takes into account different expectations for expanding
-styles. For example, if you type after a bold text, you would typically want the
-new text to continue being bold. However, if you're typing after a hyperlink or
-a comment, you likely wouldn't want the new input to become part of the
-hyperlink or comment.
+更重要的是，Peritext 考虑了对扩展样式的不同期望。例如，如果你在粗体文本后键入，你通常希望新文本继续为粗体。但是，如果你在超链接或评论后键入，你可能不希望新的输入成为超链接或评论的一部分。
 
 <div style={{filter: "invert(1) hue-rotate(180deg)"}}>
-![Link style should not expand](./loro-richtext/Peritext.png)
+![链接样式不应扩展](./loro-richtext/Peritext.png)
 </div>
 <Caption>
-Illustration of Peritext's internal state. It uses the IDs of the character's ops to record the style ranges. In the example, the bold mark has the range of `{ start: { type: "before", opId: "9@B" }, end: { type: "before", opId: "10@B" }}`
+Peritext 内部状态的插图。它使用字符操作的 ID 来记录样式范围。在示例中，粗体标记的范围是 `{ start: { type: "before", opId: "9@B" }, end: { type: "before", opId: "10@B" }}`
 </Caption>
 
-### Why Original Peritext Can't Be Directly Used with Eg-walker
+### 为什么原始 Peritext 不能直接与 Eg-walker 一起使用
 
-On the one hand, Peritext's algorithm expresses style ranges
-[through character OpIDs](https://www.inkandswitch.com/peritext/#generating-inline-formatting-operations).
-Without replaying history, CRDTs based on Eg-walker cannot determine the specific
-positions corresponding to these OpIDs.
+一方面，Peritext 的算法通过字符 OpID [表达样式范围](https://www.inkandswitch.com/peritext/#generating-inline-formatting-operations)。如果不重播历史，基于 Eg-walker 的 CRDT 无法确定与这些 OpID 对应的具体位置。
 
-On the other hand, it's not feasible to model Peritext on Eg-walker through replaying.
-This is because Eg-walker's "local backtracking suffices" relies on the algorithm
-satisfying "the same operation will produce the same effect, regardless of the
-current state," which Peritext does not adhere to. For example, when inserting
-the character "x" at position `p`, whether "x" is bold depends on "whether `p`
-is surrounded by bold" and
-"[whether the tombstones at `p` contain boundaries of bold and other styles](https://arc.net/l/quote/ifxpaand)."
+另一方面，通过重播在 Eg-walker 上建模 Peritext是不可行的。这是因为 Eg-walker 的“本地回溯就足够了”依赖于算法满足“相同的操作将产生相同的效果，无论当前状态如何”，而 Peritext 不遵守这一点。例如，在位置 `p` 插入字符“x”时，“x”是否为粗体取决于“`p` 是否被粗体包围”和“[ `p` 处的墓碑是否包含粗体和其他样式的边界](https://arc.net/l/quote/ifxpaand)”。
 
-## Loro's Rich Text CRDT
+## Loro 的富文本 CRDT
 
-### Algorithm
+### 算法
 
-Loro implements rich text using special control characters called 'style
-anchors'. Each matching pair of start anchor and end anchor contains the
-following information:
+Loro 使用称为“样式锚点”的特殊控制字符来实现富文本。每个匹配的开始锚点和结束锚点对都包含以下信息：
 
-- The op ID of the style operation
-- The style's key-value pair
-- The style's [Lamport timestamp][Lamport]
-- Style expansion behavior: Determines whether newly inserted text before or
-  after the style boundaries should inherit the style.
+- 样式操作的操作 ID
+- 样式的键值对
+- 样式的 [Lamport 时间戳][Lamport]
+- 样式扩展行为：确定在样式边界之前或之后插入的新文本是否应继承该样式。
 
-The method to determine a character's style is as follows:
+确定字符样式的方法如下：
 
-- Find all style anchor pairs that include the character, where each pair is
-  created by the same style operation
-- Aggregate pairs according to the key. There may be multiple style pairs with
-  the same key but different values. In such cases, the value with the greatest
-  Lamport timestamp is chosen (if Lamport timestamps are equal, then use the
-  peer ID to break the tie)
+- 找到包含该字符的所有样式锚点对，其中每对都由相同的样式操作创建
+- 根据键聚合对。可能存在具有相同键但不同值的多个样式对。在这种情况下，选择具有最大 Lamport 时间戳的值（如果 Lamport 时间戳相等，则使用 peer ID 来打破平局）
 
-Contrary to
-[Yjs's method of using control characters](https://www.inkandswitch.com/peritext/#adding-control-characters-to-plain-text)
-for rich text, our algorithm pairs start and end anchors when they originate
-from the same style operation. This approach accurately handles the following
-scenarios:
+与 [Yjs 使用控制字符的方法](https://www.inkandswitch.com/peritext/#adding-control-characters-to-plain-text) 来处理富文本相反，我们的算法在它们源自相同的样式操作时将开始和结束锚点配对。这种方法可以准确地处理以下情况：
 
 ![overlap_bold](./loro-richtext/overlap_bold.png)
 
-These special control characters are not exposed to the user; each control
-character is effectively of zero length from the user's perspective. Our data
-structure supports various methods of measuring text length for indexing text
-content. Besides Unicode, UTF-16, and UTF-8, we also measure our rich text
-length in `Entity length`. It treats each style anchor as an entity with a
-length of 1 and measures plain text in Unicode length.
+这些特殊的控制字符不向用户公开；从用户的角度来看，每个控制字符的长度实际上为零。我们的数据结构支持各种测量文本长度以索引文本内容的方法。除了 Unicode、UTF-16 和 UTF-8，我们还以 `实体长度` 来测量富文本长度。它将每个样式锚点视为长度为 1 的实体，并以 Unicode 长度测量纯文本。
 
 ![len](./loro-richtext/len.png)
 
-| Concept           | Definition                                                                                                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Style Anchors     | Control characters used in Loro denote style boundaries' start and end. They are differentiated into start and end anchors, representing a style's beginning and end.          |
-| Rich Text Element | A rich text element is either a span of text or a style anchor. A list of rich text elements represents the internal state of Loro's rich text.                                |
-| Unicode Index     | A method of indexing text positions in rich text. In this method, the length of the text is measured in Unicode char length, and the length of style anchors is considered 0.  |
-| Entity Index      | A method of indexing text positions in rich text. In this method, the length of the text is measured in Unicode char length, and the length of a style anchor is considered 1. |
+| 概念 | 定义 |
+| --- | --- |
+| 样式锚点 | 在 Loro 中使用的控制字符，表示样式边界的开始和结束。它们被区分为开始和结束锚点，分别表示样式的开始和结束。 |
+| 富文本元素 | 富文本元素是文本范围或样式锚点。富文本元素的列表表示 Loro 富文本的内部状态。 |
+| Unicode 索引 | 一种在富文本中索引文本位置的方法。在这种方法中，文本的长度以 Unicode 字符长度测量，样式锚点的长度被认为是 0。 |
+| 实体索引 | 一种在富文本中索引文本位置的方法。在这种方法中，文本的长度以 Unicode 字符长度测量，样式锚点的长度被认为是 1。 |
 
-#### Local Behavior
+#### 本地行为
 
-Multiple valid insertion points can exist when users insert text at a specific
-Unicode index. It occurs due to style anchors, which are zero-length elements
-from the user's perspective.
+当用户在特定的 Unicode 索引处插入文本时，可能存在多个有效的插入点。这是由于样式锚点造成的，从用户的角度来看，它们是零长度元素。
 
-![Two Different Kinds of Indexes](./loro-richtext/two_index.png)
+![两种不同类型的索引](./loro-richtext/two_index.png)
 
-For example, in the case of `<b>Hello</b> world`, when a user inserts content at
-Unicode `index=5`, they face the choice of inserting to the left or right of
-`</b>`. If the user sets the expand behavior of bold to expand forward, the new
-character will be inserted to the left of `</b>`, making the inserted text bold
-as well.
+例如，在 `<b>Hello</b> world` 的情况下，当用户在 Unicode `index=5` 处插入内容时，他们面临着在 `</b>` 的左侧或右侧插入的选择。如果用户将粗体的扩展行为设置为向前扩展，则新字符将插入到 `</b>` 的左侧，使插入的文本也变为粗体。
 
-When users delete text, Loro uses an additional mapping layer to avoid deleting
-style anchors within the text range.
+当用户删除文本时，Loro 使用一个额外的映射层来避免删除文本范围内的样式锚点。
 
-To model the deletion of a style, a new style anchor pair with a null value is
-added.
+为了对样式的删除进行建模，会添加一个新的值为 null 的样式锚点对。
 
-We can implement the following optimizations to remove redundant style anchors:
+我们可以实现以下优化来移除冗余的样式锚点：
 
-- The style anchors that include no text can be removed.
-- When styles completely negate each other, like a span of bold is canceled by a
-  span of unbold, we can remove their style anchors.
+- 不包含任何文本的样式锚点可以被移除。
+- 当样式完全相互抵消时，例如一个粗体范围被一个非粗体范围取消，我们可以移除它们的样式锚点。
 
-All these behaviors happen locally, and the algorithm is independent of the
-specific List CRDT.
+所有这些行为都发生在本地，并且算法独立于特定的列表 CRDT。
 
-##### Behavior When Inserting Text at Style Boundaries
+##### 在样式边界插入文本时的行为
 
-Most modern rich text editors (Google Doc, Microsoft Word, Notion) behave as
-follows: when new text is entered right after bold text, the new text should
-inherit the bold style; when entered after a hyperlink, the new content should
-not inherit the hyperlink style. Different styles have varying preferences for
-text insertion positions, leading to potential conflicts. This is reflected in
-the degree of freedom we have when inserting new text.
+大多数现代富文本编辑器（Google Doc、Microsoft Word、Notion）的行为如下：当在粗体文本后立即输入新文本时，新文本应继承粗体样式；当在超链接后输入时，新内容不应继承超链接样式。不同的样式对文本插入位置有不同的偏好，这可能导致潜在的冲突。这反映在插入新文本时我们拥有的自由度上。
 
-Users interact with rich text based on text-based indexes, like the Unicode
-index. Since style anchors have a Unicode Length of 0, a Unicode index with n
-style anchors presents n + 1 potential insertion positions.
+用户根据基于文本的索引（如 Unicode 索引）与富文本进行交互。由于样式锚点的 Unicode 长度为 0，具有 n 个样式锚点的 Unicode 索引会呈现 n + 1 个潜在的插入位置。
 
-We select the insertion position based on the following rules:
+我们根据以下规则选择插入位置：
 
-1. Insertions occur before a start anchor of a style that should not expand
-   backward.
-2. Insertions occur before style anchors that signify the end of bold-like marks
-   (expand = "after" or expand = "both").
-3. Insertions occur after style anchors that signify the end of link-like marks
-   (expand = "none" or expand = "before").
+1. 插入发生在不应向后扩展的样式的开始锚点之前。
+2. 插入发生在表示粗体类标记结束的样式锚点之前（expand = "after" or expand = "both"）。
+3. 插入发生在表示链接类标记结束的样式锚点之后（expand = "none" or expand = "before"）。
 
-Rule 1 should be prioritized over rules 2 and 3 to prevent
-[the accidental creation of a new style](https://github.com/inkandswitch/peritext/issues/32).
+规则 1 应优先于规则 2 和 3，以防止[意外创建新样式](https://github.com/inkandswitch/peritext/issues/32)。
 
-The current method first scans forward to find the last position satisfying
-rules 1 and 2.
+当前的方法首先向前扫描以找到满足规则 1 和 2 的最后一个位置。
 
-Then, it scans backward to find the first position satisfying rule 3.
+然后，它向后扫描以找到满足规则 3 的第一个位置。
 
-#### Merging Remote Updates
+#### 合并远程更新
 
-Loro treats style anchors as a special element and handles them using the same
-List CRDT for resolving concurrent conflicts. The logic related to rich text is
-independent of the particular List CRDT. Therefore, this algorithm can rely on
-any List CRDT algorithm for merging remote operations. Loro utilizes the [Fugue]
-List CRDT algorithm.
+Loro 将样式锚点视为特殊元素，并使用相同的列表 CRDT 来处理它们，以解决并发冲突。与富文本相关的逻辑独立于特定的列表 CRDT。因此，该算法可以依赖任何列表 CRDT 算法来合并远程操作。Loro 使用 [Fugue] 列表 CRDT 算法。
 
-When new style anchors are inserted by remote updates, new styles are added; if
-old style anchors are deleted, the corresponding old styles are removed.
+当远程更新插入新的样式锚点时，会添加新的样式；如果删除了旧的样式锚点，则会移除相应的旧样式。
 
-#### Strong Eventual Consistency
+#### 强最终一致性
 
-The internal state of this algorithm consists of a list of elements, each either
-a text segment or a style anchor. The rich text document is derived from this
-internal state.
+该算法的内部状态由一个元素列表组成，每个元素要么是文本段，要么是样式锚点。富文本文档是从这个内部状态派生出来的。
 
-The internal state achieves strong eventual consistency through the upstream
-List CRDT.
+内部状态通过上游列表 CRDT 实现强最终一致性。
 
-Identical internal states result in identical rich text documents. Hence, the
-same set of updates will produce the same rich text documents, evidencing the
-strong eventual consistency of this algorithm.
+相同的内部状态会产生相同的富文本文档。因此，同一组更新将产生相同的富文本文档，这证明了该算法的强最终一致性。
 
-### Criteria in Peritext
+### Peritext 中的标准
 
-[The Peritext paper](https://www.inkandswitch.com/peritext/static/cscw-publication.pdf)
-specifies the intent-preserving merge behavior for rich text inline format.
-Loro's rich text algorithm successfully passes all test cases outlined therein.
+[Peritext 论文](https://www.inkandswitch.com/peritext/static/cscw-publication.pdf) 指定了富文本内联格式的意图保留合并行为。Loro 的富文本算法成功通过了其中概述的所有测试用例。
 
-#### 1. Concurrent Formatting and Insertion
+#### 1. 并发格式化和插入
 
-| Name            | Text                |
-| :-------------- | :------------------ |
-| Origin          | Hello World         |
-| Concurrent A    | **Hello World**     |
-| Concurrent B    | Hello New World     |
-| Expected Result | **Hello New World** |
+| 名称 | 文本 |
+| :--- | :--- |
+| 原始 | Hello World |
+| 并发 A | **Hello World** |
+| 并发 B | Hello New World |
+| 预期结果 | **Hello New World** |
 
-Loro easily supports this case by treating style anchors as special elements
-alongside text.
+Loro 通过将样式锚点与文本一起作为特殊元素处理，轻松支持此情况。
 
-#### 2. Overlapping Formatting
+#### 2. 重叠格式化
 
-| Name            | Text            |
-| :-------------- | :-------------- |
-| Origin          | Hello World     |
-| Concurrent A    | **Hello** World |
-| Concurrent B    | Hel**lo World** |
-| Expected Result | **Hello World** |
+| 名称 | 文本 |
+| :--- | :--- |
+| 原始 | Hello World |
+| 并发 A | **Hello** World |
+| 并发 B | Hel**lo World** |
+| 预期结果 | **Hello World** |
 
-This case has been analyzed earlier. Since our style anchors contain style op ID
-information, we know there are two bold segments: one from 0 to 5 and another
-from 3 to 11, allowing us to merge them.
+此情况已在前面分析过。由于我们的样式锚点包含样式操作 ID 信息，我们知道有两个粗体段：一个从 0 到 5，另一个从 3 到 11，从而允许我们合并它们。
 
-| Name            | Text                |
-| :-------------- | :------------------ |
-| Origin          | Hello World         |
-| Concurrent A    | **Hello** World     |
-| Concurrent B    | Hel*lo World*       |
-| Expected Result | **Hel*lo*** _World_ |
+| 名称 | 文本 |
+| :--- | :--- |
+| 原始 | Hello World |
+| 并发 A | **Hello** World |
+| 并发 B | Hel*lo World* |
+| 预期结果 | **Hel*lo*** _World_ |
 
-Multiple style types are easily supported.
+轻松支持多种样式类型。
 
-| Name            | Text                                                 | Note                |
-| :-------------- | :--------------------------------------------------- | :------------------ |
-| Origin          | Hello World                                          |                     |
-| Concurrent A    | **Hello World** <br /> Then <br /> **Hello** World   | Bold, then unbold   |
-| Concurrent B    | Hello Wor**ld**                                      |                     |
-| Expected Result | **Hello** Wor**ld** <br /> Or <br /> **Hello** World | Both are acceptable |
+| 名称 | 文本 | 注意 |
+| :--- | :--- | :--- |
+| 原始 | Hello World | |
+| 并发 A | **Hello World** <br /> 然后 <br /> **Hello** World | 加粗，然后取消加粗 |
+| 并发 B | Hello Wor**ld** | |
+| 预期结果 | **Hello** Wor**ld** <br /> 或 <br /> **Hello** World | 两者都可接受 |
 
-Like Peritext, we model unbolding by adding a new style with the key `bold` and
-the value `null`. The final value of each style key on each character is
-determined by the style with the greatest [Lamport] timestamp that includes the
-character. Thus, it easily supports this case.
+与 Peritext 一样，我们通过添加一个键为 `bold` 值为 `null` 的新样式来建模取消加粗。每个字符上每个样式键的最终值由包含该字符的具有最大 [Lamport] 时间戳的样式确定。因此，它轻松支持此情况。
 
-#### 3. Text Insertion at Span Boundaries
+#### 3. 在范围边界插入文本
 
-Insertion right after a bold style should result in the newly inserted text also
-being bold.
+在粗体样式后立即插入应导致新插入的文本也为粗体。
 
 <div style={{ filter: "invert(1) hue-rotate(180deg)" }}>
   ![bold_expand](./loro-richtext/bold_expand.png)
 </div>
 
-However, insertion right after a link style should result in the newly inserted
-text not having the hyperlink style.
+然而，在链接样式后立即插入应导致新插入的文本不具有超链接样式。
 
 <div style={{ filter: "invert(1) hue-rotate(180deg)" }}>
-  ![Link style should not expand](./loro-richtext/link_expand.png)
+  ![链接样式不应扩展](./loro-richtext/link_expand.png)
 </div>
 
-#### 4. Styles that Support Overlapping
+#### 4. 支持重叠的样式
 
 <div style={{ filter: "invert(1)" }}>![](./loro-richtext/overlap_mark.png)</div>
 
-The problem of overlapping styles is related to how we represent them.
+重叠样式的问题与我们如何表示它们有关。
 
-We represent the rich text using
-[Quill's Delta](https://quilljs.com/docs/delta/) format.
+我们使用 [Quill 的 Delta](https://quilljs.com/docs/delta/) 格式来表示富文本。
 
 ```ts no_run
 [
@@ -486,18 +327,15 @@ We represent the rich text using
 ];
 ```
 
-<Caption>An example of Quill's Delta format</Caption>
+<Caption>Quill Delta 格式的一个例子</Caption>
 
-However, it cannot handle cases with multiple values assigned to the same key.
-So, it's a headache to handle the styles that support overlapping.
+然而，它无法处理为同一键分配多个值的情况。因此，处理支持重叠的样式是一个令人头疼的问题。
 
 ![](./loro-richtext/overlap_comments.png)
 
-For example, in the above case, the text "fox" is commented on by both Alice and
-Bob. We can't represent it with Quill's Delta format directly. So the possible
-workaround includes:
+例如，在上面的情况下，文本“fox”同时被 Alice 和 Bob 评论。我们不能直接用 Quill 的 Delta 格式来表示它。因此，可能的解决方法包括：
 
-**Turn the attribute value into a list**
+**将属性值转换为列表**
 
 ```ts no-run
 [
@@ -510,7 +348,7 @@ workaround includes:
 ];
 ```
 
-**Use op ID that creates the op as the key of the attribute**
+**使用创建操作的操作 ID 作为属性的键**
 
 ```ts no-run
 [
@@ -529,15 +367,9 @@ workaround includes:
 ];
 ```
 
-But both require special behaviors for both CRDT lib and for application code,
-which are painful to work with.
+但这两种方法都需要 CRDT 库和应用程序代码的特殊行为，这处理起来很痛苦。
 
-Finally, we found that the optimal approach to represent an overlappable style
-was to use `<key>:` as a prefix and allow users to assign a unique suffix to
-create a distinct style key. This method simplifies the CRDTs library code, as
-it doesn't require handling special cases. It effectively addresses scenarios
-where multiple comments overlap and is also user-friendly for application
-coding.
+最后，我们发现表示可重叠样式的最佳方法是使用 `<key>:` 作为前缀，并允许用户分配唯一的后缀来创建不同的样式键。这种方法简化了 CRDT 库代码，因为它不需要处理特殊情况。它有效地解决了多个评论重叠的场景，并且对于应用程序编码也用户友好。
 
 ```ts no-run
 [
@@ -550,7 +382,7 @@ coding.
 ];
 ```
 
-Following is the example code in Loro:
+以下是 Loro 中的示例代码：
 
 ```ts
 const doc = new Loro();
@@ -583,101 +415,63 @@ expect(text.toDelta()).toStrictEqual([
 ]);
 ```
 
-## Implementation of Loro's Rich Text Algorithm
+## Loro 富文本算法的实现
 
-The following is an overview of Loro's implementation as of January, 2024.
+以下是截至 2024 年 1 月 Loro 实现的概述。
 
-### Architecture of Loro
+### Loro 的架构
 
-In line with the properties of Event Graph Walker, Loro uses `OpLog` and
-`DocState` as the internal state.
+与 Event Graph Walker 的属性一致，Loro 使用 `OpLog` 和 `DocState` 作为内部状态。
 
-`OpLog` is dedicated to recording history, while `DocState` only records the
-current document state and does not include historical operation information.
-When applying updates from remote sources, Loro uses the relevant operations
-from `OpLog` and computes the diff through a `DiffCalculator`. This diff is then
-applied to `DocState`. This architecture also makes time travel easier to
-implement.
+`OpLog` 专用于记录历史，而 `DocState` 只记录当前的文档状态，不包含历史操作信息。在应用来自远程源的更新时，Loro 使用来自 `OpLog` 的相关操作，并通过 `DiffCalculator` 计算差异。然后将此差异应用于 `DocState`。这种架构也使时间旅行更容易实现。
 
-For more details, see the documentation on
-[DocState and OpLog](https://loro.dev/docs/advanced/doc_state_and_oplog).
+有关更多详细信息，请参阅关于 [DocState and OpLog](https://loro.dev/docs/advanced/doc_state_and_oplog) 的文档。
 
 ![](./loro-richtext/apply_updates.png)
 
-### Implementation of Loro's Rich Text CRDT
+### Loro 富文本 CRDT 的实现
 
-For rich text, Loro reuses the same `DiffCalculator` as Loro List, based on the
-[Fugue] algorithm. As a result, the primary logic related to rich text is
-concentrated in `DocState`. This includes expressing styles, inserting new
-characters, and representing multiple index formats.
+对于富文本，Loro 重用与 Loro List 相同的 `DiffCalculator`，该 `DiffCalculator` 基于 [Fugue] 算法。因此，与富文本相关的主要逻辑集中在 `DocState` 中。这包括表达样式、插入新字符和表示多种索引格式。
 
-In the representation of rich text state, we distinguish between the data
-structure `ContentTree`, which expresses the text (including style anchors), and
-`StyleRangeMap`, which expresses styles.
+在富文本状态的表示中，我们区分了表达文本（包括样式锚点）的数据结构 `ContentTree` 和表达样式的 `StyleRangeMap`。
 
 ![](./loro-richtext/text_state_arch.png)
 
-Both structures are built on B+Trees.
+两种结构都建立在 B+树之上。
 
-`ContentTree` is responsible for efficient text finding, insertion, and
-deletion. It can index specific insertion/deletion positions using
-Unicode/UTF-8/UTF-16/Entity index. It does not store what specific style each
-text segment should have.
+`ContentTree` 负责高效的文本查找、插入和删除。它可以使用 Unicode/UTF-8/UTF-16/实体索引来索引特定的插入/删除位置。它不存储每个文本段应具有的特定样式。
 
-We built the following B+Tree structure based on our
-[generic-btree library](https://github.com/loro-dev/generic-btree) to express
-text in memory:
+我们基于我们的 [generic-btree library](https://github.com/loro-dev/generic-btree) 构建了以下 B+树结构来在内存中表达文本：
 
-- Each internal node in the B+Tree stores the Unicode char length, UTF-16
-  length, UTF-8 length, and Entity length of its subtree. The Entity length
-  considers the length of style anchors as 1, otherwise 0.
-- The leaf nodes of the B+Tree are text or style anchors.
+- B+树中的每个内部节点都存储其子树的 Unicode 字符长度、UTF-16 长度、UTF-8 长度和实体长度。实体长度将样式锚点的长度视为 1，否则为 0。
+- B+树的叶节点是文本或样式锚点。
 
-`StyleRangeMap` is responsible for efficient updating/querying of style ranges.
+`StyleRangeMap` 负责高效地更新/查询样式范围。
 
-In the `StyleRangeMap` B+Tree expressing styles:
+在表达样式的 `StyleRangeMap` B+树中：
 
-- Each internal node stores the `entity length` of its subtree.
-- Each leaf node stores the collection of style information for the
-  corresponding range and its `entity length.
+- 每个内部节点都存储其子树的 `实体长度`。
+- 每个叶节点都存储相应范围的样式信息及其 `实体长度` 的集合。
 
-Separating the text `ContentTree` and style `StyleRangeMap` into two structures
-aims for better performance optimization. On rich text, style information is
-often not abundant and tends to have good continuity, such as several paragraphs
-having the same format, which can be expressed with a single leaf node. However,
-our structure for storing text is unsuitable for leaf nodes with large content,
-as conversion time between different encoding formats would become excessively
-long.
+将文本 `ContentTree` 和样式 `StyleRangeMap` 分成两个结构旨在实现更好的性能优化。在富文本上，样式信息通常不丰富，并且倾向于具有良好的连续性，例如几个段落具有相同的格式，这可以用一个叶节点来表示。然而，我们用于存储文本的结构不适合具有大内容的叶节点，因为不同编码格式之间的转换时间会变得过长。
 
-When a user inserts a new character at `Unicode index` = i, the following
-occurs:
+当用户在 `Unicode index` = i 处插入新字符时，会发生以下情况：
 
-- Find the position at `Unicode index` = i in `ContentTree`.
-- Check if there are any adjacent style anchors at this position. If not,
-  directly insert.
-- If there are, decide whether to insert to the left or right of the
-  corresponding style anchor based on its type and properties. If there are
-  multiple such style anchors, insert them according to the previous section on
-  ["Behavior When Inserting Text at Style Boundaries"](#behavior-when-inserting-text-at-style-boundaries).
+- 在 `ContentTree` 中找到 `Unicode index` = i 的位置。
+- 检查此位置是否有任何相邻的样式锚点。如果没有，直接插入。
+- 如果有，则根据其类型和属性决定是在相应样式锚点的左侧还是右侧插入。如果存在多个此类样式锚点，则根据[“在样式边界插入文本时的行为”](#在样式边界插入文本时的行为)一节中的内容进行插入。
 
-### Testing
+### 测试
 
-We have written tests for the criteria proposed by Peritext and passed all of
-them.
+我们为 Peritext 提出的标准编写了测试，并全部通过。
 
-To ensure the correctness of our CRDTs, we have added numerous fuzzing tests to
-simulate different collaborative behaviors, synchronization behaviors, and
-time-travel behaviors. These tests check for the strong eventual consistency and
-the correctness of internal invariants. We run these fuzzing tests continuously
-for several days after every critical modification to avoid oversights.
+为了确保我们的 CRDT 的正确性，我们添加了许多模糊测试来模拟不同的协作行为、同步行为和时间旅行行为。这些测试检查强最终一致性和内部不变量的正确性。每次关键修改后，我们都会连续运行这些模糊测试几天，以避免疏忽。
 
-## How to Use
+## 如何使用
 
-Before using the Loro's rich text module, it is necessary to define the
-configuration for rich text styles, specifying the expand behavior for different
-keys and whether overlap is allowed.
+在使用 Loro 的富文本模块之前，有必要定义富文本样式的配置，指定不同键的扩展行为以及是否允许重叠。
 
-Here is an example of using Loro's rich text in JavaScript:
+以下是在 JavaScript 中使用 Loro 富文本的示例：
 
 ```typescript
 const doc = new Loro();
@@ -719,17 +513,11 @@ expect(text.toDelta()).toStrictEqual([
 ] as Delta<string>[]);
 ```
 
-## Summary
+## 总结
 
-This article presents Loro's rich text algorithm design and implementation. Its
-correctness is readily demonstrable. It can be built upon any existing List CRDT
-algorithm. It allows Loro to support rich text collaboration using
-[Eg-walker](#brief-introduction-to-replayable-event-graph) and [Fugue], combining the
-strengths of multiple CRDT algorithms.
+本文介绍了 Loro 的富文本算法设计和实现。其正确性易于证明。它可以构建在任何现有的列表 CRDT 算法之上。它允许 Loro 使用 [Eg-walker](#brief-introduction-to-replayable-event-graph) 和 [Fugue] 支持富文本协作，结合了多种 CRDT 算法的优点。
 
-We are continuously refining its design and actively seeking design partners. We
-are open to all forms of feedback and constructive criticism. Should you have
-any proposals for collaboration, please reach out to zx@loro.dev
+我们正在不断完善其设计，并积极寻求设计合作伙伴。我们对各种形式的反馈和建设性批评持开放態度。如果您有任何合作建议，请联系 zx@loro.dev
 
 [Peritext]: https://www.inkandswitch.com/peritext/
 [Fugue]: https://arxiv.org/abs/2305.00583

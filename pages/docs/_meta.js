@@ -1,16 +1,16 @@
 export default {
-  index: "Introduction to Loro",
-  tutorial: "Tutorial",
-  concepts: "Concepts",
-  advanced: "Advanced Topics",
-  performance: "Performance",
+  index: "Loro 简介",
+  tutorial: "教程",
+  concepts: "核心概念",
+  advanced: "进阶主题",
+  performance: "性能",
   api:  {
-    title: "API Reference",
+    title: "API 参考",
     theme: {
       toc: true,
       pagination: false,
     }
   },
-  examples: "Examples",
-  llm: "LLM Resources"
+  examples: "示例",
+  llm: "LLM 资源"
 }

@@ -1,30 +1,30 @@
 ---
 version: "v1.8.0"
-title: "Release Loro v1.8.0"
+title: "发布 Loro v1.8.0"
 date: 2025/09/22
 ---
 
-Events now fire **synchronously**
+事件现在会**同步**触发
 
-In the JavaScript package `loro-crdt@1.8.0`, we changed event emission from **“after a microtask”** to **synchronous** dispatch. This makes event handling simpler and less error‑prone.
+在 JavaScript 包 `loro-crdt@1.8.0` 中，我们将事件触发方式从**“微任务之后”**改为**同步**派发，使事件处理更简单、更不易出错。
 
-### Why we changed it
+### 为什么要做这个调整
 
-Historically, the JS binding emitted events **after a microtask**. The reason was to avoid Rust borrow/aliasing issues: if an event triggered inside `doc.commit()` re‑entered the same `doc`, Rust could panic because `commit()` holds a borrow and reusing the object would violate borrowing rules. Deferring events to a microtask avoided that re‑entrancy. (Background: Loro’s JS API exposes subscriptions via `doc.subscribe(...)`; the docs note that events used to arrive after a microtask. ([Loro][1]))
+过去，JS 绑定会在**微任务执行完毕后**才发出事件。这样做是为了避免 Rust 的借用/别名问题：如果在 `doc.commit()` 内触发的事件再次进入同一个 `doc`，Rust 会因为 `commit()` 持有借用而在重复使用对象时触发 panic。把事件延迟到微任务阶段可以规避这种重入情况。（背景：Loro 的 JS API 通过 `doc.subscribe(...)` 暴露订阅能力，文档中也说明事件会在微任务之后才到达。([Loro][1]))
 
-However, this deferral made app logic fragile. There was a window between the mutation and the event callback. Example: the app receives the event from CRDT “delete the 3rd character of `Hi!`”, but during the microtask gap the app state changed `Hi!` → `Hi`. When the deferred event arrives, applying a “delete index 2” delta can be wrong. In practice, users had to maintain an awkward invariant: **don’t mutate the app state during that microtask** if you consume delta updates.
+然而，这种延迟让应用逻辑变得脆弱。突变和事件回调之间存在窗口。例如：CRDT 发出“删除 `Hi!` 中第 3 个字符”的事件，但在微任务间隔期间，应用状态把 `Hi!` 变成了 `Hi`。当延迟的事件到达时，应用一个“删除索引 2”的增量就可能出错。实际使用中，用户不得不维持一个怪异的不变式：如果你消费增量更新，就**不要在那个微任务里修改应用状态**。
 
-### What’s new in 1.8.0
+### 1.8.0 有什么变化
 
-Events are now **dispatched synchronously**—that is, your listeners run **before** the top‑level JS call (e.g., `doc.commit()`) returns. To keep this safe with Rust’s borrowing:
+现在事件会**同步派发**——也就是说，监听器会在顶层 JS 调用（例如 `doc.commit()`）返回之前运行。为了在 Rust 借用模型下保持安全：
 
-- We keep a **global queue** of “pending (listener, event)” pairs.
-- JS wrappers decorate APIs that can borrow the Rust doc (e.g., `commit`, import/export, checkout).
-- The wrapper calls into WASM/Rust, **returns from the borrow**, then **flushes the queue** and clears it.
-- Because callbacks run **outside** the borrowed region, listeners can freely call `doc` APIs without triggering borrow violations.
+- 我们维护一个**全局队列**，存放待处理的“监听器 + 事件”对。
+- 对可能借用 Rust 文档的 API（如 `commit`、导入/导出、checkout）增加 JS 包装器。
+- 包装器进入 WASM/Rust，释放借用后再刷新并清空队列。
+- 由于回调在借用范围之外执行，监听器可以自由调用 `doc` API 而不会触发借用违规。
 
-### What this means for your app
+### 这对你的应用意味着什么
 
-- **Simpler state updates.** No more microtask gap; event ordering matches your mutation order.
-- **Fewer footguns with deltas.** You no longer need to uphold “don’t touch the doc during the microtask” when applying delta‑style updates.
-- **Listeners can still safely use `doc`.**
+- **状态更新更简单。** 不再有微任务间隙；事件顺序与突变顺序一致。
+- **增量处理风险更少。** 应用增量更新时，无需再坚持“微任务期间别动 doc”的约束。
+- **监听器依旧可以安全使用 `doc`。**

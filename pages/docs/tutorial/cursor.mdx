@@ -1,25 +1,25 @@
 ---
-keywords: "cursor, crdts, multi-player, awareness, position, loro"
-description: "How to use Loro to implement cursor position in real-time collaboration"
+keywords: "cursor, crdt, 多人协作, awareness, 位置, loro"
+description: "使用 Loro 在实时协作中实现光标定位。"
 ---
 
-# Cursor
+# 光标
 
-Cursor is an independently storable entity, meaning it can store content separately from the Loro document. It is used to stably represent positions within structures such as Text, List, or MovableList. Cursors can be utilized to represent collaborative cursor positions, highlight ranges, or comment ranges.
+光标是一种可独立存储的实体，可以与 Loro 文档分离存放，用于稳定表示 Text、List、MovableList 等结构中的位置。它既可以表示协同光标，也可以用于高亮范围或评论范围。
 
-## Motivation
+## 背景
 
-Using "index" to denote cursor positions can be unstable, as positions may shift with document edits. To reliably represent a position or range within a document, it is more effective to leverage the unique ID of each item/character in a List CRDT or Text CRDT.
+如果直接用“索引”表示光标位置，一旦文档被编辑，索引就会失效。更可靠的做法是利用 List CRDT 或 Text CRDT 中元素 / 字符的唯一 ID 来表示具体位置。
 
-## Updating Cursors
+## 更新光标
 
-Loro optimizes State metadata by not storing the IDs of deleted elements. This approach, while efficient, complicates tracking cursor positions since they rely on these IDs for precise locations within the document. The solution recalculates position by replaying relevant history to update stable positions accurately. To minimize the performance impact of history replay, the system updates cursor info to reference only the IDs of currently present elements, thereby reducing the need for replay.
+Loro 的状态元数据不会保存已删除元素的 ID，这虽能节省空间，但会让基于 ID 的光标定位变得复杂。解决方案是：在需要时重放相关历史以更新稳定位置。同时，系统会尽量把光标更新为当前仍存在的元素 ID，从而降低未来重放的次数。
 
-Each position has a "Side" information, indicating the actual cursor position is on the left, right, or directly in the center of the target ID.
+每个位置都带有 `Side` 信息，指示光标位于目标 ID 的左侧、右侧或正中。
 
-Note: In JavaScript, the offset returned when querying a Stable Position is based on the UTF-16 index.
+注意：在 JavaScript 中，稳定位置返回的偏移量基于 UTF-16 索引。
 
-## Example
+## 示例
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";

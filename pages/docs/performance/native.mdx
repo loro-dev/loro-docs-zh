@@ -1,15 +1,13 @@
-# Native Benchmarks
+# 原生基准测试
 
-[This native benchmark](https://github.com/https://twitter.com/zx_loro/crdt-bench-native) is based on
-the Rust implementation of each crate.
+[这一组原生基准](https://github.com/https://twitter.com/zx_loro/crdt-bench-native)基于各个 crate 的 Rust 实现。
 
-- Conducted on a M2 Max CPU, dated 2024-10-18.
-- The tasks with names starting with `automerge` use the automerge paper
-  dataset.
-- In this benchmark, compression is disabled for both automerge and loro.
-- Diamond-type doesn't support the list type yet.
+- 于 2024-10-18 在 M2 Max CPU 上进行。
+- 以 `automerge` 开头的任务使用 Automerge 论文数据集。
+- 在此基准中，automerge 与 loro 均禁用了压缩。
+- diamond-type 目前尚不支持 list 类型。
 
-| Tasks                   | automerge | loro      | diamond-type | yrs       |
+| 任务                    | automerge | loro      | diamond-type | yrs       |
 | :---------------------- | :-------- | :-------- | :----------- | :-------- |
 | automerge - apply       | 450.91 ms | 88.19 ms  | 15.63 ms     | 4238.8 ms |
 | automerge - decode time | 506.30 ms | 0.189 ms  | 2.19 ms      | 3.82 ms   |

@@ -1,61 +1,56 @@
-# Tips and Tricks
+# 使用小贴士
 
-##### `LoroDoc` will be initialized with a new random PeerID each time
+##### 每次创建 `LoroDoc` 都会分配新的随机 PeerID
 
 <details>
-<summary>What if I need to set the initial state?</summary>
+<summary>如果我需要初始状态怎么办？</summary>
 
-If your document requires an initial state, you should not edit the document to achieve this state right
-after creating it with new LoroDoc(). This approach can cause problems - each time someone opens the document,
-new operations with different PeerIDs would be added just to set up the initial state.
+如果文档需要初始内容，切勿在调用 `new LoroDoc()` 后直接通过编辑来构造这个状态。否则每次有人打开文档，都会因为使用不同的 PeerID 而产生一批仅用于初始化的操作。
 
-The better approach is to initialize your document by loading the same Snapshot. This ensures all users start
-from an identical baseline without generating unnecessary operations.
+更好的方式是：预先生成一个快照，所有用户都从同一份快照加载，这样既能确保起点一致，也不会产生多余的操作。
 
 </details>
 
 ---
 
-##### Be careful when using `doc.setPeerId(newId)`
+##### 使用 `doc.setPeerId(newId)` 时务必谨慎
 
-When using `setPeerId`, you must avoid having two parallel peers use the same PeerId. This can cause serious consistency problems in your application.
+调用 `setPeerId` 时必须保证不会有两个并行节点使用相同的 PeerID，否则会引发严重的一致性问题。
 
-If you plan to reuse a PeerId across sessions, make sure that you persist the document's local state together with that PeerId and load it before applying any remote updates. Otherwise, the same `peerId + counter` combination could end up referring to two different operations, producing divergence that cannot be resolved automatically.
+如果计划在多个会话中复用某个 PeerID，请务必将该 PeerID 对应的本地文档数据一同持久化，并在导入任何远端更新之前先加载它。否则，同一对 `peerId + counter` 可能对应两次不同的操作，造成无法自动修复的分叉。
 
 <details>
-<summary>Why</summary>
+<summary>为什么会这样？</summary>
 
-It's because Loro determines whether an operation has already been included by checking its operation ID. Since operation IDs are composed of `PeerId + Counter`, duplicate PeerIds can easily lead to duplicate operation IDs. During synchronization, Loro might incorrectly assume certain operations have already been processed, resulting in document inconsistency across peers.
+Loro 根据操作 ID 判断某个操作是否已经包含在文档中，而操作 ID 由 `PeerId + Counter` 组成。如果复用了 PeerID，就可能生成重复的操作 ID。在同步时，Loro 可能误以为某些操作已经处理，导致各副本状态不一致。
 
 </details>
 
 <details>
-<summary>How to reuse PeerIds safely</summary>
+<summary>如何安全复用 PeerID？</summary>
 
-Be careful when reusing PeerIds (this optimization is often unnecessary). You should not assign a fixed PeerId to a user, as one user might use multiple devices. Similarly, you shouldn't assign a fixed PeerId to a device, because even on a single browser, multiple tabs might open the same document simultaneously.
+复用 PeerID 的需求并不常见，若确实需要，请谨慎处理：不要把 PeerID 固定给某个用户（同一用户可能有多台设备），也不要固定给设备（同一浏览器可能开多个标签页）。
 
-If you must reuse PeerIds, you need to carefully manage your local PeerId cache with proper locking mechanisms. This would allow only one tab to "take" a specific PeerId, while other tabs use random IDs. The PeerId should be returned to the cache when no longer in use.
-
-In addition to locking, avoid having multiple browser tabs (or apps on different processes) use the same PeerId concurrently. Coordinating access in this way ensures that a reused PeerId never emits two different operations with the same operation ID.
+如确需复用，应结合锁等机制管理本地缓存：例如只允许一个标签页“占用”特定 PeerID，其余标签使用随机 ID；占用结束后再释放 PeerID。同时，避免让多个标签页或进程同时使用同一个 PeerID，以免产生重复的操作 ID。
 
 </details>
 
 ---
 
-##### Root containers don't need operations to be initialized
+##### 根容器无需操作即可初始化
 
-Root Containers are created implicitly in Loro. This means that when you call `doc.getText("text")`, no new operations appear in the LoroDoc history, and there are no operations that need to be synchronized with other peers.
+在 Loro 中，根容器是隐式创建的。例如调用 `doc.getText("text")` 时不会在历史中生成任何操作，也无需与其他节点同步。
 
-This behavior contrasts with non-root containers. For example, when you execute `doc.getMap("meta").setContainer("text", new LoroText())`, it generates an operation to insert the LoroText container into the map.
+这与非根容器不同：执行 `doc.getMap("meta").setContainer("text", new LoroText())` 时，会产生“将 LoroText 插入 map”这一操作。
 
 ---
 
-##### When initializing child containers of LoroMap in parallel, overwrites can occur instead of automatic merging.
+##### 并行初始化 LoroMap 的子容器时，可能发生覆盖而非自动合并
 
 <details>
-<summary>Why this happens</summary>
+<summary>为什么会发生覆盖？</summary>
 
-This happens because parallel creation of child containers results in different container IDs, preventing automatic merging of their contents. When a container holds substantial data or serves as the primary storage for document content, overwriting it can lead to unintended hiding or loss of critical information.
+因为并行创建子容器会产生不同的 ContainerID，从而无法自动合并内容。当容器承载大量数据或是核心存储时，被覆盖会隐藏甚至丢失重要信息。
 
 ```ts twoslash
 import { LoroDoc, LoroText } from "loro-crdt";
@@ -63,7 +58,7 @@ import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
 const map = doc.getMap("map");
 
-// Parallel initialization of child containers
+// 并行初始化子容器
 const docB = doc.fork();
 const textA = doc.getMap("map").setContainer("text", new LoroText());
 textA.insert(0, "A");
@@ -71,33 +66,34 @@ const textB = docB.getMap("map").setContainer("text", new LoroText());
 textB.insert(0, "B");
 
 doc.import(docB.export({ mode: "update" }));
-// Result: Either { "meta": { "text": "A" } } or { "meta": { "text": "B" } }
+// 结果：要么 { "meta": { "text": "A" } }，要么 { "meta": { "text": "B" } }
 ```
 
 </details>
 
 <details>
-<summary>Best practices for container initialization</summary>
+<summary>初始化容器的最佳实践</summary>
 
-1. When using map containers:
-   - If possible, initialize all child containers during the map container's initialization
-   - Avoid concurrent creation of child containers with the same key in the map container to prevent overwrites
-2. If it's impossible to initialize all child containers when the map container is initialized, prefer initializing them at the root level rather than as nested containers.
-    - You can use `doc.getMap("user." + userId)` instead of `doc.getMap("user").getOrCreateContainer(userId, new LoroMap())` to avoid this problem.
+1. 在使用 Map 容器时：
+   - 尽量在创建 Map 时一次性初始化所有子容器
+   - 避免并发创建相同键的子容器，以防覆盖
+2. 如果无法一次性初始化所有子容器，优先在根层级而非嵌套层级创建。
+   - 例如使用 `doc.getMap("user." + userId)`，而不是 `doc.getMap("user").getOrCreateContainer(userId, new LoroMap())`
+
 </details>
 
 ---
 
-##### Use redaction to safely share document history
+##### 使用脱敏（redaction）安全分享文档历史
 
-There are times when users might accidentally paste sensitive information (like API keys, passwords, or personal data) into a collaborative document. When this happens, you need a way to remove just that sensitive content from the document history without compromising the rest of the document's integrity.
+有时用户会误粘贴敏感信息（API Key、密码、隐私数据）。需要“只删除敏感内容而保留历史一致性”的办法。
 
 <details>
-<summary>How to safely redact sensitive content</summary>
+<summary>如何安全地做内容脱敏？</summary>
 
-Loro provides a `redactJsonUpdates` function that allows you to selectively redact operations within specific version ranges.
+Loro 提供 `redactJsonUpdates` 方法，可针对指定版本区间选择性脱敏操作。
 
-For example, if a user accidentally pastes a password or API key into a document:
+例如用户误贴了密码或密钥：
 
 ```ts no_run twoslash
 import { LoroDoc, redactJsonUpdates } from "loro-crdt";
@@ -105,7 +101,7 @@ import { LoroDoc, redactJsonUpdates } from "loro-crdt";
 const doc = new LoroDoc();
 doc.setPeerId("1");
 
-// Create some content to be redacted
+// 创建需要脱敏的内容
 const text = doc.getText("text");
 text.insert(0, "Sensitive information");
 doc.commit();
@@ -115,28 +111,28 @@ map.set("password", "secret123");
 map.set("public", "public information");
 doc.commit();
 
-// Export JSON updates
+// 导出 JSON 更新
 const jsonUpdates = doc.exportJsonUpdates();
 
-// Define version range to redact (redact the text content)
+// 定义需要脱敏的版本区间（文本内容）
 const versionRange = {
-  "1": [0, 21], // Redact the "Sensitive information"
+  "1": [0, 21], // 脱敏 "Sensitive information"
 };
 
-// Apply redaction
+// 执行脱敏
 const redactedJson = redactJsonUpdates(jsonUpdates, versionRange);
 
-// Create a new document with redacted content
+// 使用脱敏数据创建新文档
 const redactedDoc = new LoroDoc();
 redactedDoc.importJsonUpdates(redactedJson);
 
-// The text content is now redacted with replacement characters
+// 文本内容已被替换为占位字符
 console.log(redactedDoc.getText("text").toString());
-// Outputs: "���������������������"
+// 输出: "���������������������"
 
-// You can also redact specific map entries
+// 还可以针对特定 map 条目脱敏
 const versionRange2 = {
-  "1": [21, 22], // Redact the "secret123" password
+  "1": [21, 22], // 脱敏 "secret123" 密码
 };
 
 const redactedJson2 = redactJsonUpdates(jsonUpdates, versionRange2);
@@ -147,36 +143,36 @@ console.log(redactedDoc2.getMap("map").get("password")); // null
 console.log(redactedDoc2.getMap("map").get("public")); // "public information"
 ```
 
-This approach is safer than manually editing document content because:
+这样做的好处：
 
-1. It maintains document structure and CRDT consistency
-2. It keeps key metadata like operation IDs and dependencies intact
-3. It allows concurrent editing to continue working after redaction
-4. It selectively redacts only specific operations, not the entire document
+1. 保留文档结构与 CRDT 一致性
+2. 维持操作 ID、因果依赖等元数据
+3. 脱敏后仍可继续协同编辑
+4. 只替换指定操作，不影响整个文档
 
-The redaction process follows these rules:
+脱敏遵循以下规则：
 
-- Preserves delete, tree move, and list move operations
-- Replaces text insertion content with Unicode replacement characters '�'
-- Substitutes list and map insert values with null
-- Maintains structure of child containers
-- Replaces text mark values with null
-- Preserves map keys and text annotation keys
+- 保留删除、树节点移动、列表移动等操作
+- 文本插入被替换为 Unicode 替换字符 `�`
+- 列表与 Map 插入的值替换为 `null`
+- 保持子容器结构
+- 文本标注值替换为 `null`
+- Map 键与文本标注键保持不变
 
-**Important**: Your application needs to ensure that all peers receive the redacted version, otherwise the original document with sensitive information will still exist on other peers.
+**重要提示**：必须确保所有节点都接收到脱敏后的版本，否则其他节点仍持有包含敏感信息的原始文档。
 
 </details>
 
 ---
 
-##### Use shallow snapshots to completely remove old history
+##### 使用浅快照彻底移除旧历史
 
-When you need to completely remove ALL history older than a certain version point, shallow snapshots provide the solution.
+当需要删除某个时间点之前的全部历史时，浅快照是理想方案。
 
 <details>
-<summary>How to remove old history with shallow snapshots</summary>
+<summary>如何用浅快照删除旧历史？</summary>
 
-Shallow snapshots create a new document that preserves the current state but completely eliminates all history before a specified point, similar to Git's shallow clone functionality.
+浅快照会生成一个仅保留当前状态的新文档，类似 Git 的浅克隆，指定时间点之前的历史都会被完全移除。
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -184,73 +180,73 @@ import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 doc.setPeerId("1");
 
-// Old history - will be completely removed
+// 旧历史 —— 将被移除
 const text = doc.getText("text");
 text.insert(0, "This document has a long history with many edits");
 doc.commit();
 text.insert(0, "Including some potentially sensitive information. ");
 doc.commit();
 
-// More recent history - will be preserved
-text.delete(11, 55); // Remove the middle part
+// 新的历史 —— 将被保留
+text.delete(11, 55); // 删除中间部分
 text.insert(11, "with sanitized history");
 doc.commit();
 
-// Create a sanitized version that removes ALL history before current point
+// 创建仅保留当前状态的浅快照
 const sanitizedSnapshot = doc.export({
   mode: "shallow-snapshot",
   frontiers: doc.oplogFrontiers(),
 });
 
-// Create a new document from the sanitized snapshot
+// 用浅快照生成新文档
 const sanitizedDoc = new LoroDoc();
 sanitizedDoc.import(sanitizedSnapshot);
 
-// The document has the final state
+// 文档保持最终状态
 console.log(sanitizedDoc.getText("text").toString());
-// Outputs: "Including with sanitized history"
+// 输出: "Including with sanitized history"
 
-// But ALL history before the snapshot point is completely removed
+// 但浅快照之前的历史全部删除
 console.log(sanitizedDoc.isShallow()); // true
-console.log(sanitizedDoc.shallowSinceFrontiers()); // Shows the starting point
+console.log(sanitizedDoc.shallowSinceFrontiers()); // 显示起始版本
 ```
 
-This approach is useful for:
+适用场景：
 
-1. Completely removing all old history that might contain various sensitive information
-2. Significantly reducing document size by eliminating unnecessary history
-3. Creating clean document instances after certain milestones
-4. Ensuring old operations cannot be recovered or examined
+1. 将可能包含敏感信息的旧历史彻底清除
+2. 显著减小文档体积
+3. 在里程碑节点之后创建干净版本
+4. 保证旧操作无法恢复
 
-Compared to redaction:
+与脱敏对比：
 
-- Shallow snapshots completely remove all operations before a version point
-- Redaction selectively replaces just specific content with placeholders
+- 浅快照会删除指定版本点之前的所有操作
+- 脱敏只替换特定操作的内容
 
-**Important**: While both methods maintain future synchronization consistency, your application must distribute the sanitized document to all peers. Otherwise, the original document with sensitive information will still exist on other clients.
+**重要提示**：两种方式都能维持后续同步一致性，但必须将清理后的文档分发给所有节点，否则其他节点仍保留原始数据。
 
-**When to use each approach**:
+**何时使用哪种方式？**
 
-- Use **redaction** when you need to sanitize specific operations (like an accidental password paste) while preserving older history
-- Use **shallow snapshots** when you want to completely eliminate all history before a certain point
+- 当需要保留历史但去除局部敏感内容时，使用 **脱敏**
+- 当希望删除某个时间点之前的全部历史时，使用 **浅快照**
 
 </details>
 
 ---
 
-##### You can store mappings between LoroDoc's peerIds and user IDs in the document itself
+##### 可以在文档中维护 PeerID 与用户 ID 的映射
 
-Use `doc.subscribeFirstCommitFromPeer(listener)` to associate peer information with user identities when a peer first interacts with the document.
+通过 `doc.subscribeFirstCommitFromPeer(listener)`，在某个 Peer 第一次提交时记录其用户信息。
 
 <details>
-<summary>How to track peer-to-user mappings</summary>
+<summary>如何追踪 Peer 与用户的对应关系？</summary>
 
-This functionality is essential for building user-centric features in collaborative applications. You often need bidirectional mapping between user IDs and peer IDs:
+在协作应用中，你通常需要在用户 ID 与 PeerID 之间进行双向映射：
 
-- **Finding all edits by a user**: When you need to retrieve all document edits made by a specific user ID, you must first find all peer IDs associated with that user
-- **Showing edit attribution**: When displaying which user edited a piece of text, you need to map from the peer ID (stored in the operation) back to the user ID for display
+- **查找用户的所有编辑**：需要先找出该用户对应的所有 PeerID
+- **展示编辑归属**：操作记录中只存 PeerID，需要在界面上映射回用户 ID
 
-This hook provides an ideal point to associate peer information (such as author identity) with the document. The listener is triggered on the first commit from each peer, allowing you to store user metadata within the document itself.
+这个 hook 会在每个 Peer 第一次提交时触发，适合在文档中写入作者信息等元数据。
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -267,21 +263,21 @@ await Promise.resolve();
 expect(doc.getMap("users").get("0")).toBe("user-0");
 ```
 
-This approach allows you to:
+这样可以：
 
-1. Automatically track which peers have contributed to the document
-2. Store user metadata (names, emails, etc.) alongside the document
-3. Build features like author attribution, presence indicators, or edit history
+1. 自动追踪参与协作的 Peer
+2. 在文档中保存用户元数据（姓名、邮箱等）
+3. 构建作者标注、在线状态、编辑记录等功能
 
-The mapping is stored within the document, so it automatically synchronizes across all peers and persists with the document's state.
+映射信息保存在文档内部，会随文档状态自动同步与持久化。
 
 </details>
 
 ---
 
-##### You can use https://loro.dev/llms-full.txt to prompt your AI
+##### 可以使用 https://loro.dev/llms-full.txt 为 AI 提供上下文
 
-When working with AI assistants or language models on Loro-related tasks, you can use these URLs to provide comprehensive context about Loro's capabilities and API:
+在让 AI 助手或大模型处理 Loro 相关任务时，可以使用以下链接提供完整背景：
 
-- `https://loro.dev/llms-full.txt` - All the documentation in one file
-- `https://loro.dev/llms.txt` - An overview of Loro website
+- `https://loro.dev/llms-full.txt` —— 将全部文档整合成单一文件
+- `https://loro.dev/llms.txt` —— Loro 官网概览

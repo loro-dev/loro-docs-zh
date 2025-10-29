@@ -1,45 +1,45 @@
 ---
 version: "v1.1.0"
-title: "Release Loro v1.1.0"
+title: "发布 Loro v1.1.0"
 date: 2024/11/09
 ---
 
-## New
+## 新增
 
 ### LoroDoc
 
-- `forkAt(frontiers: Frontiers)`: Fork the document at the given frontiers.
-- `getChangedContainersIn(id: ID, len: number)`: Gets container IDs modified in the given ID range.
+- `forkAt(frontiers: Frontiers)`: 在给定的 frontiers 处 fork 文档。
+- `getChangedContainersIn(id: ID, len: number)`: 获取在给定 ID 范围内修改的容器 ID。
 - ``
 
 ### LoroText
 
-- `getEditorOf(pos: number)`: Get the editor of the text at the given position.
-- `push(s: string)`: Push a string to the end of the text.
+- `getEditorOf(pos: number)`: 获取给定位置文本的编辑器。
+- `push(s: string)`: 将字符串推送到文本末尾。
 
 
 ### LoroMap
 
-- `getLastEditor(key: string)`: Get the peer id of the last editor on the given entry
+- `getLastEditor(key: string)`: 获取给定条目上最后一个编辑器的 peer id
 
 ### LoroList
 
-- `getIdAt(pos: number)`: Get the ID of the list item at the given position.
-- `pushContainer(child: Container)`: Push a container to the end of the list.
+- `getIdAt(pos: number)`: 获取给定位置列表项的 ID。
+- `pushContainer(child: Container)`: 将容器推送到列表末尾。
 
 ### LoroMovableList
 
-- `getCreatorAt(pos: number)`: Get the creator of the list item at the given position.
-- `getLastMoverAt(pos: number)`: Get the last mover of the list item at the given position.
-- `getLastEditorAt(pos: number)`: Get the last editor of the list item at the given position.
-- `pushContainer(child: Container)`: Push a container to the end of the list.
+- `getCreatorAt(pos: number)`: 获取给定位置列表项的创建者。
+- `getLastMoverAt(pos: number)`: 获取给定位置列表项的最后一个移动者。
+- `getLastEditorAt(pos: number)`: 获取给定位置列表项的最后一个编辑器。
+- `pushContainer(child: Container)`: 将容器推送到列表末尾。
 
 ### LoroTree
 
-- `toJSON()`: Get JSON format of the LoroTreeNode.
+- `toJSON()`: 获取 LoroTreeNode 的 JSON 格式。
 
-## Fix
+## 修复
 
-- fix get correct encode blob info [#545](https://github.com/loro-dev/loro/pull/545)
-- fix: avoid creating non-root containers that doesn't exist by get_container api [#541](https://github.com/loro-dev/loro/pull/541)
-- fix: define the fork behavior when the doc is detached [#537](https://github.com/loro-dev/loro/pull/537)
+- 修复获取正确的编码 blob 信息 [#545](https://github.com/loro-dev/loro/pull/545)
+- 修复：避免通过 get_container api 创建不存在的非根容器 [#541](https://github.com/loro-dev/loro/pull/541)
+- 修复：定义文档分离时的 fork 行为 [#537](https://github.com/loro-dev/loro/pull/537)

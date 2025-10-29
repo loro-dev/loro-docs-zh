@@ -1,26 +1,19 @@
 ---
-keywords: "crdts, schema, encoding, persist, snapshot, gc"
-description: "Introduce how to encode and decode Loro documents, and how to persist data"
+keywords: "crdt, schema, 编码, 持久化, 快照, 垃圾回收"
+description: "介绍 Loro 文档的编码与解码方式，以及如何持久化数据。"
 ---
 
-# Export Mode
+# 导出模式
 
-> Loro 1.0 has stabilized the data format and will not have any breaking
-> changes.
+> Loro 1.0 的数据格式已稳定，不会再发生破坏性变更。
 
-Loro introduces three encoding modes to meet the needs for different use cases:
+Loro 提供三种编码模式，以适配不同场景：
 
-- **Updates Encoding**: Encodes all or a specified range of operations, mainly
-  used for delta updates of documents.
-- **Snapshot Encoding**: Encodes the entire document, including both all the
-  operations and the current document state.
-- **Shallow Snapshot Encoding**: Loro 1.0 provides a new encoding format for
-  discarding useless historical operations. It is a special snapshot that
-  encodes the most recent historical operations, the starting state of the
-  remaining history, and the latest state of the document.
+- **Updates 编码**：编码全部或指定区间的操作，适合增量同步。
+- **Snapshot 编码**：编码完整文档，包含全部操作与当前状态。
+- **Shallow Snapshot 编码**：Loro 1.0 新增的模式，可丢弃无用历史，只保留最近历史与当前状态。
 
-Different encoding formats are provided through the unified `doc.export(mode)`,
-and all binary encoding formats can be imported via `doc.import(bytes)`.
+使用统一的 `doc.export(mode)` 导出，所有二进制格式都可以通过 `doc.import(bytes)` 导入。
 
 ```ts no_run
 export type ExportMode =
@@ -44,14 +37,12 @@ export type ExportMode =
     };
 ```
 
-## Updates Encoding
+## Updates 编码
 
-There are two modes for updates encoding. `update` 和 `updates-in-range`.
+包含 `update` 与 `updates-in-range` 两种子模式：
 
-- `update` mode will encode all ops from the from version to the latest version
-  of the document.
-- `updates-in-range` mode will encode all ops within the specified version
-  range.
+- `update`：从指定版本 `from` 到最新版本的所有操作
+- `updates-in-range`：编码指定版本区间内的操作
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -61,18 +52,15 @@ const doc2 = new LoroDoc();
 doc2.setPeerId(2);
 
 doc2.getText("text").insert(0, "hello");
-const bytes = doc2.export({ mode: "update", from: doc1.version() }); // Uint8Array
-// const bytes = doc2.export({ mode: "updates-in-range", spans: [{id: { peer: 2, counter: 0 }, len: 1}] });
-// These bytes can be stored in a database or transmitted over a network.
+const bytes = doc2.export({ mode: "update", from: doc1.version() });
+// const bytes = doc2.export({ mode: "updates-in-range", spans: [{ id: { peer: 2, counter: 0 }, len: 1 }] });
 doc1.import(bytes);
 console.log(doc1.toJSON()); // { text: "hello" }
 ```
 
-Updates Encoding selectively encodes operations from a chosen initial version to
-the most recent, enhancing support for real-time collaboration by focusing on
-incremental changes rather than the entire document state.
+与其导出整个文档，不如只导出增量操作，更适合实时协作。
 
-## Snapshot Encoding
+## Snapshot 编码
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -81,24 +69,16 @@ const doc1 = new LoroDoc();
 const doc2 = new LoroDoc();
 
 doc2.getText("text").insert(0, "hello");
-const bytes = doc2.export({ mode: "snapshot" }); // Uint8Array
-// These bytes can be stored in a database or transmitted over a network.
+const bytes = doc2.export({ mode: "snapshot" });
 doc1.import(bytes);
 console.log(doc1.toJSON()); // { text: "hello" }
 ```
 
-Snapshot Encoding comprehensively captures a document's current state and its
-historical operations. This mode can quickly obtain the latest document state.
+Snapshot 编码会打包当前状态与全部历史，适合快速恢复完整文档。
 
-## Shallow Snapshot Encoding
+## Shallow Snapshot 编码
 
-Loro will save all editing history to resolve conflicts and history
-backtracking. However, for most scenes, most of the older history is useless,
-taking up too much extra memory and requires more storage space for saving.
-
-Loro 1.0 provides a shallow snapshot encoding mode. You can specify the starting
-historical version to be retained, and Loro will truncate all the history before
-this version.
+为了支持冲突解决与回溯，Loro 默认保留全部历史；但在多数场景中，旧历史既无用又占空间。Shallow Snapshot 允许你指定历史起点，截断更早的记录。
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -115,54 +95,30 @@ text.insert(0, "o");
 text.insert(0, "r");
 text.insert(0, "l");
 text.insert(0, "d");
-const bytes = doc2.export({ mode: "shallow-snapshot", frontiers }); // Uint8Array
-// These bytes can be stored in a database or transmitted over a network.
+const bytes = doc2.export({ mode: "shallow-snapshot", frontiers });
 doc1.import(bytes);
 console.log(doc1.toJSON()); // { text: "hello" }
 ```
 
-Note: When using shallow snapshots, you cannot import updates that are
-concurrent to the snapshot's start version. For details, see
-[shallow snapshot](/docs/advanced/shallow_snapshot).
+注意：使用浅快照后，不能再导入与起始版本并发的更新。详情见[浅快照](/docs/advanced/shallow_snapshot)。
 
-## Loro's Snapshot File Format
+## Snapshot 文件格式
 
-To support lazy loading capabilities, we referenced common storage formats in
-databases, introduced a simple LSM engine, and abstracted the encoding results
-as simple key bytes and value bytes representations, preparing for future
-integration with common key-value databases.
+为支持惰性加载，Loro 借鉴数据库通用格式，引入简单的 LSM 引擎，将编码结果抽象为 key/value 形式，方便未来与常用 KV 数据库集成。
 
-### Encoding Details
+### 编码细节
 
-In Loro, multiple consecutive Ops of the same Container are merged into one
-Change, i.e., one commit record. Each Change has additional metadata, such as
-ID, Lamport, Timestamp, etc. In most scenarios, Changes are also consecutive,
-and related metadata can be compressed to some extent. Therefore, we combine
-multiple consecutive Changes into a ChangeBlock, which is the minimum unit for
-encoding Op history. Detailed encoding content can be found in the
-[documentation](https://github.com/loro-dev/loro/blob/main/crates/loro-internal/src/oplog/change_store/block_encode.rs).
+- 连续属于同一容器的多个操作会合并成一个 Change，每个 Change 包含 ID、Lamport、Timestamp 等元数据
+- 多个连续的 Change 会组合成 ChangeBlock，作为最小的历史编码单元
+- ChangeBlock 以首个 Change ID 作为 key，可快速查询对应操作
+- 文档状态由各容器状态组成：key 为 ContainerID，value 为容器元数据 + 语义化编码数据
+- 所有 key-value 会存入简化的 LSM 结构
 
-We use the first Change ID of the ChangeBlock as the query key, and the encoded
-ChangeBlock as the value. This allows for quick querying of specified ID Changes
-and their Ops without decoding all Changes.
+最终导出包含四部分：编码头、oplog 字节、最新状态字节、浅状态字节。
 
-The complete State is composed of the states of all Containers starting from the
-Root Container. The key is the bytes representation of the ContainerID, and the
-value is composed of each Container's metadata and the bytes encoded according
-to its own semantic state expression.
+- Header：4 字节 magic number + 16 字节校验和 + 2 字节编码模式
+- 其余部分均使用 [LSM 编码结构](https://github.com/loro-dev/loro/blob/main/crates/kv-store/src/lib.rs)
 
-These key-value pairs will be stored in our implemented simple LSM structure.
-
-The final exported encoding will be divided into four parts: encoding header,
-oplog bytes, latest state bytes, and shallow state bytes.
-
-The Header consists of a 4-byte magic number, 16-byte checksum, and 2-byte
-encode mode.
-
-The oplog bytes, latest state bytes, and shallow state bytes are all exported
-using the
-[LSM encoding structure](https://github.com/loro-dev/loro/blob/main/crates/kv-store/src/lib.rs).
-
-## Snapshot Encoding Layout
+## Snapshot 编码布局
 
 ![](../concepts/shallow-imgs/image-4.png)

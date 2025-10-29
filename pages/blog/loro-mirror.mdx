@@ -1,15 +1,15 @@
 ---
-title: "Loro Mirror: Make UI State Collaborative by Mirroring to CRDTs"
+title: "Loro Mirror: 通过镜像到 CRDTs 使 UI 状态具有协作性"
 date: 2025/09/22
-description: "Loro Mirror keeps a typed, immutable app‑state view in sync with a Loro CRDT document. Local `setState` edits become granular CRDT operations; incoming CRDT events update your state. You keep familiar React patterns and gain collaboration, offline edits, and history. "
+description: "Loro Mirror 将一个类型化的、不可变的应用程序状态视图与 Loro CRDT 文档保持同步。本地的 `setState` 编辑会变成细粒度的 CRDT 操作；传入的 CRDT 事件会更新您的状态。您可以保留熟悉的 React 模式，并获得协作、离线编辑和历史记录功能。"
 image: "/images/loro-mirror.png"
 ---
 
-# Loro Mirror: Make UI State Collaborative by Mirroring to CRDTs
+# Loro Mirror: 通过镜像到 CRDTs 使 UI 状态具有协作性
 
-import Caption from "../../components/caption";
-import GitHub from "../../components/github";
-import Authors, { Author } from "../../components/authors";
+import Caption from "../../../components/caption";
+import GitHub from "../../../components/github";
+import Authors, { Author } from "../../../components/authors";
 
 <Authors date="2025-09-22">
   <Author
@@ -20,57 +20,57 @@ import Authors, { Author } from "../../components/authors";
 
 ![](/images/loro-mirror.png)
 
-**TL;DR.** Loro Mirror keeps a typed, immutable app‑state view in sync with a Loro CRDT document. Local `setState` edits become granular CRDT operations; incoming CRDT events update your state. You keep familiar React patterns and gain collaboration, offline edits, and history.
+**摘要：** Loro Mirror 将一个类型化的、不可变的应用程序状态视图与 Loro CRDT 文档保持同步。本地的 `setState` 编辑会变成细粒度的 CRDT 操作；传入的 CRDT 事件会更新您的状态。您可以保留熟悉的 React 模式，并获得协作、离线编辑和历史记录功能。
 
-> CRDT: A Conflict‑free Replicated Data Type lets multiple peers edit concurrently and still converge without central coordination.
+> CRDT：一种无冲突复制数据类型，允许多个对等方并发编辑，并且仍然可以在没有中央协调的情况下收敛。
 >
-> **Local‑first:** Data is usable offline and synced later; the device is the primary source of truth.
+> **本地优先：** 数据可离线使用并稍后同步；设备是主要的事实来源。
 
-## Overview
+## 概述
 
-**Loro** is a CRDT library for local‑first apps. It supports rich containers—`Text`, `Map`, `List`/`MovableList`, `MovableTree`—with versioning, time‑travel, and compact updates/snapshots.
+**Loro** 是一个用于本地优先应用程序的 CRDT 库。它支持丰富的容器——`Text`、`Map`、`List`/`MovableList`、`MovableTree`——具有版本控制、时间旅行和紧凑的更新/快照功能。
 
-Though CRDTs ensure CRDTs states converge, apps still need glue code to map between CRDT documents and UI state to ensure their consistency. It's not an easy task.
+尽管 CRDTs 确保 CRDTs 状态收敛，但应用程序仍然需要粘合代码来在 CRDT 文档和 UI 状态之间进行映射，以确保它们的一致性。这不是一项容易的任务。
 
-**Loro Mirror** addresses this boundary. You declare a schema once. Mirror maintains an immutable app‑state view and handles both directions:
+**Loro Mirror** 解决了这个边界问题。您只需声明一次模式。Mirror 维护一个不可变的应用程序状态视图，并处理两个方向：
 
-- **Event → state.** Loro events update your state.
-- **State → CRDT.** `setState` diffs become container‑level CRDT ops (insert / delete / move / text edits).
+- **事件 → 状态。** Loro 事件更新您的状态。
+- **状态 → CRDT。** `setState` 差异变成容器级的 CRDT 操作（插入/删除/移动/文本编辑）。
 
-For an update, if **k** items change and each changed item affects **m** of its immediate fields, time complexity is **≈ O(k·m)**. _(k = number of changed items; m = average number of changed immediate fields per changed item.)_ This is similar to React’s render complexity.
+对于一次更新，如果 **k** 个项目发生变化，并且每个变化的项目影响其 **m** 个直接字段，则时间复杂度约为 **O(k·m)**。（k = 更改的项目数；m = 每个更改项目平均更改的直接字段数。）这类似于 React 的渲染复杂度。
 
-## Why this exists
+## 为什么存在这个
 
-Without Mirror, projects that uses Loro need to:
+没有 Mirror，使用 Loro 的项目需要：
 
-1. Map CRDTs states to UI states
-2. Diff UI edits and translate them to CRDT operations
-3. Subscribe to CRDT events and patch UI state
+1. 将 CRDTs 状态映射到 UI 状态
+2. 区分 UI 编辑并将其转换为 CRDT 操作
+3. 订阅 CRDT 事件并修补 UI 状态
 
-This code is repetitive and easy to get wrong. Mirror centralizes it behind a declarative schema.
-
----
-
-## What Mirror provides
-
-- **Declarative schema.** Describe UI state in terms of Loro containers; Mirror maintains an immutable view.
-- **Typed and framework‑agnostic.** Works in plain TypeScript, React (via `loro-mirror-react`) or any other UI framework that supports immutable states.
-- **Fine‑grained diffs.** Generates ops such as item moves in `MovableList` and character deltas in `Text`.
+此代码是重复的，并且容易出错。Mirror 将其集中在声明性模式之后。
 
 ---
 
-## How to use
+## Mirror 提供了什么
 
-1. Define a schema that describes your app state
-2. Create a `LoroDoc` and a Mirror store; provide `schema`
-3. Update via `setState`. Subscribe for changes if needed.
-4. Sync across peers using Loro updates; Mirror applies remote delta back to your app state automatically.
+- **声明性模式。** 根据 Loro 容器描述 UI 状态；Mirror 维护一个不可变的视图。
+- **类型化且与框架无关。** 可在纯 TypeScript、React（通过 `loro-mirror-react`）或任何其他支持不可变状态的 UI 框架中工作。
+- **细粒度差异。** 生成诸如 `MovableList` 中的项目移动和 `Text` 中的字符增量之类的操作。
 
-### Basic Example
+---
+
+## 如何使用
+
+1. 定义一个描述您的应用程序状态的模式
+2. 创建一个 `LoroDoc` 和一个 Mirror 存储；提供 `schema`
+3. 通过 `setState` 更新。如果需要，订阅更改。
+4. 使用 Loro 更新在对等方之间同步；Mirror 会自动将远程增量应用回您的应用程序状态。
+
+### 基本示例
 
 ```ts twoslash
 /**
- * As an example, you can use `useState` from React to manage the state
+ * 作为一个例子，您可以使用 React 的 `useState` 来管理状态
  *
  * `const [appState, setAppState] = useState({});`
  */
@@ -79,7 +79,7 @@ function setAppState(state: any) {}
 import { LoroDoc } from "loro-crdt";
 import { schema, SyncDirection, Mirror } from "loro-mirror";
 
-// 1) Declare state shape – a MovableList of todos with stable Container ID `$cid`
+// 1) 声明状态形状 – 一个待办事项的 MovableList，具有稳定的容器 ID `$cid`
 type TodoStatus = "todo" | "inProgress" | "done";
 const appSchema = schema({
   todos: schema.LoroMovableList(
@@ -87,59 +87,58 @@ const appSchema = schema({
       text: schema.String(),
       status: schema.String<TodoStatus>(),
     }),
-    // $cid is the container ID of LoroMap assigned by Loro
+    // $cid 是 Loro 分配的 LoroMap 的容器 ID
     (t) => t.$cid,
   ),
 });
 
-// 2) Create a Loro document and a Mirror store
+// 2) 创建一个 Loro 文档和一个 Mirror 存储
 const doc = new LoroDoc();
 const store = new Mirror({
   doc,
   schema: appSchema,
-  // InitialState will not be written into LoroDoc
+  // InitialState 不会写入 LoroDoc
   initialState: { todos: [] },
 });
 
-// 3) Subscribe (optional) – know whether updates came from local or remote
+// 3) 订阅（可选）– 了解更新是来自本地还是远程
 const unsubscribe = store.subscribe((state, { direction, tags }) => {
   if (direction === SyncDirection.FROM_LORO) {
-    console.log("Remote update", { state, tags });
+    console.log("远程更新", { state, tags });
   } else {
-    console.log("Local update", { state, tags });
+    console.log("本地更新", { state, tags });
   }
 
-  // You can use `state` to render directly, it's a new immutable object that shares
-  // the unchanged fields with the old state
+  // 您可以直接使用 `state` 进行渲染，它是一个新的不可变对象，与旧状态共享未更改的字段
   setAppState(state);
 });
 
-// 4) Either draft‑mutate or return a new state
-// Draft‑style (mutate a draft)
+// 4) 要么草稿式突变，要么返回一个新状态
+// 草稿式（突变一个草稿）
 store.setState((s) => {
-  s.todos.push({ text: "Draft add", status: "todo" });
+  s.todos.push({ text: "草稿添加", status: "todo" });
 });
 
-// Immutable return (construct a new object)
+// 不可变返回（构造一个新对象）
 store.setState((s) => ({
   ...s,
-  todos: [...s.todos, { text: "Immutable add", status: "todo" }],
+  todos: [...s.todos, { text: "不可变添加", status: "todo" }],
 }));
 
-// 5) Sync across peers with Loro updates (transport‑agnostic)
-// Example: two docs in memory – in real apps, send `bytes` over WS/HTTP/WebRTC
+// 5) 使用 Loro 更新在对等方之间同步（与传输无关）
+// 示例：内存中的两个文档 – 在实际应用程序中，通过 WS/HTTP/WebRTC 发送 `bytes`
 const other = new LoroDoc();
 other.import(doc.export({ mode: "snapshot" }));
 
-// Wire realtime sync (local updates → remote import)
+// 连接实时同步（本地更新 → 远程导入）
 const stop = doc.subscribeLocalUpdates((bytes) => {
   other.import(bytes);
 });
 
-// Any `store.setState(...)` on `doc` now appears in `other` as well
+// `doc` 上的任何 `store.setState(...)` 现在也会出现在 `other` 中
 ```
 
-### React Example
+### React 示例
 
 ```tsx twoslash
 import React, { useMemo } from "react";
@@ -175,7 +174,7 @@ export function TodoApp() {
 
   return (
     <>
-      <button onClick={() => addTodo("Write blog")}>Add</button>
+      <button onClick={() => addTodo("写博客")}>添加</button>
       <ul>
         {state.todos.map((t) => (
           <li key={t.$cid}>
@@ -184,7 +183,7 @@ export function TodoApp() {
               onChange={(e) =>
                 setState((s) => {
                   const i = s.todos.findIndex((x) => x.$cid === t.$cid);
-                  // Text delta will be calculated automatically
+                  // 文本增量将自动计算
                   if (i !== -1) s.todos[i].text = e.target.value;
                 })
               }
@@ -199,9 +198,9 @@ export function TodoApp() {
                 })
               }
             >
-              <option value="todo">Todo</option>
-              <option value="inProgress">In Progress</option>
-              <option value="done">Done</option>
+              <option value="todo">待办</option>
+              <option value="inProgress">进行中</option>
+              <option value="done">已完成</option>
             </select>
           </li>
         ))}
@@ -211,34 +210,34 @@ export function TodoApp() {
 }
 ```
 
-Undo/Redo
+撤销/重做
 
 ```tsx
 import { UndoManageker } from "loro-crdt";
 
-// Inside the same component, after creating `doc`:
+// 在创建 `doc` 之后，在同一组件内：
 const undo = useMemo(() => new UndoManager(doc), [doc]);
 
-// Add controls anywhere in your UI:
+// 在 UI 的任何位置添加控件：
 <div>
-  <button onClick={() => undo.undo()}>Undo</button>
-  <button onClick={() => undo.redo()}>Redo</button>
-  {/* UndoManager only reverts your local edits; remote edits stay. */}
-  {/* See docs: <https://loro.dev/docs/advanced/undo> */}
-  {/* For full time travel, see: <https://loro.dev/docs/tutorial/time_travel> */}
+  <button onClick={() => undo.undo()}>撤销</button>
+  <button onClick={() => undo.redo()}>重做</button>
+  {/* UndoManager 仅恢复您的本地编辑；远程编辑保持不变。 */}
+  {/* 请参阅文档：<https://loro.dev/docs/advanced/undo> */}
+  {/* 有关完整的时间旅行，请参阅：<https://loro.dev/docs/tutorial/time_travel> */}
 </div>;
 ```
 
-What you get
+您将获得什么
 
-- Type-safe, framework-agnostic state
-- Each mutation becomes a minimal change-set (CRDT delta)—no manual diffing
-- Fine-grained updates to subscribers for fast, predictable renders
-- [Built-in history and time travel](https://loro.dev/docs/tutorial/time_travel)
-- [Offline-first sync](https://loro.dev/docs/tutorial/sync) via updates or snapshots with deterministic conflict resolution over any transport (HTTP, WebSocket, P2P)
-- [Collaborative undo/redo](https://loro.dev/docs/advanced/undo) across clients
+- 类型安全、与框架无关的状态
+- 每个突变都成为一个最小的变更集（CRDT 增量）——无需手动区分
+- 对订阅者的细粒度更新，以实现快速、可预测的渲染
+- [内置历史和时间旅行](https://loro.dev/docs/tutorial/time_travel)
+- 通过更新或快照进行[离线优先同步](https://loro.dev/docs/tutorial/sync)，并通过任何传输（HTTP、WebSocket、P2P）进行确定性冲突解决
+- 跨客户端的[协作撤销/重做](https://loro.dev/docs/advanced/undo)
 
-import { ReactPlayer } from "../../components/video";
+import { ReactPlayer } from "../../../components/video";
 
 <ReactPlayer
   url="/static/recording-loro-todo.mp4"
@@ -249,16 +248,16 @@ import { ReactPlayer } from "../../components/video";
   playing={true}
 />
 
-We built a example PWA app here [https://todo.loro.dev](https://todo.loro.dev) . It’s open source at https://github.com/loro-dev/loro-todo. It’s collaborative and account-free. The data will be persisted locally in IndexedDB and saved in the cloud for 7 days. You can share your todo list with others by just sharing the unique URL. In the codebase, only a tiny portion of the code is about Loro thanks to the help of loro-mirror.
+我们在这里构建了一个示例 PWA 应用程序 [https://todo.loro.dev](https://todo.loro.dev)。它在 https://github.com/loro-dev/loro-todo 开源。它是协作式的，无需帐户。数据将本地持久化在 IndexedDB 中，并在云中保存 7 天。您只需共享唯一的 URL 即可与他人共享您的待办事项列表。在代码库中，由于 loro-mirror 的帮助，只有一小部分代码与 Loro 相关。
 
-## Where we’re going
+## 我们未来的方向
 
-Because Mirror owns the bidirectional mapping between application state and the Loro document, we can move value up the stack while lowering integration cost. For example:
+因为 Mirror 拥有应用程序状态和 Loro 文档之间的双向映射，所以我们可以在降低集成成本的同时提升价值。例如：
 
-- Text. Many interfaces render by lines, yet LoroText’s low‑level API is index‑based. Teams typically re‑implement line segmentation and map edits back to lines by hand. With Mirror in the middle, it becomes feasible to surface optional line‑aware events on top of LoroText so the UI receives stable, line‑based diffs without custom conversion—while retaining the underlying CRDT guarantees.
-- Tree. LoroTree CRDT already ensures correct concurrent moves, but developers still translate tree operations into application‑state patches. Mirror carries first‑class mappings from tree events into your state shape, so consumers can work with natural “insert/move/delete node” updates.
-- Ephemeral patches. We'll add [`setStateWithEphemeralPatch`](https://github.com/loro-dev/loro-mirror/issues/35) so Mirror can stream temporary drag or scale interactions through an `EphemeralStore`, letting collaborators see live previews while the persisted history stays clean and deduplicated once the change finalizes.
+- 文本。许多界面按行渲染，而 LoroText 的低级 API 是基于索引的。团队通常会手动重新实现行分段并将编辑映射回行。有了 Mirror 在中间，就可以在 LoroText 之上提供可选的行感知事件，以便 UI 接收稳定的、基于行的差异，而无需自定义转换——同时保留底层的 CRDT 保证。
+- 树。LoroTree CRDT 已经确保了正确的并发移动，但开发人员仍然需要将树操作转换为应用程序状态补丁。Mirror 携带从树事件到您的状态形状的一流映射，因此消费者可以使用自然的“插入/移动/删除节点”更新。
+- 临时补丁。我们将添加 [`setStateWithEphemeralPatch`](https://github.com/loro-dev/loro-mirror/issues/35)，以便 Mirror 可以通过 `EphemeralStore` 流式传输临时的拖动或缩放交互，让协作者看到实时预览，同时在更改最终确定后保持持久化历史的清洁和去重。
 
-By using loro-mirror to bridge CRDTs and application state consistency, and by expressing schemas declaratively, we can let AI help developers get more done correctly. This makes Loro not only suitable for professional creative tools with real-time collaboration, but also for enabling people to build practical mini-tools for themselves and their communities.
+通过使用 loro-mirror 来桥接 CRDTs 和应用程序状态的一致性，并通过声明性地表达模式，我们可以让 AI 帮助开发人员更正确地完成更多工作。这使得 Loro 不仅适用于具有实时协作功能的专业创意工具，也适用于让人们为自己和社区构建实用的迷你工具。
 
-If this work helps you build collaborative, local‑first experiences, we’d be grateful for your sponsorship. You can support us via [GitHub Sponsors](https://github.com/sponsors/loro-dev).
+如果这项工作能帮助您构建协作式、本地优先的体验，我们将非常感谢您的赞助。您可以通过 [GitHub Sponsors](https://github.com/sponsors/loro-dev) 支持我们。

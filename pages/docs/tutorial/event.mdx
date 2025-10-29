@@ -1,25 +1,17 @@
-# Event Handling in Loro
+# Loro 的事件处理
 
-Loro implements an event system to track changes in the document. This section
-explains when events are emitted and how transactions work in Loro.
+Loro 内置事件系统用于追踪文档变化。本节介绍事件的触发时机以及事务在 Loro 中的工作方式。
 
-## Event Emission Points
+## 事件触发时机
 
-Events in Loro are emitted whenever the internal document state changes. This
-mechanism allows application-level derived states to automatically synchronize
-with changes in the document state.
+只要内部文档状态发生变化，就会触发事件，帮助应用层的派生状态自动与文档同步。
 
-1. **Local Operations**: For local operations (like insertions or deletions on
-   text), the operations are first placed in a pending state within an internal
-   transaction.
+1. **本地操作**：对于本地插入、删除等操作，Loro 会先将它们置于内部事务的 pending 状态。
+2. **事务提交**：事务提交时，所有待处理操作会一次性触发相应事件。提交发生在以下场景：
+   - 显式调用 `LoroDoc.commit()`
+   - 在导入或导出前自动提交
 
-2. **Transaction Commit**: When a transaction is committed, all pending
-   operations collectively emit their corresponding events. This transaction
-   commit occurs in two scenarios:
-   - When `LoroDoc.commit()` is explicitly called
-   - Automatically before an import or export operation
-
-   Note that events are emitted asynchronously after a microtask. If you need to handle events immediately after a commit, you should await a microtask:
+   事件会在微任务结束后异步触发。如果需要在提交后立即处理事件，请等待一个微任务：
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
@@ -32,14 +24,12 @@ doc.subscribe((event) => {
 const text = doc.getText("text");
 text.insert(0, "Hello");
 doc.commit();
-// Event hasn't been emitted yet
+// 事件尚未触发
 await Promise.resolve();
-// Now the event has been emitted
+// 事件现已触发
 ```
 
-3. **Import**: When importing changes from a remote source using the `import()`
-   method, respective events are emitted. This allows the local document to
-   react to changes made by other peers.
+3. **导入**：调用 `import()` 导入远端更新时，会触发对应事件，便于本地响应其他节点的变更：
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
@@ -50,54 +40,41 @@ doc.subscribe((event) => {
   console.log("Event:", event);
 });
 
-doc.import(remoteChanges); // This will trigger events after a microtask
-await Promise.resolve(); // Wait for events to be emitted
+doc.import(remoteChanges); // 微任务后触发事件
+await Promise.resolve();
 ```
 
-4. **Version Checkout**: When you switch document state to a different version
-   using `doc.checkout(frontiers)`, Loro emits an event to reflect this change.
-   Like other events, these are also emitted after a microtask.
+4. **版本切换**：调用 `doc.checkout(frontiers)` 切换到其他版本时，同样会在微任务后触发事件。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
 const frontiers = doc.frontiers();
-doc.checkout(frontiers); // This will trigger events after a microtask
-await Promise.resolve(); // Wait for events to be emitted
+doc.checkout(frontiers); // 微任务后触发事件
+await Promise.resolve();
 ```
 
-## Transaction Behavior
+## 事务行为
 
-Transactions in Loro primarily serve to bundle related operations and emit their
-events together as a cohesive unit. This is useful in several scenarios:
+Loro 的事务主要用于将相关操作打包，并以整体事件的形式发出，常见用途包括：
 
-1. **Related Local Operations**: When performing multiple local operations that
-   are logically connected, you may want them to:
-   - Share the same commit message
-   - Have the same timestamp
-   - Move together during undo/redo operations
+1. **关联操作**：当一系列本地操作在逻辑上相关时，你可能希望它们：
+   - 共享提交信息
+   - 使用相同时间戳
+   - 在撤销 / 重做时作为整体处理
 
-2. **Event Handling**: Applications often benefit from receiving related changes
-   as a single batch rather than individual updates. Transactions facilitate
-   this by:
-   - Allowing you to set an origin identifier during commit
-   - Including this origin value in the emitted events
-   - Enabling better event filtering and processing based on the origin
+2. **事件处理**：应用通常希望一次性收到相关变更，事务提供了：
+   - 在提交时设置 origin 标识
+   - 在事件中携带 origin 便于过滤
 
 <aside>
-  Operations within a transaction are not immediately committed to the internal
-  oplog. They are only committed when the transaction itself is committed.
-  However, in order to make it easier to use and compare versions, uncommitted
-  operations will also directly update the version.
+  事务中的操作不会立即写入内部 OpLog，只有在事务提交时才会写入。为方便比较版本，未提交的操作也会直接更新版本信息。
 </aside>
 
-## Triggering a Commit
+## 触发提交的方式
 
-There are several ways to trigger a commit:
-
-1. **Explicit Commit**: Directly calling the `commit()` method on the Loro
-   document.
+1. **显式提交**：直接调用 `commit()`。
 
    ```ts twoslash
    import { LoroDoc } from "loro-crdt";
@@ -105,11 +82,10 @@ There are several ways to trigger a commit:
    const doc = new LoroDoc();
    const text = doc.getText("myText");
    text.insert(0, "Hello, Loro!");
-   doc.commit(); // This commits pending operations and emits events
+   doc.commit(); // 提交待处理操作并触发事件
    ```
 
-2. **Before Import/Export**: A commit is automatically triggered before
-   executing an import operation.
+2. **导入 / 导出前**：在执行导入或导出前会自动提交。
 
    ```ts twoslash
    import { LoroDoc } from "loro-crdt";
@@ -119,22 +95,21 @@ There are several ways to trigger a commit:
    const doc2 = new LoroDoc();
    doc2.setPeerId(2);
 
-   // Some ops on doc1 and doc2
-   doc1.getText("text").insert(0, "Alice");
-   doc2.getText("text").insert(0, "Hello, Loro!");
-   console.log(doc1.version().toJSON()); // Map(0) {}
-   console.log(doc2.version().toJSON()); // Map(0) {}
-   const updates = doc1.export({ mode: "snapshot" });
-   doc2.import(updates); // This first commits any pending operations in doc2
-   console.log(doc2.version().toJSON()); // Map(2) { "1" => 5, "2" => 12 }
-   console.log(doc1.version().toJSON()); // Map(2) { "1" => 5 }
+   // 对 doc1 与 doc2 进行一些操作
+doc1.getText("text").insert(0, "Alice");
+doc2.getText("text").insert(0, "Hello, Loro!");
+console.log(doc1.version().toJSON()); // Map(0) {}
+console.log(doc2.version().toJSON()); // Map(0) {}
+const updates = doc1.export({ mode: "snapshot" });
+doc2.import(updates); // doc2 会先提交自身待处理操作
+console.log(doc2.version().toJSON()); // Map(2) { "1" => 5, "2" => 12 }
+console.log(doc1.version().toJSON()); // Map(2) { "1" => 5 }
    ```
 
-## Transactions in Loro
+## Loro 中的事务
 
-It's important to note that Loro's concept of a transaction differs from
-traditional database transactions:
+需要强调的是，Loro 的事务不同于传统数据库事务：
 
-- Loro transactions do not have ACID properties.
-- They primarily serve as event wrappers.
-- There is no rollback mechanism if an operation fails.
+- 不具备 ACID 属性
+- 主要充当事件包装器
+- 操作失败时不会自动回滚

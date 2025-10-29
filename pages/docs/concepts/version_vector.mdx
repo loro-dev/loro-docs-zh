@@ -1,26 +1,26 @@
 ---
-keywords: "version vector, logical clock, distributed systems, CRDT, synchronization"
-description: "Understanding Version Vectors in Loro - complete peer state tracking for synchronization"
+keywords: "版本向量, 逻辑时钟, 分布式系统, CRDT, 同步"
+description: "了解 Loro 中的版本向量——用于同步的完整 peer 状态追踪"
 ---
 
-# Version Vector
+# 版本向量（Version Vector）
 
-Version Vectors are a fundamental concept in distributed systems that track the complete state of all peers by recording how many operations each peer has contributed.
+版本向量是分布式系统中的核心概念，通过记录每个 peer 提交的操作数量，完整追踪所有节点的状态。
 
-## What is a Version Vector?
+## 什么是版本向量？
 
-A Version Vector is a map from peer IDs to operation counters, explicitly listing every peer and their operation count. It provides a complete picture of which operations are included in a version.
+版本向量是一个从 peer ID 到操作计数的映射，它显式列出每个 peer 及其对应的操作数量，从而完整描述某个版本包含的操作。
 
-**Example**: `{ "peer-A": 5, "peer-B": 3 }` means this version includes operations 0-4 from peer A and operations 0-2 from peer B.
+**示例**：`{ "peer-A": 5, "peer-B": 3 }` 表示该版本包含 peer A 的 0-4 号操作，以及 peer B 的 0-2 号操作。
 
-## Key Characteristics
+## 主要特性
 
-- **Complete information**: Explicitly lists all peers and their operation counts
-- **Grows with peer count**: Size increases as more peers join
-- **No dependency on history**: Can determine included operations without accessing the operation log
-- **Enables version comparison**: Can easily check if one version includes another
+- **信息完整**：显式列出全部 peer 及其操作计数
+- **随 peer 数量增长**：加入节点越多，结构越大
+- **无需访问历史**：仅凭版本向量即可判断包含哪些操作
+- **便于比较版本**：可以直接判断一个版本是否包含另一个版本
 
-## Basic Usage
+## 基本用法
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -30,41 +30,41 @@ doc.setPeerId("1");
 const text = doc.getText("content");
 text.insert(0, "Hello");
 
-// Get version vector
+// 获取版本向量
 const vv = doc.version();
 console.log(vv.toJSON()); // Map { "1" => 1 }
 ```
 
-## When to Use Version Vectors
+## 何时使用版本向量
 
-Version Vectors are ideal for:
+版本向量适用于：
 
-1. **Synchronization protocols** - Determine what updates to send between peers
-2. **Network communication** - Self-contained version information
-3. **Distributed systems** - Track state across multiple nodes
+1. **同步协议**——用于判断需要与其他节点交换哪些更新
+2. **网络通信**——提供自包含的版本信息
+3. **分布式系统**——跨多节点追踪状态
 
-## Comparison with Frontiers
+## 与 Frontiers 的对比
 
-| Aspect | Version Vectors | Frontiers |
-|--------|----------------|-----------|
-| **Size** | O(number of peers) | O(1-2) typically |
-| **Information** | Complete peer states | Boundary operations only |
-| **Use Case** | Synchronization | Checkpoints |
-| **History Required** | No | Yes, for full information |
+| 维度 | 版本向量 | Frontiers |
+|------|----------|-----------|
+| **大小** | O(peer 数量) | 通常 O(1-2) |
+| **信息量** | 完整的 peer 状态 | 仅包含边界操作 |
+| **适用场景** | 同步 | 检查点 |
+| **是否依赖历史** | 否 | 是（需历史信息） |
 
-## Conversion with Frontiers
+## 与 Frontiers 互转
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const vv = doc.version();
-const frontiers = doc.vvToFrontiers(vv);     // Convert to Frontiers
-const backToVV = doc.frontiersToVV(frontiers); // Convert back
+const frontiers = doc.vvToFrontiers(vv);       // 转为 Frontiers
+const backToVV = doc.frontiersToVV(frontiers); // 再转回版本向量
 ```
 
-## Related Documentation
+## 相关文档
 
-- [Frontiers](./frontiers) - Compact version representation
-- [Version Tutorial](../tutorial/version) - Working with versions
-- [Version Deep Dive](../advanced/version_deep_dive) - Technical details
+- [Frontiers](./frontiers)——紧凑的版本表示方式
+- [版本教程](../tutorial/version)——如何处理不同版本
+- [版本深潜](../advanced/version_deep_dive)——技术细节解析

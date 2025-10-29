@@ -1,39 +1,38 @@
 ---
-keywords: "loro-crdt, build collaboration software, local-first, operation transform, crdts, ot"
-description: "How to use Loro to build real-time or asynchronous collaboration software."
+keywords: "loro-crdt, 协作软件, local-first, operation transform, crdt, ot"
+description: "如何使用 Loro 构建实时或异步协作应用。"
 ---
 
-# Getting Started
+# 快速入门
 
-You can use Loro in your application by using:
+你可以通过以下方式在应用中使用 Loro：
 
-- [`loro-crdt`](https://www.npmjs.com/package/loro-crdt) NPM package
+- [`loro-crdt`](https://www.npmjs.com/package/loro-crdt) NPM 包
 - [`loro`](https://crates.io/crates/loro) Rust crate
-- [`loro-swift`](https://github.com/loro-dev/loro-swift) Swift package
-- [`loro-py`](https://github.com/loro-dev/loro-py) Python package
-- [`loro-cs`](https://github.com/sensslen/loro-cs) Community-maintained C# package
-- You can also find a list of examples in
-  [Loro examples in Deno](https://github.com/loro-dev/loro-examples-deno).
+- [`loro-swift`](https://github.com/loro-dev/loro-swift) Swift 包
+- [`loro-py`](https://github.com/loro-dev/loro-py) Python 包
+- [`loro-cs`](https://github.com/sensslen/loro-cs) 社区维护的 C# 包
+- 也可以在 [Loro 的 Deno 示例仓库](https://github.com/loro-dev/loro-examples-deno)中找到示例列表
 
-You can use [Loro Inspector](/docs/advanced/inspector) to debug and visualize the state and history of Loro documents.
+可以借助 [Loro Inspector](/docs/advanced/inspector) 调试并可视化 Loro 文档的状态与历史。
 
-The following guide will use `loro-crdt` js package as the example.
+下文示例统一使用 `loro-crdt` JavaScript 包。
 
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/edit/loro-basic-test?file=test%2Floro-sync.test.ts)
 
-## Install
+## 安装
 
 ```bash
 npm install loro-crdt
 
-# Or
+# 或者
 pnpm install loro-crdt
 
-# Or
+# 或者
 yarn add loro-crdt
 ```
 
-If you're using `Vite`, you should add the following to your vite.config.ts:
+如果你使用的是 `Vite`，请在 vite.config.ts 中加入：
 
 ```ts no-run
 import wasm from "vite-plugin-wasm";
@@ -45,48 +44,49 @@ export default defineConfig({
 ```
 
 <details>
-<summary>⚠️ DOMContentLoaded Timing Issue with Vite</summary>
+<summary>⚠️ Vite 中的 DOMContentLoaded 定时问题</summary>
 
-When using Loro with Vite, be aware of module loading timing issues with DOM events:
+在 Vite 中使用 Loro 时，需要注意模块加载与 DOM 事件的时序问题。
 
-**Problem:** The following code will cause nothing to load on the screen:
+**问题：** 下面的代码会导致页面没有任何渲染结果：
 
 ```ts no_run
 import { LoroDoc } from "loro-crdt";
 
 document.addEventListener("DOMContentLoaded", () => {
   const doc = new LoroDoc();
-  // Your code here...
+  // 在此编写逻辑…
 });
 ```
 
-**Reason:** This occurs because Vite loads ES modules asynchronously, and the WASM module initialization within `loro-crdt` also happens asynchronously. When you import at the top level but execute code inside `DOMContentLoaded`, the WASM module may not be fully initialized when the event fires, causing the application to fail silently.
+**原因：** Vite 以异步方式加载 ES 模块，`loro-crdt` 内部的 WASM 初始化同样是异步的。当你在顶层导入模块却把逻辑放在 `DOMContentLoaded` 事件里执行时，事件触发时 WASM 可能尚未完成初始化，从而导致页面静默失败。
 
-**Solutions:**
+**解决方案：**
 
-1. **Remove the event listener** (recommended for most cases):
+1. **移除事件监听器**（大多数场景推荐）：
 
    ```ts no_run twoslash
    import { LoroDoc } from "loro-crdt";
 
    const doc = new LoroDoc();
-   // Your code here...
+   // 在此编写逻辑…
    ```
 
-2. **Use dynamic import inside the event listener**:
+2. **在事件监听器内使用动态导入**：
+
    ```ts no_run twoslash
    document.addEventListener("DOMContentLoaded", async () => {
      const { LoroDoc } = await import("loro-crdt");
      const doc = new LoroDoc();
-     // Your code here...
+     // 在此编写逻辑…
    });
    ```
 
-The dynamic import ensures the module and its WASM dependencies are fully loaded before use.
+动态导入可以确保模块及其 WASM 依赖加载完成后再执行代码。
 
 </details>
 
-If you're using `Next.js`, you should add the following to your next.config.js:
+如果你使用 `Next.js`，请在 next.config.js 中加入：
 
 ```js no-run
 module.exports = {
@@ -100,8 +100,7 @@ module.exports = {
 };
 ```
 
-You can also use Loro directly in the browser via ESM imports. Here's a minimal
-example:
+你也可以通过 ESM 直接在浏览器中使用 Loro。下面是一个最小示例：
 
 ```html
 <!DOCTYPE html>
@@ -128,34 +127,32 @@ example:
 </html>
 ```
 
-## Introduction
+## 简介
 
-It is well-known that syncing data/building realtime collaborative apps is
-challenging, especially when devices can be offline or part of a peer-to-peer
-network. Loro simplifies this process for you.
+构建数据同步或实时协作应用众所周知是一项挑战，尤其当设备可能离线，或处于点对点网络时。Loro 可以帮你轻松应对这些问题。
 
-After you model your app state by Loro, syncing is simple:
+当你用 Loro 来建模应用状态后，同步就会变得简单：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 const docA = new LoroDoc();
 const docB = new LoroDoc();
 
-//...operations on docA and docB
+// …在 docA 与 docB 上进行操作
 
-// Assume docA and docB are two Loro documents in two different devices
+// 假设 docA 与 docB 位于不同设备
 const bytesA = docA.export({ mode: "update" });
-// send bytes to docB by any method
+// 以任意方式把字节发送给 docB
 docB.import(bytesA);
-// docB is now updated with all the changes from docA
+// docB 现在拥有 docA 的全部变更
 
 const bytesB = docB.export({ mode: "update" });
-// send bytes to docA by any method
+// 以任意方式把字节发送给 docA
 docA.import(bytesB);
-// docA and docB are now in sync, they have the same state
+// docA 与 docB 现在同步，状态一致
 ```
 
-Saving your app state is also straightforward:
+保存应用状态同样简单：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -163,10 +160,10 @@ import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 doc.getText("text").insert(0, "Hello world!");
 const bytes = doc.export({ mode: "snapshot" });
-// Bytes can be saved to local storage, database, or sent over the network
+// 这些字节可以写入本地存储、数据库或通过网络发送
 ```
 
-Loading your app state:
+加载应用状态：
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
@@ -176,33 +173,28 @@ const newDoc = new LoroDoc();
 newDoc.import(bytes);
 ```
 
-Loro also makes it easy for you to time travel the history and add version
-control to your app. [Learn more about time travel](/docs/tutorial/time_travel).
+Loro 还支持时光旅行，让你为应用加入版本控制。[进一步了解时光旅行功能](/docs/tutorial/time_travel)。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const version = doc.frontiers();
 // ---cut---
-doc.checkout(version); // Checkout the doc to the given version
+doc.checkout(version); // 将文档检出到指定版本
 ```
 
-Loro is compatible with the JSON schema. If you can model your app state with
-JSON, you probably can sync your app with Loro. Because we need to adhere to the
-JSON schema, using a number as a key in a Map is not permitted, and cyclic links
-should be avoided.
+Loro 与 JSON schema 兼容。如果你的应用状态可以用 JSON 建模，大概率也能用 Loro 同步。由于需要遵循 JSON schema，Map 的键不得使用数字，也应避免循环引用。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 // ---cut---
-doc.toJSON(); // Get the JSON representation of the doc
+doc.toJSON(); // 获取文档的 JSON 表示
 ```
 
-## Entry Point: LoroDoc
+## 入口：LoroDoc
 
-LoroDoc is the entry point for using Loro. You must create a Doc to use Map,
-List, Text, and other types and to complete data synchronization.
+LoroDoc 是使用 Loro 的入口。要使用 Map、List、Text 等类型并进行数据同步，你必须先创建一个 Doc。
 
 ```ts twoslash
 import { LoroDoc, LoroText } from "loro-crdt";
@@ -213,12 +205,11 @@ text.insert(0, "Hello world!");
 console.log(doc.toJSON()); // { "text": "Hello world!" }
 ```
 
-## Container
+## 容器
 
-We refer to CRDT types such as `List`, `Map`, `Tree`, `MovableList`, and `Text`
-as `Container`s.
+`List`、`Map`、`Tree`、`MovableList`、`Text` 等 CRDT 类型统称为 `Container`。
 
-Here are their basic operations:
+以下示例展示了它们的基本操作：
 
 ```ts twoslash
 import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt";
@@ -231,21 +222,21 @@ list.insert(1, "B");
 list.insert(2, "C");
 
 const map: LoroMap = doc.getMap("map");
-// map can only has string key
+// map 只能使用字符串键
 map.set("key", "value");
 expect(doc.toJSON()).toStrictEqual({
   list: ["A", "B", "C"],
   map: { key: "value" },
 });
 
-// delete 2 element at index 0
+// 删除索引 0 处的两个元素
 list.delete(0, 2);
 expect(doc.toJSON()).toStrictEqual({
   list: ["C"],
   map: { key: "value" },
 });
 
-// Insert a text container to the list
+// 在列表中插入一个文本容器
 const text = list.insertContainer(0, new LoroText());
 text.insert(0, "Hello");
 text.insert(0, "Hi! ");
@@ -255,7 +246,7 @@ expect(doc.toJSON()).toStrictEqual({
   map: { key: "value" },
 });
 
-// Insert a list container to the map
+// 在 map 中插入一个列表容器
 const list2 = map.setContainer("test", new LoroList());
 list2.insert(0, 1);
 expect(doc.toJSON()).toStrictEqual({
@@ -264,12 +255,11 @@ expect(doc.toJSON()).toStrictEqual({
 });
 ```
 
-## Save and Load
+## 保存与加载
 
-Loro is a pure library and does not handle network protocols or storage mechanisms. It is your responsibility to manage the storage and transmission of the binary data exported by Loro.
+Loro 是纯粹的库，不处理网络协议或存储机制。你需要自行保存和传输 Loro 导出的二进制数据。
 
-To save the document, use `doc.export({mode: "snapshot"})` to get its binary
-form. To open it again, use `doc.import(data)` to load this binary data.
+要保存文档，可以使用 `doc.export({ mode: "snapshot" })` 获取二进制表示；稍后通过 `doc.import(data)` 重新加载。
 
 ```ts twoslash
 import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt";
@@ -286,9 +276,8 @@ expect(newDoc.toJSON()).toStrictEqual({
 });
 ```
 
-Exporting the entire document on each keypress is inefficient. Instead, use
-`doc.export({mode: "update", from: VersionVector})` to obtain binary data for
-operations since the last export.
+每次按键都导出完整文档效率不高。更好的做法是使用
+`doc.export({ mode: "update", from: VersionVector })` 获取自上次导出以来的增量操作。
 
 ```ts twoslash
 import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt";
@@ -306,23 +295,23 @@ const update1 = doc.export({ mode: "update", from: lastSavedVersion });
 
 {
   /**
-   * You can import the snapshot and the updates to get the latest version of the document.
+   * 可以先导入快照，再导入增量，以恢复文档最新状态。
    */
 
-  // import the snapshot
+  // 导入快照
   const newDoc = new LoroDoc();
   newDoc.import(data);
   expect(newDoc.toJSON()).toStrictEqual({
     text: "Hello world!",
   });
 
-  // import update0
+  // 导入 update0
   newDoc.import(update0);
   expect(newDoc.toJSON()).toStrictEqual({
     text: "✨Hello world!",
   });
 
-  // import update1
+  // 导入 update1
   newDoc.import(update1);
   expect(newDoc.toJSON()).toStrictEqual({
     text: "😶‍🌫️✨Hello world!",
@@ -331,7 +320,7 @@ const update1 = doc.export({ mode: "update", from: lastSavedVersion });
 
 {
   /**
-   * You may also import them in a batch
+   * 也可以批量导入
    */
   const newDoc = new LoroDoc();
   newDoc.importUpdateBatch([update1, update0, data]);
@@ -341,17 +330,15 @@ const update1 = doc.export({ mode: "update", from: lastSavedVersion });
 }
 ```
 
-If updates accumulate, exporting a new snapshot can quicken import times and
-decrease the overall size of the exported data.
+如果增量过多，可以重新导出一个快照，以提升导入速度并减小数据体积。
 
-You can store the binary data exported from Loro wherever you prefer.
+导出的二进制数据可以存储在任意位置，由你决定。
 
-## Sync
+## 同步
 
-Two documents with concurrent edits can be synchronized by just two message
-exchanges.
+两个存在并发编辑的文档，只需交换两次消息即可完成同步。
 
-Below is an example of synchronization between two documents:
+以下示例演示了两个文档之间的同步流程：
 
 ```ts twoslash
 import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt";
@@ -363,9 +350,9 @@ const listA: LoroList = docA.getList("list");
 listA.insert(0, "A");
 listA.insert(1, "B");
 listA.insert(2, "C");
-// B import the ops from A
+// B 导入来自 A 的操作
 const data: Uint8Array = docA.export({ mode: "update" });
-// The data can be sent to B through the network
+// 通过网络将数据发送给 B
 docB.import(data);
 expect(docB.toJSON()).toStrictEqual({
   list: ["A", "B", "C"],
@@ -374,42 +361,39 @@ expect(docB.toJSON()).toStrictEqual({
 const listB: LoroList = docB.getList("list");
 listB.delete(1, 1);
 
-// `doc.export({mode: "update", from: version})` can encode all the ops from the version to the latest version
-// `version` is the version vector of another document
+// `doc.export({ mode: "update", from: version })` 会将某版本以来的所有操作打包
+// `version` 即另一文档的版本向量
 const missingOps = docB.export({
   mode: "update",
   from: docA.oplogVersion(),
 });
 docA.import(missingOps);
-
 expect(docA.toJSON()).toStrictEqual({
   list: ["A", "C"],
 });
 expect(docA.toJSON()).toStrictEqual(docB.toJSON());
 ```
 
-## Event
+## 事件
 
-You can subscribe to the event from `Container`s.
+你可以订阅 `Container` 的事件。
 
-`LoroText` and `LoroList` can receive updates in
-[Quill Delta](https://quilljs.com/docs/delta/) format.
+`LoroText` 与 `LoroList` 的事件以 [Quill Delta](https://quilljs.com/docs/delta/) 格式呈现。
 
-The events will be emitted after a transaction is committed. A transaction is
-committed when:
+事件会在事务提交后触发。事务会在以下情况提交：
 
-- `doc.commit()` is called.
-- `doc.export(mode)` is called.
-- `doc.import(data)` is called.
-- `doc.checkout(version)` is called.
+- 调用了 `doc.commit()`。
+- 调用了 `doc.export(mode)`。
+- 调用了 `doc.import(data)`。
+- 调用了 `doc.checkout(version)`。
 
-Below is an example of rich text event:
+下面的示例展示了富文本事件：
 
 ```ts twoslash
 import { LoroDoc, LoroList, LoroMap, LoroText } from "loro-crdt";
 import { expect } from "expect";
 // ---cut---
-// The code is from https://github.com/loro-dev/loro-examples-deno
+// 代码改编自 https://github.com/loro-dev/loro-examples-deno
 const doc = new LoroDoc();
 const text = doc.getText("text");
 text.insert(0, "Hello world!");
@@ -434,24 +418,24 @@ await new Promise((r) => setTimeout(r, 1));
 expect(ran).toBeTruthy();
 ```
 
-The types of events are defined as follows:
+事件类型定义如下：
 
 ```ts twoslash
 import { Path, Diff, Frontiers, ContainerID } from "loro-crdt";
 
 export interface LoroEventBatch {
   /**
-   * How the event is triggered.
+   * 事件触发方式：
    *
-   * - `local`: The event is triggered by a local transaction.
-   * - `import`: The event is triggered by an import operation.
-   * - `checkout`: The event is triggered by a checkout operation.
+   * - `local`：由本地事务触发。
+   * - `import`：由导入操作触发。
+   * - `checkout`：由 checkout 操作触发。
    */
   by: "local" | "import" | "checkout";
   origin?: string;
   /**
-   * The container ID of the current event receiver.
-   * It's undefined if the subscriber is on the root document.
+   * 当前事件接收者的容器 ID。
+   * 如果订阅者是根文档，则为 undefined。
    */
   currentTarget?: ContainerID;
   events: LoroEvent[];
@@ -460,16 +444,16 @@ export interface LoroEventBatch {
 }
 
 /**
- * The concrete event of Loro.
+ * Loro 的具体事件。
  */
 export interface LoroEvent {
   /**
-   * The container ID of the event's target.
+   * 事件目标的容器 ID。
    */
   target: ContainerID;
   diff: Diff;
   /**
-   * The absolute path of the event's emitter, which can be an index of a list container or a key of a map container.
+   * 事件触发器的绝对路径，可以是列表容器的索引或 map 容器的键。
    */
   path: Path;
 }

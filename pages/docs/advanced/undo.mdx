@@ -1,45 +1,36 @@
 ---
 keywords: "crdt, undo, redo, undo manager, cursor, selection, collaborate"
-description: "how to use loro undo manager and show all APIs of loro undo manager."
+description: "如何使用 Loro 的撤销管理器，并展示其完整 API。"
 ---
 
-# Undo
+# 撤销与重做
 
-We provide an `UndoManager` that helps you manage the undo/redo stack and can be
-used during concurrent editing. It also supports cursor position transformation.
-In the case of concurrent editing, you will want the undo/redo to be **local**,
-meaning it should only undo/redo local operations without affecting other
-collaborators' edits.
+我们提供了 `UndoManager` 来帮助你管理撤销/重做栈，并支持并发编辑场景。它还能处理光标位置转换。在多人协同时，我们希望撤销/重做是**本地化**的，也就是只作用于本地操作，不影响其他协作者的修改。
 
-### Why Local Undo/Redo?
+### 为什么需要本地撤销/重做？
 
-If undo/redo is global, it often does not meet expectations. Consider the
-following scenario:
+如果撤销/重做是全局行为，往往会与预期不符。想象以下场景：
 
-- **User A and User B are collaborating**: They are likely editing different
-  parts of the document.
-- **User A performs an undo**: If this undoes User B's operations, User A might
-  see no changes and think the undo failed, as User B might be editing content
-  outside of User A's view.
-- **User B's perspective**: User B would find their recent edits deleted without
-  knowing how it happened.
+- **用户 A 与用户 B 正在协作**：他们很可能在编辑文档的不同部分。
+- **用户 A 执行撤销**：如果这一步撤销了用户 B 的操作，用户 A 可能看不到任何变化，以为撤销失败，因为用户 B 的修改不在他的视野内。
+- **用户 B 的视角**：用户 B 会发现自己的最新编辑莫名被删除，完全不知道发生了什么。
 
-## Usage
+## 使用方式
 
-To create an `UndoManager`, you can specify:
+创建 `UndoManager` 时，可以指定以下配置：
 
-- Which local operations are not recorded.
-- The merge range for undo operations.
-- The stack depth.
+- 哪些本地操作不需要被记录；
+- 撤销操作的合并时间范围；
+- 栈的最大深度。
 
 ```ts twoslash
 import { UndoManager, LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 // ---cut---
 const undoManager = new UndoManager(doc, {
-    maxUndoSteps: 100, // default 100
-    mergeInterval: 1000, // default 1000ms
-    excludeOriginPrefixes: ["sys:"], // default []
+    maxUndoSteps: 100, // 默认 100
+    mergeInterval: 1000, // 默认 1000ms
+    excludeOriginPrefixes: ["sys:"], // 默认 []
     onPush: (isUndo, range, event) => {
         return { value: null, cursors: [] };
     },
@@ -49,68 +40,44 @@ const undoManager = new UndoManager(doc, {
 });
 ```
 
-## Limitations
+## 使用限制
 
-It can only track a single peer. When the peer ID of the document changes, it will
-clear the undo stack and the redo stack and track the new peer ID.
+`UndoManager` 只能追踪单个 Peer。当文档的 Peer ID 发生变化时，会清空撤销栈与重做栈，并开始跟踪新的 Peer ID。
 
-## Restoring Selections
+## 恢复选区
 
-When utilizing undo/redo functionalities, it is important for our application to
-restore the selection to its position prior to the operation that is being
-undone or redone. This task is particularly challenging in a collaborative
-setting where remote operations can alter the cursor's position (for instance,
-if the cursor needs to revert to the 5th position, but remote operations have
-added new characters before this position).
+在使用撤销/重做功能时，应用需要把选区恢复到执行操作前的位置。协作场景下这尤其困难，因为远端操作可能改变光标位置（例如光标需要回到第 5 个字符，但远端在此之前插入了字符）。
 
 <details>
-<summary>Challenges</summary>
+<summary>难点</summary>
 
-- **Local undo/redo**: Local undo and redo delete and recreate elements. If we
-  use CRDT-based stable positions, they might lock on to the deleted elements,
-  while the user's expectation is for the cursor to return to the newly created
-  elements after redo.
-- **Example**:
+- **本地撤销/重做**：本地撤销与重做会删除并重新创建元素。如果直接使用基于 CRDT 的稳定位置，光标可能仍停留在被删除的元素上，但用户期望在重做后光标回到新创建的元素。
+- **示例**：
   ```
   A fox jumped
   ```
-  - Select "fox" and delete it.
-  - Undo.
-  - After undo, the three characters "fox" should be recreated, and the cursor
-    should select these three characters. However, if we use stable positions,
-    it would lock onto the initially deleted characters, and after undo, the
-    absolute positions obtained would be `start = 2` and `end = 2`.
+  - 选中 “fox” 并删除。
+  - 执行撤销。
+  - 撤销后应重新出现 “fox” 三个字符，并被选中。但如果使用稳定位置，光标仍指向最早被删除的字符，撤销完成后得到的绝对位置会是 `start = 2` 与 `end = 2`。
 
 </details>
 
-### Solution
+### 解决方案
 
-We support storing [`cursors`](/docs/tutorial/cursor) for each undo/redo action
-within the `UndoManager`. The `UndoManager` will adjust the stored cursors to
-reflect changes from remote edits or other undo/redo operations, ensuring they
-match the current state of the document.
+`UndoManager` 支持为每个撤销/重做项存储 [`cursor`](/docs/tutorial/cursor)。它会根据远端编辑或其他撤销/重做带来的变更自动调整这些光标，确保它们始终对应当前文档状态。
 
-They need be handled by the `onPush` and `onPop` callbacks.
+光标的存取由 `onPush` 与 `onPop` 回调处理。
 
-On `onPush`, you can return a list of `Cursor`s that you want to store. On
-`onPop`, you can retrieve the stored cursors and use them to restore the
-selection.
+在 `onPush` 中返回需要保存的 `Cursor` 列表；在 `onPop` 中取回这些光标，再将选区恢复到目标位置。
 
-Typically, you may need to store selections in an undo/redo item in the
-following cases:
+通常在以下场景需要在撤销/重做项中保存选区：
 
-- When a new local change is applied, we need to record a new undo item.
-  Therefore, we must store the selection **before** the operation to be undone.
-  - **Purpose**: Storing the selection **before** is crucial because we may lose
-    the selection after applying the operation. If the user selects text and
-    deletes it, after undo, the `onPop` can retrieve the state of the selected
-    deleted content.
-- **First undo operation**: Store the current document's selection for the
-  corresponding redo item.
-  - **Purpose**: After redo, it can return to the initial selection state.
+- 当本地有新的变更提交时，需要记录一条新的撤销项，并在操作执行**之前**保存选区。
+  - **原因**：操作执行后选区可能丢失，例如用户选中文本并删除，撤销时 `onPop` 需要拿到删除前的选区状态。
+- **第一次执行撤销**：为对应的重做项保存当前文档的选区。
+  - **原因**：重做后才能恢复到最初的选区状态。
 
-Internally, we also automatically handle the storage and reset of cursors in the
-undo/redo loop state.
+在内部，我们也会自动处理撤销/重做循环中的光标存储与重置。
 
 ```ts twoslash
 import { LoroDoc, UndoManager, Cursor } from "loro-crdt";
@@ -135,7 +102,7 @@ cursors = [
   doc.getText("text").getCursor(0)!,
   doc.getText("text").getCursor(5)!,
 ];
-// delete "hello ", the cursors should be transformed
+// 删除 "hello "，光标应随之转换
 doc.getText("text").delete(0, 6);
 doc.commit();
 expect(poppedCursors.length).toBe(0);
@@ -144,33 +111,27 @@ expect(poppedCursors.length).toBe(2);
 expect(doc.toJSON()).toStrictEqual({
   text: "hello world",
 });
-// expect the cursors to be transformed back
+// 撤销后光标应回到原来的位置
 expect(doc.getCursorPos(poppedCursors[0]).offset).toBe(0);
 expect(doc.getCursorPos(poppedCursors[1]).offset).toBe(5);
 ```
 
 <details>
-<summary>Implementation</summary>
+<summary>实现细节</summary>
 
-[The implementation of undo/redo](https://github.com/loro-dev/loro/pull/361)
-follows a model similar to ProseMirror/Quill, which are based on OT (Operational
-Transformation) algorithms (so we also implement basic OT primitives
-internally).
+[撤销/重做的实现](https://github.com/loro-dev/loro/pull/361) 参考了 ProseMirror 与 Quill 的思路，它们基于 OT（Operational Transformation）算法，因此我们也在内部实现了基础的 OT 原语。
 
-When implementing undo/redo operations, we need to ensure the following
-properties:
+在实现撤销/重做时，需要保证以下特性：
 
-- Do not undo remote inserts.
-- Redo after undo should return to the original state.
-- If there is no concurrent editing, undo should return to the previous
-  version's state.
+- 不撤销远端插入；
+- 撤销之后重做应恢复到原始状态；
+- 不存在并发编辑时，撤销应还原到上一个版本。
 
-Therefore, we have also added some relevant checks in our internal fuzzing tests
-to ensure correctness.
+为此我们在内部模糊测试中加入了相关校验，确保逻辑正确。
 
 </details>
 
-## Demonstration
+## 演示
 
 import { ReactPlayer } from "../../../components/video";
 import Caption from "../../../components/caption";
@@ -188,66 +149,66 @@ import Caption from "../../../components/caption";
   playing={true}
 />
 
-<Caption>ProseMirror with Loro binding</Caption>
+<Caption>在 ProseMirror 中绑定 Loro</Caption>
 
-## Understanding the Undo/Redo Stack
+## 理解撤销/重做栈
 
-The UndoManager maintains two stacks:
+`UndoManager` 会维护两个栈：
 
-1. **Undo Stack**: Contains operations that can be undone
-2. **Redo Stack**: Contains operations that were undone and can be redone
+1. **撤销栈（Undo Stack）**：存放可以被撤销的操作
+2. **重做栈（Redo Stack）**：存放已被撤销、可再次执行的操作
 
-### How the Callbacks Work
+### 回调如何运作
 
-The `onPush` and `onPop` callbacks are triggered when these stacks change:
+当栈发生变化时会触发 `onPush` 与 `onPop`：
 
-- **onPush(isUndo, range, event)**: Called when a new item is pushed to either stack
-  - `isUndo: boolean`: `true` for the undo stack, `false` for the redo stack
-  - `range: (number, number)`: The operations' counter range that associated with the undo/redo action
-  - Returns: An object that can include `value` (any data you want to store) and `cursors` (cursor positions)
+- **onPush(isUndo, range, event)**：当有新条目推入任意一个栈时触发
+  - `isUndo: boolean`：`true` 表示推入撤销栈，`false` 表示推入重做栈
+  - `range: (number, number)`：与此次撤销/重做关联的操作计数范围
+  - 返回值：包含 `value`（希望持久化的任意数据）与 `cursors`（光标位置）
 
-- **onPop(isUndo, value)**: Called when an item is popped from either stack
-  - `isUndo`: `true` for the undo stack, `false` for the redo stack
-  - `value`: The value you returned from `onPush` when this item was created
+- **onPop(isUndo, value)**：当栈顶条目被弹出时触发
+  - `isUndo`：`true` 表示来自撤销栈，`false` 表示来自重做栈
+  - `value`：创建该条目时从 `onPush` 返回的数据
 
-### Understanding Action Merging
+### 理解操作合并
 
-The `mergeInterval` option in the UndoManager controls how closely spaced operations are grouped:
+`UndoManager` 中的 `mergeInterval` 选项用于控制将时间上相近的操作合并为同一个撤销项：
 
 ```ts twoslash no_run 
 import { UndoManager, LoroDoc } from "loro-crdt";
 // ---cut---
 declare const doc: LoroDoc;
 const undoManager = new UndoManager(doc, {
-  mergeInterval: 1000, // 1000ms = 1 second (default)
+  mergeInterval: 1000, // 默认 1000ms = 1 秒
 });
 ```
 
-**How mergeInterval works:**
+**mergeInterval 的行为：**
 
-- Operations occurring within the specified time interval (in milliseconds) will be merged into a single undo action
-- Even though these operations are merged, `onPush` events will still be triggered for each individual operation
-- When undoing, all merged operations will be undone as a single unit
-- A lower value results in more granular undo steps; a higher value creates fewer, more comprehensive undo steps
-- Set to `0` to disable merging entirely (every operation becomes a separate undo step)
+- 在该毫秒级间隔内发生的操作会被合并为同一个撤销动作；
+- 即便合并，`onPush` 仍会在每个操作上触发；
+- 撤销时会一次性撤销所有被合并的操作；
+- 数值越小，撤销越细粒化；数值越大，撤销步骤越少但覆盖范围更大；
+- 设为 `0` 可以关闭合并（每次操作都独立为一个撤销步骤）。
 
-### Stack Operations Flow
+### 栈的操作流程
 
-1. When a local transaction is committed, a new undo item is pushed to the undo stack (triggers `onPush` with `isUndo=true`)
-2. When `.undo()` is called:
-   - An item is popped from the undo stack (triggers `onPop` with `isUndo=true`)
-   - A corresponding item is pushed to the redo stack (triggers `onPush` with `isUndo=false`)
-3. When `.redo()` is called:
-   - An item is popped from the redo stack (triggers `onPop` with `isUndo=false`)
-   - A corresponding item is pushed to the undo stack (triggers `onPush` with `isUndo=true`)
+1. 当本地事务提交时，会向撤销栈推入一条新撤销项（触发 `onPush`，`isUndo=true`）。
+2. 调用 `.undo()` 时：
+   - 从撤销栈弹出一条记录（触发 `onPop`，`isUndo=true`）；
+   - 同时向重做栈推入对应记录（触发 `onPush`，`isUndo=false`）。
+3. 调用 `.redo()` 时：
+   - 从重做栈弹出一条记录（触发 `onPop`，`isUndo=false`）；
+   - 再向撤销栈推入对应记录（触发 `onPush`，`isUndo=true`）。
 
-### Manual Grouping with `groupStart` and `groupEnd`
+### 使用 `groupStart` / `groupEnd` 手动分组
 
-Sometimes you need tighter control over how undo units are formed than `mergeInterval` alone can provide. The `UndoManager.groupStart()` and `UndoManager.groupEnd()` methods let you explicitly wrap a sequence of commits so they become a single undo step.
+有时仅靠 `mergeInterval` 无法满足撤销粒度控制。`UndoManager.groupStart()` 与 `UndoManager.groupEnd()` 允许显式包裹一组提交，使其成为单独的撤销步骤。
 
-- Call `groupStart()` before you begin a batch of related edits. Any commits that happen before the matching `groupEnd()` will undo together.
-- Calling `groupStart()` while another group is active throws an error and leaves the original group in place, which helps catch accidental nesting.
-- Remote updates can influence grouping: a conflicting import may force the current group to end early, while non-conflicting imports are merged without breaking the group. Always finish with `groupEnd()`—if the group already auto-closed, the call becomes a no-op.
+- 在一批相关编辑开始前调用 `groupStart()`，在对应的 `groupEnd()` 之前发生的提交会被视为同一撤销单元。
+- 若已有分组未结束再调用 `groupStart()` 会抛出错误，并保留原有分组，可帮助捕捉意外嵌套。
+- 远端更新可能影响分组：冲突的导入会提前结束当前分组，而无冲突的导入会继续合并。请始终调用 `groupEnd()`——如果分组已自动结束，调用将成为空操作。
 
 ```ts twoslash no_run
 import { LoroDoc, UndoManager } from "loro-crdt";
@@ -265,30 +226,30 @@ doc.commit();
 
 undoManager.groupEnd();
 
-undoManager.undo(); // Reverts both commits in one step
+undoManager.undo(); // 一次性撤销两个提交
 ```
 
-### Example: Text Editing with Undo/Redo
+### 示例：文本编辑中的撤销/重做
 
-Consider a simple text editor that uses Loro for collaboration. Let's walk through what happens during typical editing operations:
+假设我们构建了一个使用 Loro 协作的简易文本编辑器，下面按步骤展示常见操作：
 
 ```ts twoslash no_run 
 import { LoroDoc, UndoManager } from "loro-crdt";
 // ---cut---
-// Create document and undo manager
+// 创建文档与撤销管理器
 const doc = new LoroDoc();
 const textField = doc.getText("textField");
 
-// Set up undo manager with callbacks to track changes
+// 配置撤销管理器的回调以追踪变化
 const undoManager = new UndoManager(doc, {
-  // Store cursor positions and any other state you need
+  // 存储光标位置或其他需要的状态
   onPush: (isUndo, range) => {
     if (isUndo) {
-      console.log("Action recorded for undo");
+      console.log("记录一条撤销动作");
     } else {
-      console.log("Action recorded for redo");
+      console.log("记录一条重做动作");
     }
-    // Return whatever data you want associated with this action
+    // 返回希望与该动作关联的数据
     return {
       value: { affectedRange: range },
       cursors: [/* your cursor positions */]
@@ -296,55 +257,53 @@ const undoManager = new UndoManager(doc, {
   },
   
   onPop: (isUndo, storedData) => {
-    // Access the data you stored during onPush
+    // 取回 onPush 时存储的数据
     const { value, cursors } = storedData;
     
     if (isUndo) {
-      console.log("Retrieving data for undo");
+      console.log("获取撤销数据");
     } else {
-      console.log("Retrieving data for redo");
+      console.log("获取重做数据");
     }
     
-    // Use the stored cursors to restore selection
+    // 使用保存的光标恢复选区
     // applyStoredCursors(cursors);
   },
 
   mergeInterval: 0,
 });
 
-// User types "Hello"
+// 用户输入 "Hello"
 textField.insert(0, "Hello");
 doc.commit();
-// → onPush triggered (isUndo=true) - Adds to undo stack
+// → 触发 onPush（isUndo=true），加入撤销栈
 
-// User types " World"
+// 用户继续输入 " World"
 textField.insert(5, " World");
 doc.commit();
-// → onPush triggered (isUndo=true) - Adds to undo stack
+// → 再次触发 onPush（isUndo=true），加入撤销栈
 
-// User clicks Undo button
+// 用户点击“撤销”
 undoManager.undo();
-// → onPop triggered (isUndo=true) - Removes " World" from document
-// → onPush triggered (isUndo=false) - Adds to redo stack
+// → 触发 onPop（isUndo=true），文档移除 " World"
+// → 触发 onPush（isUndo=false），加入重做栈
 
-// Document now contains only "Hello"
+// 文档现在只剩 "Hello"
 
-// User clicks Redo button
+// 用户点击“重做”
 undoManager.redo();
-// → onPop triggered (isUndo=false) - Retrieves " World" operation
-// → onPush triggered (isUndo=true) - Adds back to undo stack
+// → 触发 onPop（isUndo=false），取回 " World" 操作
+// → 触发 onPush（isUndo=true），重新加入撤销栈
 
-// Document now contains "Hello World" again
+// 文档恢复为 "Hello World"
 ```
 
-When the user clicks Undo, two things happen:
-1. The last action is popped from the undo stack (removing " World")
-2. That action is pushed to the redo stack so it can be redone later
+当用户执行撤销时，会发生两件事：
+1. 撤销栈弹出最后一条记录（移除 " World"）。
+2. 同一条记录被推入重做栈，方便日后重做。
 
-This approach ensures that local changes can be undone without affecting other users' edits, making it ideal for collaborative editing.
+这种方式确保只撤销本地改动，不会影响其他协作者，非常适合协同编辑。
 
-### Cursor Efficiency
+### 光标效率
 
-The built-in cursor solution is optimized for performance and handles collaborative scenarios efficiently, including situations where peers may 
-change the document concurrently during undo/redo operations. For complex editors like rich text editors, the cursor implementation provides the 
-best balance of performance and correctness.
+内置光标方案在性能上做了优化，能够高效处理协作场景，包括在撤销/重做期间其他节点并发修改文档的情况。对于富文本等复杂编辑器，这套实现兼顾了性能与正确性。

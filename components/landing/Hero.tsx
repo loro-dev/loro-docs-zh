@@ -16,9 +16,9 @@ export default function Hero({ }: HeroProps): JSX.Element {
                 "self-end md:self-start text-base text-[13px]"
               )}
             >
-              Implement collaboration effortlessly.
-              Powered by CRDTs. <br />
-              Built for local-first software.
+              轻松实现协作，<br />
+              由 CRDT 驱动，<br />
+              为本地优先软件而生。
             </p>
           </div>
           <a href="/blog/loro-now-open-source"><h1 className="py-1.5 flex flex-col gap-y-3.5 md:gap-y-7.5 leading-none">
@@ -26,7 +26,7 @@ export default function Hero({ }: HeroProps): JSX.Element {
             <GradientText>State</GradientText>
             <GradientText>Management</GradientText>
             <span className="flex items-center gap-x-7.5">
-              <GradientText>with</GradientText>
+              <GradientText>With</GradientText>
               <span
                 className={cn(
                   classes.HairlineText,

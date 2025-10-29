@@ -1,48 +1,48 @@
 ---
-keywords: "crdt, oplog, snapshot, doc state, checkout, version, architecture, memory, performance"
-description: "Understanding Loro's architectural separation of OpLog and DocState for efficient CRDT operations and version control"
+keywords: "crdt, oplog, 快照, 文档状态, checkout, 版本, 架构, 内存, 性能"
+description: "了解 Loro 中 OpLog 与 DocState 的架构分离如何提升 CRDT 操作效率与版本管理能力"
 ---
 
-# OpLog and DocState
+# OpLog 与 DocState
 
-## Quick Reference
+## 快速概览
 
-- **OpLog** = Sequence of events/operations that compose the document history
-- **DocState** = Current materialized state of the document
+- **OpLog** = 构成文档历史的事件 / 操作序列
+- **DocState** = 文档当前具象化的状态
 
-This separation enables time travel, efficient sync, and flexible storage strategies.
+二者分离使得时光旅行、高效同步与灵活存储策略成为可能。
 
-## Key Concepts
+## 核心概念
 
-**OpLog (Operation Log)**
-- Append-only sequence of operations
-- Causal relationships and metadata
+**OpLog（操作日志）**
+- 仅追加的操作序列
+- 保存因果关系与元数据
 
-**DocState (Document State)**
-- Current materialized view of the document
-- Actual data structures and values
-- What your app reads and displays
+**DocState（文档状态）**
+- 文档当前的具象视图
+- 实际的数据结构与值
+- 应用读取和展示的数据来源
 
-## Benefits
+## 优势
 
-- **Memory efficiency**: Load OpLog without state (relay servers)
-- **Time travel**: Navigate history without losing the log
-- **Fast startup**: Load state via snapshots, fetch history later
-- **Flexible storage**: Store separately for optimization
+- **内存效率**：中继服务器只加载 OpLog，而不加载状态
+- **时光旅行**：回溯历史而不丢失操作日志
+- **快速启动**：先加载快照获取状态，再按需拉取历史
+- **灵活存储**：两者可分开存储以便优化
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
 
-// Edit updates both
+// 编辑会同时更新两者
 doc.getText("text").insert(0, "Hello");
-console.log(doc.oplogVersion());  // Latest known version
-console.log(doc.version());       // The version of the current state of the document
-// If the document is attached, they are the same.
+console.log(doc.oplogVersion());  // 最新已知版本
+console.log(doc.version());       // 当前 DocState 的版本
+// 当文档处于 attached 状态时，两者相同
 ```
 
-## Time Travel & Detachment
+## 时光旅行与分离
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -53,38 +53,37 @@ const v1 = doc.frontiers();
 
 doc.getText("text").insert(2, " -> v2");
 
-// Checkout old version - DocState diverges from OpLog
+// checkout 旧版本：DocState 与 OpLog 出现分歧
 doc.checkout(v1);
-console.log(doc.version());       // v1 state
-console.log(doc.oplogVersion());  // Still has v2
+console.log(doc.version());       // 显示 v1 状态
+console.log(doc.oplogVersion());  // 仍包含 v2
 console.log(doc.isDetached());    // true
 
-// Return to latest
+// 回到最新版本
 doc.attach();
 ```
 
-**Detached state**: DocState shows old version while OpLog has all operations. Editing disabled by default.
+**Detached 状态**：DocState 显示旧版本，但 OpLog 保留全部操作；默认禁用编辑。
 
-
-## Export Strategies
+## 导出策略
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 // ---cut---
-// Update: OpLog only (sync)
+// update：仅导出 OpLog（用于同步）
 const update = doc.export({ mode: "update" });
 
-// Snapshot: OpLog + DocState (persistence)
+// snapshot：导出 OpLog + DocState（用于持久化）
 const snapshot = doc.export({ mode: "snapshot" });
 
-// Shallow: Minimal OpLog + DocState (fast startup)
+// shallow：最小化 OpLog + DocState（快速启动）
 const shallow = doc.export({ mode: "shallow-snapshot", frontiers: doc.frontiers() });
 ```
 
-## Common Patterns
+## 常见模式
 
-### Relay Server (OpLog Only)
+### 中继服务器（仅 OpLog）
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
@@ -92,7 +91,7 @@ class RelayServer {
   private doc: LoroDoc;
   constructor() {
     this.doc = new LoroDoc();
-    this.doc.detach(); // Never materialize state
+    this.doc.detach(); // 从不具象化状态
   }
 
   handleUpdate(update: Uint8Array) {
@@ -101,15 +100,15 @@ class RelayServer {
 }
 ```
 
-## Best Practices
+## 最佳实践
 
-- **Export modes**: Updates for sync, snapshots for persistence, shallow for startup
-- **Optimize by use case**: 
-  - Editors: Both in memory
-  - Relays: OpLog only
+- **导出模式选择**：update 用于同步，snapshot 用于持久化，shallow 适合快速启动
+- **按场景优化**：
+  - 编辑器：同时在内存中保留两者
+  - 中继服务：只保留 OpLog
 
-## Related Documentation
+## 相关文档
 
-- [Attached/Detached States](./attached_detached) - Document and container states
-- [Shallow Snapshots](./shallow_snapshots) - History trimming
-- [Time Travel](../tutorial/time_travel) - Using checkout
+- [Attached / Detached 状态](./attached_detached)——文档与容器的状态
+- [浅快照](./shallow_snapshots)——如何裁剪历史
+- [时光旅行](../tutorial/time_travel)——使用 checkout

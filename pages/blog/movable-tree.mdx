@@ -1,14 +1,14 @@
 ---
-title: "Movable tree CRDTs and Loro's implementation"
+title: "可移动树 CRDTs 和 Loro 的实现"
 date: 2024/07/18
-description: This article introduces the implementation difficulties and challenges of Movable Tree CRDTs when collaboration, and how Loro implements it and sorts child nodes. The algorithm has high performance and can be used in production.
+description: 本文介绍了可移动树 CRDTs 在协作时的实现困难和挑战，以及 Loro 如何实现它并对子节点进行排序。该算法具有高性能，可用于生产。
 image: https://i.ibb.co/nMrgzZJ/DALL-E-2024-01-31-21-29-16-Create-a-black-and-white-illustration-with-a-black-background-that-matche.png
 ---
 
-# Movable tree CRDTs and Loro's implementation
+# 可移动树 CRDTs 和 Loro 的实现
 
-import Caption from "../../components/caption";
-import Authors, { Author } from "../../components/authors";
+import Caption from "../../../components/caption";
+import Authors, { Author } from "../../../components/authors";
 
 <Authors date="2024-07-18">
   <Author name="Liang Zhao" link="https://github.com/Leeeon233" />
@@ -16,220 +16,215 @@ import Authors, { Author } from "../../components/authors";
 
 ![](./movable-tree/movable-tree-cover.png)
 
-This article introduces the implementation difficulties and challenges of Movable Tree CRDTs when collaboration, and how Loro implements it and sorts child nodes. The algorithm has high performance and can be used in production.
+本文介绍了可移动树 CRDTs 在协作时的实现困难和挑战，以及 Loro 如何实现它并对子节点进行排序。该算法具有高性能，可用于生产。
 
-## Background
+## 背景
 
-In distributed systems and collaborative software, managing hierarchical relationships is difficult and complex. Challenges arise in resolving conflicts and meeting user expectations when working with the data structure that models movement by combining deletion and insertion. For instance, if a node is concurrently moved to different parents in replicas, it may lead to the unintended creation of duplicate nodes with the same content. Because the node is deleted twice and created under two parents.
+在分布式系统和协作软件中，管理层次关系是困难和复杂的。在使用通过组合删除和插入来建模移动的数据结构时，解决冲突和满足用户期望会产生挑战。例如，如果一个节点在副本中被并发地移动到不同的父节点，可能会导致意外创建具有相同内容的重复节点。因为该节点被删除了两次并创建在两个父节点下。
 
-Currently, many software solutions offer different levels of support and functionality for managing hierarchical data structures in distributed environments. The key variation among these solutions lies in their approaches to handling potential conflicts.
+目前，许多软件解决方案为在分布式环境中管理分层数据结构提供了不同级别的支持和功能。这些解决方案之间的主要区别在于它们处理潜在冲突的方法。
 
-### Conflicts in Movable Trees
+### 可移动树中的冲突
 
-A movable tree has 3 primary operations: creation, deletion, and movement. Consider a scenario where two peers independently execute various operations on their respective replicas of the same movable tree. Synchronizing these operations can lead to potential conflicts, such as:
+可移动树有 3 个主要操作：创建、删除和移动。考虑一个场景，两个对等方在同一可移动树的各自副本上独立执行各种操作。同步这些操作可能会导致潜在的冲突，例如：
 
-- The same node was deleted and moved
-- The same node was moved under different nodes
-- Different nodes were moved, resulting in a cycle
-- The ancestor node is deleted while the descendant node is moved
+- 同一个节点被删除和移动
+- 同一个节点被移动到不同的节点下
+- 移动了不同的节点，导致了循环
+- 在移动后代节点时删除了祖先节点
 
-#### Deletion and Movement of the Same Node
+#### 删除和移动同一个节点
 
-![Deletion and Movement of the Same Node](./movable-tree/move-delete-dark.png)
+![删除和移动同一个节点](./movable-tree/move-delete-dark.png)
 
-This situation is relatively easy to resolve. It can be addressed by applying one of the operations while ignoring the other based on the timestamp in the distributed system or the application's specific requirements. Either approach yields an acceptable outcome.
+这种情况相对容易解决。可以通过根据分布式系统中的时间戳或应用程序的特定要求应用其中一个操作而忽略另一个操作来解决。两种方法都会产生可接受的结果。
 
-#### Moving the Same Node Under Different Parents
+#### 将同一个节点移动到不同的父节点下
 
-![Moving the Same Node Under Different Parents](./movable-tree/move-same-node-dark.png)
+![将同一个节点移动到不同的父节点下](./movable-tree/move-same-node-dark.png)
 
-Merging concurrent movement operations of the same node is slightly more complex. Different approaches can be adopted depending on the application:
+合并同一节点的并发移动操作稍微复杂一些。可以根据应用程序采用不同的方法：
 
-- Delete the node and create copies of nodes under different parent nodes. Subsequent operations then treat these nodes independently. This approach is acceptable when node uniqueness is not critical.
-- Allow the node have two edges pointing to different parents. However, this approach breaks the fundamental tree structure and is generally not considered acceptable.
-- Sort all operations, then apply them one by one. The order can be determined by timestamps in a distributed system. Providing the system maintains a consistent operation sequence, it ensures uniform results across all peers.
+- 删除该节点并在不同的父节点下创建节点的副本。后续操作然后独立地处理这些节点。当节点唯一性不重要时，这种方法是可以接受的。
+- 允许该节点有两条边指向不同的父节点。然而，这种方法破坏了基本的树结构，通常不被认为是可接受的。
+- 对所有操作进行排序，然后逐个应用它们。顺序可以由分布式系统中的时间戳确定。只要系统保持一致的操作顺序，它就能确保所有对等方的结果一致。
 
-#### Movement of Different Nodes Resulting in a Cycle
+#### 移动不同的节点导致循环
 
-![cycle](./movable-tree/cycle-dark.png)
+![循环](./movable-tree/cycle-dark.png)
 
-Concurrent movement operations that cause cycles make the conflict resolution of movable trees complex. Matthew Weidner listed several solutions to resolve cycles in his [blog](https://mattweidner.com/2023/09/26/crdt-survey-2.html#forests-and-trees).
+导致循环的并发移动操作使可移动树的冲突解决变得复杂。Matthew Weidner 在他的[博客](https://mattweidner.com/2023/09/26/crdt-survey-2.html#forests-and-trees)中列出了几种解决循环的方案。
 
-> 1. Error. Some desktop file sync apps do this in practice ([Martin Kleppmann et al. (2022)](https://doi.org/10.1109/TPDS.2021.3118603) give an example).
-> 2. Render the cycle nodes (and their descendants) in a special “time-out” zone. They will stay there until some user manually fixes the cycle.
-> 3. Use a server to process move ops. When the server receives an op, if it would create a cycle in the server’s own state, the server rejects it and tells users to do likewise. This is [what Figma does](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects). Users can still process move ops optimistically, but they are tentative until confirmed by the server. (Optimistic updates can cause temporary cycles for users; in that case, Figma uses strategy (2): it hides the cycle nodes.)
-> 4. Similar, but use a [topological sort](https://mattweidner.com/2023/09/26/crdt-survey-2.html#topological-sort) (below) instead of a server’s receipt order. When processing ops in the sort order, if an op would create a cycle, skip it [(Martin Kleppmann et al. 2022)](https://doi.org/10.1109/TPDS.2021.3118603).
-> 5. For forests: Within each cycle, let `B.parent = A` be the edge whose `set` operation has the largest LWW timestamp. At render time, “hide” that edge, instead rendering `B.parent = "none"`, but don’t change the actual CRDT state. This hides one of the concurrent edges that created the cycle.
->    • To prevent future surprises, users’ apps should follow the rule: before performing any operation that would create or destroy a cycle involving a hidden edge, first “affirm” that hidden edge, by performing an op that sets `B.parent = "none"`.
-> 6. For trees: Similar, except instead of rendering `B.parent = "none"`, render the previous parent for `B` - as if the bad operation never happened. More generally, you might have to backtrack several operations. Both [Hall et al. (2018)](http://dx.doi.org/10.1145/3209280.3229110) and [Nair et al. (2022)](https://arxiv.org/abs/2103.04828) describe strategies along these lines.
+> 1. 错误。一些桌面文件同步应用程序在实践中会这样做（[Martin Kleppmann 等人 (2022)](https://doi.org/10.1109/TPDS.2021.3118603) 给出了一个例子）。
+> 2. 将循环节点（及其后代）渲染在一个特殊的“超时”区域。它们将一直待在那里，直到某个用户手动修复循环。
+> 3. 使用服务器处理移动操作。当服务器收到一个操作时，如果它会在服务器自己的状态中创建一个循环，服务器会拒绝它并告诉用户也这样做。这是 [Figma 的做法](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects)。用户仍然可以乐观地处理移动操作，但在服务器确认之前它们是暂定的。（乐观更新可能会给用户造成暂时的循环；在这种情况下，Figma 使用策略 (2)：它隐藏循环节点。）
+> 4. 类似，但使用[拓扑排序](https://mattweidner.com/2023/09/26/crdt-survey-2.html#topological-sort)（如下）而不是服务器的接收顺序。在按排序顺序处理操作时，如果一个操作会创建一个循环，则跳过它（[Martin Kleppmann 等人 2022](https://doi.org/10.1109/TPDS.2021.3118603)）。
+> 5. 对于森林：在每个循环内，让 `B.parent = A` 是其 `set` 操作具有最大 LWW 时间戳的边。在渲染时，“隐藏”该边，而是渲染 `B.parent = "none"`，但不更改实际的 CRDT 状态。这隐藏了创建循环的并发边之一。
+>    • 为了防止将来的意外，用户的应用程序应遵循以下规则：在执行任何会创建或销毁涉及隐藏边的循环的操作之前，首先通过执行将 `B.parent = "none"` 的操作来“确认”该隐藏边。
+> 6. 对于树：类似，但不是渲染 `B.parent = "none"`，而是渲染 `B` 的前一个父节点——就好像错误的操作从未发生过一样。更一般地说，您可能需要回溯几个操作。 [Hall 等人 (2018)](http://dx.doi.org/10.1145/3209280.3229110) 和 [Nair 等人 (2022)](https://arxiv.org/abs/2103.04828) 都描述了类似的方法。
 
-#### Ancestor Node Deletion and Descendant Node Movement
+#### 祖先节点删除和后代节点移动
 
-![Ancestor Node Deletion and Descendant Node Movement](./movable-tree/move_chlid_delete_parent_dark.png)
+![祖先节点删除和后代节点移动](./movable-tree/move_chlid_delete_parent_dark.png)
 
-The most easily overlooked scenario is moving descendant nodes when deleting an ancestor node. If all descendant nodes of the ancestor are deleted directly, users may easily misunderstand that their data has been lost.
+最容易被忽视的场景是在删除祖先节点时移动后代节点。如果直接删除祖先的所有后代节点，用户很容易误解他们的数据已经丢失。
 
-### How Popular Applications Handle Conflicts
+### 流行应用程序如何处理冲突
 
-Dropbox is a file data synchronization software. Initially, Dropbox treated file movement as a two-step process: deletion from the original location followed by creation at a new location. However, this method risked data loss, especially if a power outage or system crash occurred between the delete and create operations.
+Dropbox 是一款文件数据同步软件。最初，Dropbox 将文件移动视为一个两步过程：从原始位置删除，然后在新的位置创建。然而，这种方法有数据丢失的风险，尤其是在删除和创建操作之间发生停电或系统崩溃的情况下。
 
-Today, when multiple people move the same file concurrently and attempt to save their changes, Dropbox detects a conflict. In this scenario, it typically saves one version of the original file and creates a new ["conflicted copy"](https://help.dropbox.com/organize/conflicted-copy) for the changes made by one of the users.
+如今，当多个人并发移动同一个文件并尝试保存他们的更改时，Dropbox 会检测到冲突。在这种情况下，它通常会保存原始文件的一个版本，并为其中一个用户所做的更改创建一个新的[“冲突副本”](https://help.dropbox.com/organize/conflicted-copy)。
 
-![Solution for conflicts when moving files with Dropbox](./movable-tree/dropbox_move.gif)
+![使用 Dropbox 移动文件时冲突的解决方案](./movable-tree/dropbox_move.gif)
 
 <Caption>
-  The image shows the conflict that occurs when A is moved to the B folder and B
-  is moved to the A folder concurrently.
+  该图显示了当 A 被移动到 B 文件夹，而 B 被并发地移动到 A 文件夹时发生的冲突。
 </Caption>
 
-Figma is a real-time collaborative prototyping tool. They consider tree structures as the most complex part of the collaborative system, as detailed in their [blog post about multiplayer technology](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects). To maintain consistency, each element in Figma has a "parent" attribute. The centralized server plays a crucial role in ensuring the integrity of these structures. It monitors updates from various users and checks if any operation would result in a cycle. If a potential cycle is detected, the server rejects the operation.
+Figma 是一款实时协作原型设计工具。他们认为树结构是协作系统中最复杂的部分，正如他们在关于多人技术的[博客文章](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects)中所详述的那样。为了保持一致性，Figma 中的每个元素都有一个“parent”属性。集中式服务器在确保这些结构的完整性方面起着至关重要的作用。它监视来自不同用户的更新，并检查是否有任何操作会导致循环。如果检测到潜在的循环，服务器会拒绝该操作。
 
-However, due to network delays and similar issues, there can be instances where updates from users temporarily create a cycle before the server has the chance to reject them. Figma acknowledges that this situation is uncommon. Their [solution](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects) is straightforward yet effective: they temporarily preserve this state and hide the elements involved in the cycle. This approach lasts until the server formally rejects the operation, ensuring both the stability of the system and a seamless user experience.
+然而，由于网络延迟和类似问题，在服务器有机会拒绝它们之前，用户的更新可能会暂时创建一个循环。Figma 承认这种情况不常见。他们的[解决方案](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects)简单而有效：他们暂时保留此状态并隐藏涉及循环的元素。这种方法会一直持续到服务器正式拒绝该操作，从而确保系统的稳定性和无缝的用户体验。
 
 <div style={{ filter: "invert(1) hue-rotate(180deg)" }}>
-  ![An animation that demonstrates how Figma resolves
-  conflicts.](./movable-tree/figma-tree.gif)
+  ![一个演示 Figma 如何解决冲突的动画。](./movable-tree/figma-tree.gif)
 </div>
 
 <Caption>
-  An animation that demonstrates how
-  [Figma](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects)
-  resolves conflicts.
+  一个演示 [Figma](https://www.figma.com/blog/how-figmas-multiplayer-technology-works/#syncing-trees-of-objects) 如何解决冲突的动画。
 </Caption>
 
-## Movable Tree CRDTs
+## 可移动树 CRDTs
 
-The applications mentioned above use movable trees and resolve conflicts based on centralized solutions. Another alternative approach to collaborative tree structures is using Conflict-free Replicated Data Types (CRDTs). While initial CRDT-based algorithms were challenging to implement and incurred significant storage overhead as noted in prior research, such as [Abstract unordered and
-ordered trees CRDT](https://arxiv.org/pdf/1201.1784.pdf) or [File system on CRDT](https://arxiv.org/pdf/1207.5990.pdf), but continual optimization and improvement have made several CRDT-based tree synchronization algorithms suitable for certain production environments. This article highlights two innovative CRDT-based approaches for movable trees. The first is presented by Martin Kleppmann et al. in their work **_[A highly-available move operation for replicated trees](https://martin.kleppmann.com/2021/10/07/crdt-tree-move-operation.html)_** and the second by Evan Wallace in his **_[CRDT: Mutable Tree Hierarchy](https://madebyevan.com/algos/crdt-mutable-tree-hierarchy/)_**.
+上面提到的应用程序使用可移动树并根据集中式解决方案解决冲突。协作树结构的另一种替代方法是使用无冲突复制数据类型 (CRDTs)。虽然最初基于 CRDT 的算法难以实现并且如先前研究中所指出的那样会产生巨大的存储开销，例如 [Abstract unordered and ordered trees CRDT](https://arxiv.org/pdf/1201.1784.pdf) 或 [File system on CRDT](https://arxiv.org/pdf/1207.5990.pdf)，但持续的优化和改进已使几种基于 CRDT 的树同步算法适用于某些生产环境。本文重点介绍了两种用于可移动树的创新的基于 CRDT 的方法。第一种由 Martin Kleppmann 等人在他们的著作 **_[A highly-available move operation for replicated trees](https://martin.kleppmann.com/2021/10/07/crdt-tree-move-operation.html)_** 中提出，第二种由 Evan Wallace 在他的 **_[CRDT: Mutable Tree Hierarchy](https://madebyevan.com/algos/crdt-mutable-tree-hierarchy/)_** 中提出。
 
-### A highly-available move operation for replicated trees
+### 一种用于复制树的高度可用的移动操作
 
-This paper unifies the three operations used in trees (creating, deleting, and moving nodes) into a move operation. The move operation is defined as a four-tuple `Move t p m c`, where `t` is the operation's unique and ordered timestamp such as [`Lamport timestamp`](https://en.wikipedia.org/wiki/Lamport_timestamp), `p` is the parent node ID, `m` is the metadata associated with the node, and `c` is the child node ID.
+本文将树中使用的三个操作（创建、删除和移动节点）统一为一个移动操作。移动操作被定义为一个四元组 `Move t p m c`，其中 `t` 是操作的唯一且有序的时间戳，例如 [`Lamport timestamp`](https://en.wikipedia.org/wiki/Lamport_timestamp)，`p` 是父节点 ID，`m` 是与节点关联的元数据，`c` 是子节点 ID。
 
-If all nodes of the tree do not contain `c`, this is a **creation** operation that creates a child node `c` under parent node `p`. Otherwise, it is a **move** operation that moves `c` from its original parent to the new parent `p`. Additionally, node deletion is elegantly handled by introducing a designated `TRASH` node; moving a node to `TRASH` implies its deletion, with all descendants of `TRASH` considered deleted. But they remain in memory to prevent concurrent editing from moving them to other nodes. In order to handle the previously mentioned situation of deleting ancestor nodes and moving descendant nodes concurrently.
+如果树的所有节点都不包含 `c`，则这是一个**创建**操作，它在父节点 `p` 下创建一个子节点 `c`。否则，它是一个**移动**操作，将 `c` 从其原始父节点移动到新的父节点 `p`。此外，通过引入一个指定的 `TRASH` 节点，可以优雅地处理节点删除；将节点移动到 `TRASH` 意味着其删除，`TRASH` 的所有后代都被视为已删除。但它们仍保留在内存中，以防止并发编辑将它们移动到其他节点。为了处理前面提到的并发删除祖先节点和移动后代节点的情况。
 
-In the three potential conflicts mentioned earlier, since deletion is also defined as a move operation, **deleting and moving the same node** is transformed into two move operations, leaving only two remaining problems:
+在前面提到的三个潜在冲突中，由于删除也被定义为移动操作，**删除和移动同一个节点**被转换为两个移动操作，只剩下两个问题：
 
-- **Moving the same node under different parents**
-- **Moving different nodes, creating a cycle**
+- **将同一个节点移动到不同的父节点下**
+- **移动不同的节点，创建一个循环**
 
-Logical timestamps are added so that all operations can be linearly ordered, thus the first conflict can be avoided as they can be expressed as two operations in sequence rather than concurrently for the same node. Therefore, in modeling a Tree using only move operations, the only exceptional case in concurrent editing would be creating a cycle, and operations causing a cycle are termed **unsafe operations**.
+添加了逻辑时间戳，以便所有操作都可以线性排序，因此可以避免第一个冲突，因为它们可以表示为同一节点的两个顺序操作而不是并发操作。因此，在仅使用移动操作对树进行建模时，并发编辑中唯一的例外情况是创建一个循环，而导致循环的操作被称为**不安全操作**。
 
-This algorithm sorts all move operations according to their timestamps. It can then sequentially apply each operation. Before applying, the algorithm detects cycles to determine whether an operation is safe. If the operation creates a cycle, we ignore the unsafe operation to ensure the correct structure of the tree.
-
-
-Based on the above approach, the consistency problem of movable trees becomes the following two questions:
-
-1. How to introduce global order to operations
-2. How to apply a remote operation that should be inserted in the middle of an existing sorted sequence of operations
-
-#### Globally Ordered Logical Timestamps
-
-[Lamport Timestamp](https://en.wikipedia.org/wiki/Lamport_timestamp) can determine the causal order of events in a distributed system. Here's how they work: each peer starts with a counter initialized to `0`. When a local event occurs, the counter is increased by `1`, and this value becomes the event's Lamport Timestamp. When peer `A` sends a message to peer `B`, `A` attaches its Lamport Timestamp to the message. Upon receiving the message, peer `B` compares its current logical clock value with the timestamp in the message and updates its logical clock to the larger value.
-
-To globally sort events, we first look at the Lamport Timestamps: smaller numbers mean earlier events. If two events have the same timestamp, we use the unique ID of the peer serves as a tiebreaker.
+该算法根据其时间戳对所有移动操作进行排序。然后它可以按顺序应用每个操作。在应用之前，算法会检测循环以确定操作是否安全。如果操作创建了一个循环，我们忽略不安全的操作以确保树的正确结构。
 
 
-#### Apply a Remote Operation
+基于上述方法，可移动树的一致性问题变成了以下两个问题：
 
-An op's safety depends on the tree's state when applied, avoiding cycles. Insertion requires evaluating the state formed by all preceding ops. For remote updates, we may need to:  
+1. 如何为操作引入全局顺序
+2. 如何应用一个应该插入到现有已排序操作序列中间的远程操作
 
-1. Undo recent ops
-2. Insert the new op  
-3. Reapply undone ops  
+#### 全局有序逻辑时间戳
 
-This ensures proper integration of new ops into the existing sequence.  
+[Lamport Timestamp](https://en.wikipedia.org/wiki/Lamport_timestamp) 可以确定分布式系统中事件的因果顺序。它们的工作原理如下：每个对等方都以一个初始化为 `0` 的计数器开始。当本地事件发生时，计数器增加 `1`，该值成为事件的 Lamport 时间戳。当对等方 `A` 向对等方 `B` 发送消息时，`A` 将其 Lamport 时间戳附加到消息中。收到消息后，对等方 `B` 将其当前的逻辑时钟值与消息中的时间戳进行比较，并将其逻辑时钟更新为较大的值。
 
-##### Undo Recent Ops
+为了全局排序事件，我们首先查看 Lamport 时间戳：较小的数字意味着较早的事件。如果两个事件具有相同的时间戳，我们使用对等方的唯一 ID 作为决胜局。
 
-Since we've modeled all operations on the tree as move operations, undoing a move operation involves either moving the node back to its old parent or undoing the operation that created this node. To enable quick undoing, we cache and record the **old parent** of the node before applying each move operation.
 
-##### Apply the Remote Op
+#### 应用远程操作
 
-Upon encountering an unsafe operation, disregarding its effects prevents the creation of a cycle. Nevertheless, it's essential to record the operation, as the safety of an operation is determined **dynamically**. For instance, if we receive and sort an update that deletes another node causing the cycle prior to this operation, the operation that was initially unsafe becomes safe. Additionally, we need to mark this unsafe operation as ineffective, since during undo operations, it's necessary to query the **old parent** node, which is the target parent of the last effective operation in the sequence targeting this node.
+操作的安全性取决于应用它时树的状态，以避免循环。插入需要评估由所有先前操作形成的状态。对于远程更新，我们可能需要：
 
-##### Reapply Undone Ops
+1. 撤销最近的操作
+2. 插入新操作
+3. 重新应用已撤销的操作
 
-Cycles only occur when receiving updates from other peers, so the undo-do-redo process is also needed at this time. When receiving a new op:
+这确保了新操作能正确地集成到现有序列中。
+
+##### 撤销最近的操作
+
+由于我们已将树上的所有操作建模为移动操作，因此撤销移动操作涉及将节点移回其旧父节点或撤销创建此节点的操作。为了能够快速撤销，我们在应用每个移动操作之前缓存并记录节点的**旧父节点**。
+
+##### 应用远程操作
+
+遇到不安全的操作时，忽略其效果可以防止创建循环。然而，记录该操作至关重要，因为操作的安全性是**动态**确定的。例如，如果我们收到并排序了一个在当前操作之前删除导致循环的另一个节点的更新，那么最初不安全的操作就变得安全了。此外，我们需要将此不安全的操作标记为无效，因为在撤销操作期间，需要查询**旧父节点**，即序列中针对此节点的最后一个有效操作的目标父节点。
+
+##### 重新应用已撤销的操作
+
+只有在接收到来自其他对等方的更新时才会出现循环，因此此时也需要撤销-执行-重做过程。当接收到新操作时：
 
 ```jsx
 function apply(newOp)
-      // Compare the ID of the new operation with existing operations
+      // 将新操作的 ID 与现有操作进行比较
       if largerThanExistingOpId(newOp.id, oplog)
-          // If the new operation's ID is greater, apply it directly
+          // 如果新操作的 ID 更大，则直接应用它
           oplog.applyOp(newOp)
       else
-          // If the new operation's ID is not the greatest, undo operations until it can be applied
+          // 如果新操作的 ID 不是最大的，则撤销操作直到可以应用它
           undoneOps = oplog.undoUtilCanBeApplied(newOp)
           oplog.applyOp(newOp)
-          // After applying the new operation, redo the undone operations to maintain sequence order
+          // 应用新操作后，重做已撤销的操作以保持序列顺序
           oplog.redoOps(undoneOps)
 ```
 
-- If the new operation depends on an op that has not been encountered locally, indicating that some inter-version updates are still missing, it is necessary to temporarily cache the new op and wait to apply it until the missing updates are received.
-- Compare the new operation with all existing operations. If the `opId` of the new operation is greater than that of all existing operations, it can be directly applied. If the new operation is safe, record the parent node of the target node as the old parent node, then apply the move operation to change the current state. If it is not safe, mark this operation as ineffective and ignore the operation's impact.
-- If the new opId is sorted in the middle of the existing sequence, it is necessary to pop the operations that are sorted later from the sequence one by one, and undo the impact of this operation, which means moving back to the child of the old parent node, until the new operation can be applied. After applying the new operation, reapply the undone nodes in sequence order, ensuring that all operations are applied in order.
+- 如果新操作依赖于本地尚未遇到的操作，则表明某些版本间的更新仍然缺失，有必要暂时缓存新操作，并等待接收到缺失的更新后再应用它。
+- 将新操作与所有现有操作进行比较。如果新操作的 `opId` 大于所有现有操作的 `opId`，则可以直接应用它。如果新操作是安全的，则将目标节点的父节点记录为旧父节点，然后应用移动操作以更改当前状态。如果不安全，则将此操作标记为无效并忽略该操作的影响。
+- 如果新的 opId 在现有序列的中间排序，则有必要从序列中逐个弹出排序在后面的操作，并撤销此操作的影响，即将子节点移回旧父节点，直到可以应用新操作。应用新操作后，按顺序重新应用已撤销的节点，确保所有操作都按顺序应用。
 
-The following animated GIF demonstrates the process executed by `Peer1`:
+以下动画 GIF 演示了 `Peer1` 执行的过程：
 
-1. Received `Peer0` creating node `A` with the `root` node as its parent.
-2. Received `Peer0` creating node `B` with `A` as its parent.
-3. Created node `C` with `A` as its parent and synchronized it with `Peer0`.
-4. Moved `C` to have `B` as its parent.
-5. Received `Peer0`'s moving `B` to have `C` as its parent.
+1. 收到 `Peer0` 创建节点 `A`，其父节点为 `root` 节点。
+2. 收到 `Peer0` 创建节点 `B`，其父节点为 `A`。
+3. 创建节点 `C`，其父节点为 `A`，并将其与 `Peer0` 同步。
+4. 将 `C` 移动到以 `B` 为父节点。
+5. 收到 `Peer0` 将 `B` 移动到以 `C` 为父节点。
 
 <div style={{ filter: "invert(1) hue-rotate(180deg)" }}>
   ![](./movable-tree/undo-do-redo.gif)
 </div>
 
-The queue at the top right of the animation represents the order of local operations and newly received updates. The interpretation of each element in each `Block` is as follows:
+动画右上角的队列表示本地操作和新收到的更新的顺序。每个 `Block` 中每个元素的解释如下：
 
 <div style={{ filter: "invert(1) hue-rotate(180deg)" }}>
   ![](./movable-tree/explain.png)
 </div>
 
-A particular part of this process to note is the two operations with `lamport timestamps` of `0:3` and `1:3`. Initially, the `1:3` operation moving `C` to `B` was created and applied locally, followed by receiving `Peer0`'s `0:3` operation moving `B` to `C`. In `lamport timestamp` order, `0:3` is less than `1:3` but greater than `1:2` (with peer as the tiebreaker when counters are equal). To apply the new op, the `1:3` operation is undone first, moving `C` back to its old parent `A`, then `0:3` moving `B` to `C` is applied. After that, `1:3` is redone, attempting to move `C` to `B` again (the old parent remains `A`, omitted in the animation). However, a cycle is detected during this attempt, preventing the operation from taking effect, and the state of the tree remains unchanged. This completes an `undo-do-redo` process.
+此过程中需要特别注意的一部分是两个 `lamport timestamps` 为 `0:3` 和 `1:3` 的操作。最初，将 `C` 移动到 `B` 的 `1:3` 操作在本地创建并应用，然后收到 `Peer0` 的将 `B` 移动到 `C` 的 `0:3` 操作。在 `lamport timestamp` 顺序中，`0:3` 小于 `1:3` 但大于 `1:2`（当计数器相等时，以 peer 作为决胜局）。为了应用新操作，首先撤销 `1:3` 操作，将 `C` 移回其旧父节点 `A`，然后应用将 `B` 移动到 `C` 的 `0:3` 操作。之后，重做 `1:3` 操作，再次尝试将 `C` 移动到 `B`（旧父节点仍然是 `A`，在动画中省略）。然而，在此尝试期间检测到循环，阻止了该操作生效，并且树的状态保持不变。这样就完成了一个 `undo-do-redo` 过程。
 
-### CRDT: Mutable Tree Hierarchy
+### CRDT: 可变树层次结构
 
-Evan Wallace has developed an innovative algorithm that enables each node to track all its historical parent nodes, attaching a counter to each recorded parent. The count value of a new parent node is 1 higher than that of all the node's historical parents, indicating the update sequence of the node's parents. The parent with the highest count is considered the current parent node.
+Evan Wallace 开发了一种创新算法，使每个节点能够跟踪其所有历史父节点，并为每个记录的父节点附加一个计数器。新父节点的计数值比该节点所有历史父节点的计数值高 1，表示该节点父节点的更新顺序。计数值最高的父节点被视为当前父节点。
 
-During synchronization, this parent node information is also synced. If a cycle occurs, a heuristic algorithm reattaches the nodes causing the cycle back to the nearest historical parent node that won't cause a cycle and is connected to the root node, thus updating the parent node record. This process is repeated until all nodes causing cycles are reattached to the tree, achieving all replica synchronization of the tree structure. The demo in [Evan's blog](https://madebyevan.com/algos/crdt-mutable-tree-hierarchy/) clearly illustrates this process.
+在同步期间，此父节点信息也会同步。如果出现循环，启发式算法会将导致循环的节点重新附加到不会导致循环且连接到根节点的最近的历史父节点，从而更新父节点记录。重复此过程，直到所有导致循环的节点都重新附加到树上，从而实现树结构的所有副本同步。 [Evan 的博客](https://madebyevan.com/algos/crdt-mutable-tree-hierarchy/) 中的演示清楚地说明了此过程。
 
-As Evan summarized at the end of the article, this algorithm does not require the expensive `undo-do-redo` process. However, each time a remote move is received, the algorithm needs to determine if all nodes are connected to the root node and reattach the nodes causing cycles back to the tree, which can perform poorly when there are too many nodes.
+正如 Evan 在文章末尾总结的那样，该算法不需要昂贵的 `undo-do-redo` 过程。然而，每次收到远程移动时，算法都需要确定所有节点是否都连接到根节点，并将导致循环的节点重新附加到树上，当节点过多时，这可能会表现不佳。
 
-I established a [benchmark](https://github.com/Leeeon233/movable-tree-crdt) to compare the performance of the movable tree algorithms.
+我建立了一个[基准测试](https://github.com/Leeeon233/movable-tree-crdt)来比较可移动树算法的性能。
 
-## Movable Tree CRDTs implementation in Loro
+## Loro 中可移动树 CRDTs 的实现
 
-Loro implements the algorithm proposed by Martin Kleppmann et al., **_[A highly-available move operation for replicated trees](https://martin.kleppmann.com/2021/10/07/crdt-tree-move-operation.html)_**. On one hand, this algorithm has high performance in most real world scenarios. On the other hand, the core `undo-do-redo` process of the algorithm is highly similar to how Eg-walker (Event Graph Walker) applies remote updates in Loro. Introduction about **Eg-walker** can be found in our previous [blog](https://www.loro.dev/blog/loro-richtext#brief-introduction-to-replayable-event-graph).
+Loro 实现了 Martin Kleppmann 等人提出的算法，**_[A highly-available move operation for replicated trees](https://martin.kleppmann.com/2021/10/07/crdt-tree-move-operation.html)_**。一方面，该算法在大多数实际场景中具有高性能。另一方面，该算法的核心 `undo-do-redo` 过程与 Loro 中 Eg-walker (Event Graph Walker) 应用远程更新的方式高度相似。关于 **Eg-walker** 的介绍可以在我们之前的[博客](https://www.loro.dev/blog/loro-richtext#brief-introduction-to-replayable-event-graph)中找到。
 
 Movable tree has been introduced in detail, but there is still another problem of tree structure that has not been solved. For movable tree, in some real use cases, we still need the capability to sort child nodes. This is necessary for outline notes or layer management in graphic design softwares. Users need to adjust node order and sync it to other collaborators or devices.
 
-We integrated the `Fractional Index` algorithm into Loro and combined it with the movable tree, making the child nodes of the movable tree sortable.
+我们将 `Fractional Index` 算法集成到 Loro 中，并将其与可移动树相结合，使可移动树的子节点可排序。
 
-There are many introductions to `Fractional Index` on the web, You can read more about `Fractional Index` in the [Figma blog](https://www.figma.com/blog/realtime-editing-of-ordered-sequences) or [Evan blog](https://madebyevan.com/algos/crdt-fractional-indexing/). In simple terms, `Fractional Index` assigns a sortable value to each object, and if a new insertion occurs between two objects, the `Fractional Index` of the new object will be between the left and right values. What we want to speak about more here is how to deal with potential conflicts brought by `Fractional Index` in CRDTs systems.
+网上有很多关于 `Fractional Index` 的介绍，您可以在 [Figma 博客](https://www.figma.com/blog/realtime-editing-of-ordered-sequences)或 [Evan 博客](https://madebyevan.com/algos/crdt-fractional-indexing/)中阅读更多关于 `Fractional Index` 的内容。简单来说，`Fractional Index` 为每个对象分配一个可排序的值，如果在新插入发生在两个对象之间，新对象的 `Fractional Index` 将介于左右值之间。我们在这里更想说的是如何在 CRDTs 系统中处理 `Fractional Index` 带来的潜在冲突。
 
-### Potential Conflicts in Child Node Sorting
+### 子节点排序中的潜在冲突
 
-As our applications are in a distributive condition, when multiple peers insert new nodes in the same position, the same `Fractional Index` would be assigned to these differing content but same position nodes. When updates from the remote are applied to local, conflicts arise as the same `Fractional Index` is encountered.
+由于我们的应用程序处于分布式状态，当多个对等方在同一位置插入新节点时，会为这些内容不同但位置相同的节点分配相同的 `Fractional Index`。当来自远程的更新应用到本地时，由于遇到相同的 `Fractional Index` 而产生冲突。
 
-In Loro, we retain these identical `Fractional Index` and use `PeerID` (unique ID of every Peer) as the tie-breaker for the relative order judgment of the same `Fractional Index`.
+在 Loro 中，我们保留这些相同的 `Fractional Index`，并使用 `PeerID`（每个对等方的唯一 ID）作为相同 `Fractional Index` 相对顺序判断的决胜局。
 
 ![](./movable-tree/FI-and-PeerID-dark.png)
 
-Although this solved the sorting problem among the same `Fractional Index` nodes from different peers, it impacted the generation of new `Fractional Index` as we cannot generate a new `Fractional Index` between two same ones. We use two methods to solve this problem:
+虽然这解决了来自不同对等方的相同 `Fractional Index` 节点之间的排序问题，但它影响了新 `Fractional Index` 的生成，因为我们无法在两个相同的 `Fractional Index` 之间生成新的 `Fractional Index`。我们使用两种方法来解决这个问题：
 
-1. The first method, as stated in Evan's blog, we could add a certain amount of jitter to each generated `Fractional Index`, (for the ease of explanation, all examples below take decimal fraction as the `Fractional Index`) for example, when generating a new `Fractional Index` between 0 and 1, it should have been 0.5, but through random jitters, it could be `0.52712`, `0.58312`, `0.52834`, etc., thus significantly reducing the chance of same `Fractional Index` appearing.
-2. If the situation arises where the same `Fractional Index` is present on both sides, we can handle this problem by resetting these `Fractional Index`. For example, if we need to insert a new node between `0.7@A` and `0.7@B` (which indicates `Fractional Index` @ `PeerID`), instead of generating a new `Fractional Index` between 0.7 and 0.7, we could assign two new `Fractional Index` respectively for the new node and the `0.7@B` node between 0.7 and 1, which could be understood as an extra move operations.
+1. 第一种方法，如 Evan 的博客中所述，我们可以为每个生成的 `Fractional Index` 添加一定量的抖动（为便于解释，以下所有示例均以十进制小数作为 `Fractional Index`），例如，在 0 和 1 之间生成新的 `Fractional Index` 时，它本应是 0.5，但通过随机抖动，它可能是 `0.52712`、`0.58312`、`0.52834` 等，从而显着减少出现相同 `Fractional Index` 的机会。
+2. 如果出现两边都存在相同 `Fractional Index` 的情况，我们可以通过重置这些 `Fractional Index` 来处理这个问题。例如，如果我们需要在 `0.7@A` 和 `0.7@B`（表示 `Fractional Index` @ `PeerID`）之间插入一个新节点，而不是在 0.7 和 0.7 之间生成新的 `Fractional Index`，我们可以分别为新节点和 `0.7@B` 节点在 0.7 和 1 之间分配两个新的 `Fractional Index`，这可以理解为额外的移动操作。
 
 ![](./movable-tree/same-FI-dark.png)
 
-### Implementation and Encoding Size
+### 实现和编码大小
 
-Introducing `Fractional Index` brings the advantage of node sequence. What about encoding size?
+引入 `Fractional Index` 带来了节点序列的优势。编码大小呢？
 
-Loro uses [drifting-in-space](https://github.com/drifting-in-space/fractional_index) `Fractional Index` implementation based on `Vec<u8>`, which is base 256. In other words, you need to continuously insert 128 values forward or backward from the default value to increase the byte size of the `Fractional Index` by 1. The worst storage overhead case, such as inserting new values alternately each time. For example, the initial sequence is `ab`, insert `c` between `a` and `b`, then insert `d` between `c` and `b`, then `e` between `c` and `d`, like:
+Loro 使用基于 `Vec<u8>` 的 [drifting-in-space](https://github.com/drifting-in-space/fractional_index) `Fractional Index` 实现，即以 256 为基数。换句话说，您需要从默认值向前或向后连续插入 128 个值，才能使 `Fractional Index` 的字节大小增加 1。最坏的存储开销情况，例如每次交替插入新值。例如，初始序列是 `ab`，在 `a` 和 `b` 之间插入 `c`，然后在 `c` 和 `b` 之间插入 `d`，然后在 `c` 和 `d` 之间插入 `e`，就像：
 
 ```js no_run
 ab    // [128] [129, 128]
@@ -237,18 +232,18 @@ acb   // [128] [129, 127, 128] [129, 128]
 acdb  // [128] [129, 127, 128] [129, 127, 129, 128] [129, 128]
 acedb // [128] [129, 127, 128] [129, 127, 129, 127, 128] [129, 127, 129, 128] [129, 128]
 ```
-a new operation would cause an additional byte to be needed. But such a situation is very rare.
+一个新操作会导致需要一个额外的字节。但这种情况非常罕见。
 
-Considering that potential conflicts wouldn't appear frequently in most applications, Loro simply extended the implementation, the original implementation produced new `Fractional Index` in `Vec<u8>` by only increasing or decreasing 1 in certain index to achieve relative sorting. The simple jitter solution was added, by appending random bytes in length of jitter value to `Fractional Index`. To enable jitter in js, you can use `doc.setFractionalIndexJitter(number)` with a positive value. But this will increase the encoding size slightly, but each `Fractional Index` only adds `jitter` bytes. If you want to generate `Fractional Index` at the same position with 99% probability without conflict, the relationship between `jitter` settings and the maximum number of concurrent edits `n` will be:
+考虑到在大多数应用程序中潜在的冲突不会频繁出现，Loro 只是扩展了实现，原始实现通过在 `Vec<u8>` 的某个索引处仅增加或减少 1 来生成新的 `Fractional Index` 以实现相对排序。添加了简单的抖动解决方案，通过在 `Fractional Index` 后附加长度为抖动值的随机字节。要在 js 中启用抖动，您可以使用 `doc.setFractionalIndexJitter(number)` 并提供一个正值。但这会略微增加编码大小，但每个 `Fractional Index` 只增加 `jitter` 字节。如果您希望在同一位置生成 `Fractional Index` 且有 99% 的概率不发生冲突，`jitter` 设置与最大并发编辑数 `n` 之间的关系将是：
 
 <table style={{ margin: "0 auto" }}>
   <thead>
     <tr class="nx-m-0 nx-border-t nx-border-gray-300 nx-p-0 dark:nx-border-gray-600 even:nx-bg-gray-100 even:dark:nx-bg-gray-600/20">
       <th class="nx-m-0 nx-border nx-border-gray-300 nx-px-4 nx-py-2 nx-font-semibold dark:nx-border-gray-600">
-        jitter
+        抖动
       </th>
       <th class="nx-m-0 nx-border nx-border-gray-300 nx-px-4 nx-py-2 nx-font-semibold dark:nx-border-gray-600">
-        max num of concurrent edits
+        最大并发编辑数
       </th>
     </tr>
   </thead>
@@ -280,31 +275,30 @@ Considering that potential conflicts wouldn't appear frequently in most applicat
   </tbody>
 </table>
 
-When there are numerous `Fractional Indexes`, there will be many common prefixes after being sorted, when Loro encodes these `Fractional Indexes`, prefix optimization would be implemented. Each `Fractional Index` only saves the amount of same prefix bits and remaining bytes with the previous one, which further downsizes the overall encoding size.
+当存在大量 `Fractional Index` 时，排序后会有许多公共前缀，当 Loro 编码这些 `Fractional Index` 时，会实现前缀优化。每个 `Fractional Index` 只保存与前一个 `Fractional Index` 相同的前缀位数和剩余字节，这进一步减小了整体编码大小。
 
-### Related work
+### 相关工作
 
-Other than using Fractional Index, there are other movable list CRDT that can make sibling nodes of the tree in order. One of these algorithms is Martin Kleppmann's [Moving Elements in List CRDTs](https://martin.kleppmann.com/2020/04/27/papoc-list-move.html), which has been used in Loro's [Movable List](https://www.loro.dev/docs/tutorial/list).
+除了使用 Fractional Index，还有其他可移动列表 CRDT 可以使树的兄弟节点有序。其中一种算法是 Martin Kleppmann 的 [Moving Elements in List CRDTs](https://martin.kleppmann.com/2020/04/27/papoc-list-move.html)，该算法已在 Loro 的 [Movable List](https://www.loro.dev/docs/tutorial/list) 中使用。
 
 
-In comparison, the implementation of `Fractional Index` solution is simpler, and no stable position representation is provided for child nodes when modeling nodes in a tree, otherwise, the overall tree structure would be too complex. However, the `Fractional Index` has the problem of [interleaving](https://vlcn.io/blog/fractional-indexing#interleaving), but this is acceptable when some only need relative order and do not require strict sequential semantics, such as figma layer items, multi-level bookmarks, etc.
+相比之下，`Fractional Index` 解决方案的实现更简单，并且在树中对节点进行建模时没有为子节点提供稳定的位置表示，否则整体树结构会过于复杂。然而，`Fractional Index` 存在[交错](https://vlcn.io/blog/fractional-indexing#interleaving)问题，但当某些只需要相对顺序而不需要严格顺序语义时，这是可以接受的，例如 figma 图层项、多级书签等。
 
-## Benchmark
+## 基准测试
 
-We conducted performance benchmarks on the Movable Tree implementation by Loro, including scenarios of random node movement, switching to historical versions, and performance under extreme conditions with significantly deep tree structures. The results indicate that it is capable of supporting real-time collaboration and enabling seamless historical version checkouts.
+我们对 Loro 的可移动树实现进行了性能基准测试，包括随机节点移动、切换到历史版本以及在树结构非常深的情况下极端条件下的性能。结果表明，它能够支持实时协作并实现无缝的历史版本检出。
 
-| Task                                      | Time   | Setup                                             |
+| 任务 | 时间 | 设置 |
 | :---------------------------------------- | :----- | :------------------------------------------------ |
-| Move 10000 times randomly                 | 28 ms  | Create 1000 nodes first                           |
-| Switch to different versions 1000 times    | 153 ms | Create 1000 nodes and move 1000 times first       |
-| Switch to different versions 1000 times in a tree with depth of 300 | 701 ms | The new node is a child node of the previous node |
+| 随机移动 10000 次 | 28 毫秒 | 首先创建 1000 个节点 |
+| 切换到不同版本 1000 次 | 153 毫秒 | 首先创建 1000 个节点并移动 1000 次 |
+| 在深度为 300 的树中切换到不同版本 1000 次 | 701 毫秒 | 新节点是前一个节点的子节点 |
 
 <Caption>
-  Test environment: M2 Max CPU, you can find the bench code
-  [here](https://github.com/loro-dev/loro/blob/main/crates/loro-internal/benches/tree.rs).
+  测试环境：M2 Max CPU，您可以在[此处](https://github.com/loro-dev/loro/blob/main/crates/loro-internal/benches/tree.rs)找到基准测试代码。
 </Caption>
 
-## Usage
+## 用法
 
 ```tsx
 import { Loro, LoroTree, LoroTreeNode, LoroMap } from "loro-crdt";
@@ -312,31 +306,31 @@ import { Loro, LoroTree, LoroTreeNode, LoroMap } from "loro-crdt";
 let doc = new Loro();
 let tree: LoroTree = doc.getTree("tree");
 let root: LoroTreeNode = tree.createNode();
-// By default, append to the end of the parent node's children list
+// 默认情况下，附加到父节点子列表的末尾
 let node = root.createNode();
-// Specify the child's position
+// 指定子节点的位置
 let node2 = root.createNode(0);
-// Move `node2` to be the last child of `node`
+// 将 `node2` 移动为 `node` 的最后一个子节点
 node2.move(node);
-// Move `node` to be the first child of `node2`
+// 将 `node` 移动为 `node2` 的第一个子节点
 node.move(node2, 0);
-// Move the node to become the root node
+// 将节点移动为根节点
 node.move();
-// Move the node to be positioned after another node
+// 将节点移动到另一个节点之后
 node.moveAfter(node2);
-// Move the node to be positioned before another node
+// 将节点移动到另一个节点之前
 node.moveBefore(node2);
-// Retrieve the index of the node within its parent's children
+// 检索节点在其父节点子节点中的索引
 let index = node.index();
-// Get the `Fractional Index` of the node
+// 获取节点的 `Fractional Index`
 let fractionalIndex = node.fractionalIndex();
-// Access the associated data map container
+// 访问关联的数据映射容器
 let nodeData: LoroMap = node.data;
 ```
 
-### Demo
+### 演示
 
-We developed a simulated Todo app with data synchronization among multiple peers using Loro, including the use of `Movable Tree` to represent subtask relationships, `Map` to represent various attributes of tasks, and `Text` to represent task titles, etc. In addition to basic creation, moving, modification, and deletion, we also implemented version switching based on Loro. You can drag the scrollbar to switch between all the historical versions that have been operated on.
+我们使用 Loro 开发了一个模拟的 Todo 应用程序，可在多个对等方之间进行数据同步，包括使用 `Movable Tree` 表示子任务关系，使用 `Map` 表示任务的各种属性，使用 `Text` 表示任务标题等。除了基本的创建、移动、修改和删除外，我们还实现了基于 Loro 的版本切换。您可以拖动滚动条在所有已操作的历史版本之间切换。
 
 <iframe
   src="https://loro-movable-tree-demo.zeabur.app"
@@ -352,10 +346,10 @@ We developed a simulated Todo app with data synchronization among multiple peers
   height="750px"
 />
 
-## Summary
+## 总结
 
-This article discusses why implementing Movable Tree CRDTs is difficult, and presents two innovative algorithms for movable trees.
+本文讨论了实现可移动树 CRDTs 的困难，并介绍了两种用于可移动树的创新算法。
 
-For implementation, Loro has integrated **_[A highly-available move operation for replicated trees](https://martin.kleppmann.com/2021/10/07/crdt-tree-move-operation.html)_** to implement the hierarchical movement of the Tree, and integrated the `Fractional Index` implementation by [drifting-in-space](https://github.com/drifting-in-space/fractional_index) to achieve the movement between child nodes. This can meet the needs of various application scenarios.
+对于实现，Loro 集成了 **_[A highly-available move operation for replicated trees](https://martin.kleppmann.com/2021/10/07/crdt-tree-move-operation.html)_** 来实现树的层次移动，并集成了 [drifting-in-space](https://github.com/drifting-in-space/fractional_index) 的 `Fractional Index` 实现来实现子节点之间的移动。这可以满足各种应用场景的需求。
 
-If you are developing collaborative applications or are interested in CRDT algorithms, you are welcome to join [our community](https://discord.gg/tUsBSVfqzf).
+如果您正在开发协作应用程序或对 CRDT 算法感兴趣，欢迎加入[我们的社区](https://discord.gg/tUsBSVfqzf)。

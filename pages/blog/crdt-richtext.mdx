@@ -1,15 +1,15 @@
 ---
-title: crdt-richtext - Rust implementation of Peritext and Fugue
+title: crdt-richtext - Peritext 和 Fugue 的 Rust 实现
 date: 2023/04/20
 keywords: crdt, richtext, peritext, fugue, loro
-description: Presenting a new Rust crate that combines Peritext and Fugue's power with impressive performance, tailored specifically for rich text. This crate's functionality is set to be incorporated into Loro, a general-purpose CRDT library currently under development.
+description: 介绍一个新的 Rust crate，它结合了 Peritext 和 Fugue 的强大功能以及令人印象深刻的性能，专为富文本量身定制。该 crate 的功能将被整合到 Loro 中，这是一个正在开发的通用 CRDT 库。
 tag: richtext
 # ogImage: /images/blog/joining-vercel/x-card.png
 ---
 
-# [crdt-richtext](https://github.com/loro-dev/crdt-richtext): Rust implementation of Peritext and Fugue
+# [crdt-richtext](https://github.com/loro-dev/crdt-richtext): Peritext 和 Fugue 的 Rust 实现
 
-import Authors, { Author } from "../../components/authors";
+import Authors, { Author } from "../../../components/authors";
 
 <Authors date="2023-04-20">
   <Author
@@ -18,81 +18,81 @@ import Authors, { Author } from "../../components/authors";
   />
 </Authors>
 
-Presenting a new Rust crate that combines [Peritext](https://inkandswitch.com/peritext) and [Fugue](https://arxiv.org/abs/2305.00583)'s power with impressive performance, tailored specifically for rich text. This crate's functionality is set to be incorporated into **[Loro](https://www.loro.dev/)**, a general-purpose CRDT library currently under development.
+介绍一个新的 Rust crate，它结合了 [Peritext](https://inkandswitch.com/peritext) 和 [Fugue](https://arxiv.org/abs/2305.00583) 的强大功能以及令人印象深刻的性能，专为富文本量身定制。该 crate 的功能将被整合到 **[Loro](https://www.loro.dev/)** 中，这是一个正在开发的通用 CRDT 库。
 
-# What’s Peritext
+# 什么是 Peritext
 
 [Peritext: A CRDT for Rich-Text Collaboration](https://inkandswitch.com/peritext)
 
-Peritext is a novel rich-text CRDT (Conflict-free Replicated Data Type) algorithm. It is capable of merging concurrent edits in rich text format while [preserving users' intent as much as possible](https://www.inkandswitch.com/peritext/#preserving-the-authors-intent). Its primary focus is on merging the formats and annotations of rich text content, such as bold, italic, and comments.
+Peritext 是一种新颖的富文本 CRDT（无冲突复制数据类型）算法。它能够在富文本格式中合并并发编辑，同时[尽可能保留用户的意图](https://www.inkandswitch.com/peritext/#preserving-the-authors-intent)。其主要关注点是合并富文本内容的格式和注释，例如粗体、斜体和评论。
 
-> 💡 The specific definition of user intent in the context of concurrent rich text editing can't be clearly explained in a few words. it's best understood through specific examples.
+> 💡 在并发富文本编辑的上下文中，用户意图的具体定义无法用几句话清楚地解释。最好通过具体的例子来理解。
 
-Peritext is designed to solve a couple of significant challenges:
+Peritext 旨在解决几个重大挑战：
 
-Firstly, it addresses the anticipated problems arising from conflicting style edits. For instance, consider a text example, "The quick fox jumped." If User A highlights "The quick" in bold and User B highlights "quick fox jumped," the ideal merge should result in the entire sentence, "The quick fox jumped," being bold. However, existing algorithms might not meet this expectation, resulting in either "The quick fox" or "The" and "jumped" being bold instead.
+首先，它解决了由冲突的样式编辑引起的预期问题。例如，考虑一个文本示例，“The quick fox jumped.”。如果用户 A 将“The quick”突出显示为粗体，而用户 B 将“quick fox jumped”突出显示为粗体，则理想的合并结果应该是整个句子“The quick fox jumped.”都为粗体。然而，现有的算法可能无法满足这种期望，导致“The quick fox”或“The”和“jumped”变为粗体。
 
-| Original Text                                | The quick fox jumped         |
-| -------------------------------------------- | ---------------------------- |
-| Concurrent Edit from A                       | **The quick** fox jumped     |
-| Concurrent Edit from B                       | The **quick fox jumped**     |
-| Expected Merged Result                       | **The quick fox jumped**     |
-| Bad case from merging Markdown text directly | **The** quick **fox jumped** |
-| Bad case from Yjs                            | **The quick** fox jumped     |
+| 原始文本 | The quick fox jumped |
+| --- | --- |
+| 来自 A 的并发编辑 | **The quick** fox jumped |
+| 来自 B 的并发编辑 | The **quick fox jumped** |
+| 预期的合并结果 | **The quick fox jumped** |
+| 直接合并 Markdown 文本的坏情况 | **The** quick **fox jumped** |
+| Yjs 的坏情况 | **The quick** fox jumped |
 
-Additionally, Peritext manages conflicts between style and text edits. In the same example, if User A highlights "The quick" in bold, but User B changes the text to "The fast fox jumped," the ideal merge should result in "The fast" being bold.
+此外，Peritext 管理样式和文本编辑之间的冲突。在同一个例子中，如果用户 A 将“The quick”突出显示为粗体，但用户 B 将文本更改为“The fast fox jumped.”，则理想的合并结果应该是“The fast”为粗体。
 
-| Original Text          | The quick fox jumped     |
-| ---------------------- | ------------------------ |
-| Concurrent Edit from A | **The quick** fox jumped |
-| Concurrent Edit from B | The fast fox jumped      |
-| Expected Merged Result | **The fast** fox jumped  |
+| 原始文本 | The quick fox jumped |
+| --- | --- |
+| 来自 A 的并发编辑 | **The quick** fox jumped |
+| 来自 B 的并发编辑 | The fast fox jumped      |
+| 预期的合并结果 | **The fast** fox jumped  |
 
-What’s more, Peritext takes into account different expectations for expanding styles. For example, if you type after a bold text, you would typically want the new text to continue being bold. However, if you're typing after a hyperlink or a comment, you likely wouldn't want the new input to become part of the hyperlink or comment.
+更重要的是，Peritext 考虑了对扩展样式的不同期望。例如，如果你在粗体文本后键入，你通常希望新文本继续为粗体。但是，如果你在超链接或评论后键入，你可能不希望新的输入成为超链接或评论的一部分。
 
-# What’s Fugue
+# 什么是 Fugue
 
-Fugue is a new CRDT text algorithm, presented in _[The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing](https://arxiv.org/abs/2305.00583)_ by [Matthew Weidner](https://arxiv.org/search/cs?searchtype=author&query=Weidner%2C+M) et al., nicely solves **the interleaving problem**.
+Fugue 是一种新的 CRDT 文本算法，在 [Matthew Weidner](https://arxiv.org/search/cs?searchtype=author&query=Weidner%2C+M) 等人的论文 *[The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing](https://arxiv.org/abs/2305.00583)* 中提出，很好地解决了**交错问题**。
 
-## The interleaving problem
+## 交错问题
 
-The interleaving problem was proposed in the paper _[Interleaving anomalies in collaborative text editors](https://martin.kleppmann.com/2019/03/25/papoc-interleaving-anomalies.html)_ by Martin Kleppmann et al.
+交错问题在 Martin Kleppmann 等人的论文 *[Interleaving anomalies in collaborative text editors](https://martin.kleppmann.com/2019/03/25/papoc-interleaving-anomalies.html)* 中提出。
 
-An example of interleaving:
+交错的一个例子：
 
-- A type "Hello " from left to right/right to left
-- B type "Hi " from left to right/right to left
-- The expected result: "Hello Hi " or "Hi Hello "
-- The interleaving result may look like: "HHeil lo"
-  - This happens when typing from right to left in RGA.
+- A 从左到右/从右到左键入“Hello ”
+- B 从左到右/从右到左键入“Hi ”
+- 预期的结果：“Hello Hi ”或“Hi Hello ”
+- 交错的结果可能看起来像：“HHeil lo”
+  - 在 RGA 中从右到左键入时会发生这种情况。
 
-![An example of an interleaving anomaly when using [fractional indexing](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT on text content.
-Source: **Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)](./images/richtext0.png)
+![在使用[分数索引](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT 处理文本内容时出现交错异常的示例。
+来源：**Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)](./images/richtext0.png)
 
-An example of an interleaving anomaly when using [fractional indexing](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT on text content.
-Source: \*\*Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)
+在使用[分数索引](https://madebyevan.com/algos/crdt-fractional-indexing/) CRDT 处理文本内容时出现交错异常的示例。
+来源：\*\*Martin Kleppmann, Victor B. F. Gomes, Dominic P. Mulligan, and Alastair R. Beresford. 2019. Interleaving anomalies in collaborative text editors. [https://doi.org/10.1145/3301419.3323972](https://doi.org/10.1145/3301419.3323972)
 
-The [Fugue paper](https://arxiv.org/abs/2305.00583) summarizes the current state of the interleaving problems in the table.
+[Fugue 论文](https://arxiv.org/abs/2305.00583)在表格中总结了交错问题的当前状态。
 
-![Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext1.png)
+![来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext1.png)
 
-Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
+来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
 
-The interleaving problem sometimes are unsolvable when there are more than 2 sites. See [Fugue](https://arxiv.org/abs/2305.00583) paper Appendix B, Proof of Theorem 5 for detailed explanation.
+当站点超过 2 个时，交错问题有时是无法解决的。有关详细说明，请参阅 [Fugue](https://arxiv.org/abs/2305.00583) 论文附录 B，定理 5 的证明。
 
-![The case where the interleaving problem is unsolvable
-Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext2.png)
+![交错问题无法解决的情况
+来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. *ArXiv*. /abs/2305.00583](./images/richtext2.png)
 
-The case where the interleaving problem is unsolvable
-Source: Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
+交错问题无法解决的情况
+来源：Weidner, M., Gentle, J., & Kleppmann, M. (2023). The Art of the Fugue: Minimizing Interleaving in Collaborative Text Editing. _ArXiv_. /abs/2305.00583
 
-However, we can still minimize the chance of interleaving. Fugue introduces the concept of **maximal non-interleaving** and solves it with an elegant algorithm that is easy to optimize. The definition of _maximal non-interleaving_ makes a lot of sense to me and leaves little room for ambiguity. I won't reiterate the definition here. But the basic idea is first to solve forward interleaving by leftOrigin. If there is still ambiguity, then solve the backward interleaving by rightOrigin. (The leftOrigin and rightOrigin refer to the ids of the original neighbors when the character is inserted, just like Yjs)
+但是，我们仍然可以最大限度地减少交错的机会。Fugue 引入了**最大非交错**的概念，并用一种易于优化的优雅算法解决了它。*最大非交错*的定义对我来说很有意义，几乎没有歧义的余地。我不会在这里重申定义。但基本思想是首先通过 leftOrigin 解决前向交错。如果仍然存在歧义，则通过 rightOrigin 解决后向交错。（leftOrigin 和 rightOrigin 指的是插入字符时原始邻居的 id，就像 Yjs 一样）
 
 # CRDT-Richtext
 
-Based on the algorithms of Peritext and Fugue, we made `crdt-richtext`, a lib written in Rust that provides a wasm interface. It’s available on [crates.io](http://crates.io) and npm now.
+基于 Peritext 和 Fugue 的算法，我们制作了 `crdt-richtext`，这是一个用 Rust 编写的库，提供 wasm 接口。它现在可以在 [crates.io](http://crates.io) 和 npm 上使用。
 
-## Example
+## 示例
 
 ```tsx
 import { RichText } from "crdt-richtext-wasm";
@@ -114,33 +114,33 @@ b.import(text.export(new Uint8Array()));
 expect(b.toString()).toBe("你好呀，世界！");
 ```
 
-## Data structure
+## 数据结构
 
-We heavily use B-Trees to optimize our algorithm. We made a library called [generic-btree](https://github.com/loro-dev/generic-btree), which is written in safe Rust code, which provides a flexible foundation for our optimization efforts.
+我们大量使用 B-Tree 来优化我们的算法。我们制作了一个名为 [generic-btree](https://github.com/loro-dev/generic-btree) 的库，它是用安全的 Rust 代码编写的，为我们的优化工作提供了灵活的基础。
 
 [https://github.com/loro-dev/generic-btree](https://github.com/loro-dev/generic-btree)
 
-![The cached content inside B-Tree](./images/richtext3.png)
+![B-Tree 内部的缓存内容](./images/richtext3.png)
 
-The cached content inside B-Tree
+B-Tree 内部的缓存内容
 
-There are several common tasks we need to address in Text CRDT, including:
+在文本 CRDT 中，我们需要解决几个常见的任务，包括：
 
-- Finding, inserting, or deleting content at a given index:
-  - We use a BTree to look up and update the content
-  - The time complexity is O(logN), where N is the length of the content
-- Finding content with a given op ID:
-  - We use a combination of HashMap and BTree
-  - The time complexity if O(logN), where N is the number of operations
-- Compressing content in memory:
-  - To reduce the amount of memory used by storing every operation in raw format, we compress the content using the RLE tricks from Yjs and DiamondTypes.
-    - The insight behind this compression is that neighboring inserts and deletions tend to be continuous, so we can merge them and store less metadata.
-  - Commonly, every leaf node in the diagram contains a dozen of characters
-- Converting index between UTF-16 and UTF-8:
-  - In JS, the default encoding of a string is utf16, but in Rust, the default one is utf8. Although the WASM interface can help us convert the encoding of the string, we still need to convert the _index_ of the operation.
-  - To solve this, `crdt-richtext` also store the UTF-16 length of the content in B-Tree. So we can query the B-Tree with either the utf8 index or the utf16 index.
-- Storing the boundary of style/format/comments:
-  - We use the same B-Tree to store the boundary, with each subtree corresponding to a span of text or tombstones. For each node in the tree, we store which annotations start before it, start after it, end before it, or end after it.
+- 在给定索引处查找、插入或删除内容：
+  - 我们使用 BTree 来查找和更新内容
+  - 时间复杂度为 O(logN)，其中 N 是内容的长度
+- 查找具有给定操作 ID 的内容：
+  - 我们使用 HashMap 和 BTree 的组合
+  - 时间复杂度为 O(logN)，其中 N 是操作数
+- 压缩内存中的内容：
+  - 为了减少以原始格式存储每个操作所使用的内存量，我们使用 Yjs 和 DiamondTypes 的 RLE 技巧来压缩内容。
+    - 这种压缩背后的见解是，相邻的插入和删除往往是连续的，因此我们可以合并它们并存储更少的元数据。
+  - 通常，图中的每个叶节点都包含十几个字符
+- 在 UTF-16 和 UTF-8 之间转换索引：
+  - 在 JS 中，字符串的默认编码是 utf16，但在 Rust 中，默认编码是 utf8。虽然 WASM 接口可以帮助我们转换字符串的编码，但我们仍然需要转换操作的*索引*。
+  - 为了解决这个问题，`crdt-richtext` 还在 B-Tree 中存储了内容的 UTF-16 长度。因此，我们可以使用 utf8 索引或 utf16 索引来查询 B-Tree。
+- 存储样式/格式/评论的边界：
+  - 我们使用相同的 B-Tree 来存储边界，每个子树对应一个文本或逻辑删除的范围。对于树中的每个节点，我们存储哪些注释在其之前开始、在其之后开始、在其之前结束或在其之后结束。
     ```rust
     #[derive(Debug, PartialEq, Eq, Default, Clone)]
     pub struct ElemAnchorSet {
@@ -150,19 +150,19 @@ There are several common tasks we need to address in Text CRDT, including:
         end_after: FxHashSet<AnnIdx>,
     }
     ```
-  - This is basically the same optimization as Peritext, except we do it on the tree.
+  - 这基本上与 Peritext 的优化相同，只是我们在树上进行。
 
-## Encoding
+## 编码
 
-We use columnar encoding, which was first adopted to CRDTs by Martin Kelppmann [in automerge](https://github.com/automerge/automerge-classic/pull/253). To make it easier in Rust, we created the lib [Serde Columnar: Ergonomic columnar storage encoding crate](https://www.notion.so/Serde-Columnar-Ergonomic-columnar-storage-encoding-crate-7b0c86d6f8d24e4da45a1e2ebd86741c?pvs=21).
+我们使用列式编码，这是 Martin Kelppmann [在 automerge 中](https://github.com/automerge/automerge-classic/pull/253) 首次应用于 CRDT 的。为了在 Rust 中更容易实现，我们创建了 [Serde Columnar: Ergonomic columnar storage encoding crate](https://www.notion.so/Serde-Columnar-Ergonomic-columnar-storage-encoding-crate-7b0c86d6f8d24e4da45a1e2ebd86741c?pvs=21) 库。
 
-## Heavily tested by libFuzzer
+## 通过 libFuzzer 进行大量测试
 
-Test-Driven Development (TDD) provides an amazing development experience. If possible, I always write unit tests for a standalone module before moving forward. However, for algorithms like CRDTs, it is infeasible to list all possible cases manually but is easy to generate test cases automatically. This is where fuzzing tests come into play.
+测试驱动开发 (TDD) 提供了惊人的开发体验。如果可能，我总是在继续之前为独立模块编写单元测试。然而，对于像 CRDT 这样的算法，手动列出所有可能的情况是不可行的，但自动生成测试用例很容易。这就是模糊测试发挥作用的地方。
 
-Some fuzzers can track coverage information and generate mutations on the input data to maximize code coverage. LibFuzzer can also identify memory leaks and UAF problems.
+一些模糊器可以跟踪覆盖率信息并对输入数据生成突变以最大化代码覆盖率。LibFuzzer 还可以识别内存泄漏和 UAF 问题。
 
-`[cargo-fuzz`](https://www.notion.so/crdt-richtext-Rust-implementation-of-Peritext-and-Fugue-c49ef2a411c0404196170ac8daf066c0?pvs=21) provides a user-friendly API for writing fuzzing tests, and it supports two fuzzers: libFuzzer and AFL. It makes the unstructured libFuzzer feel structured. So we’re able to write fuzzing tests in this way
+`[cargo-fuzz`](https://www.notion.so/crdt-richtext-Rust-implementation-of-Peritext-and-Fugue-c49ef2a411c0404196170ac8daf066c0?pvs=21) 为编写模糊测试提供了用户友好的 API，它支持两个模糊器：libFuzzer 和 AFL。它使非结构化的 libFuzzer 感觉结构化。因此，我们能够以这种方式编写模糊测试
 
 ```rust
 use arbitrary::Arbitrary;
@@ -199,56 +199,56 @@ use libfuzzer_sys::fuzz_target;
 fuzz_target!(|actions: [Action; 100]| { fuzzing(actions.to_vec()) });
 ```
 
-![We will run millions of Fuzzing Tests after making big changes. The fuzzer can help us extract the most useful thousands of tests to be included into the corpus. The minor changes can be verified by running the corpus.](./images/richtext4.png)
+![我们将在进行重大更改后运行数百万次模糊测试。模糊器可以帮助我们提取最有用的数千个测试以包含到语料库中。可以通过运行语料库来验证微小的更改。](./images/richtext4.png)
 
-We will run millions of Fuzzing Tests after making big changes. The fuzzer can help us extract the most useful thousands of tests to be included into the corpus. The minor changes can be verified by running the corpus.
+我们将在进行重大更改后运行数百万次模糊测试。模糊器可以帮助我们提取最有用的数千个测试以包含到语料库中。可以通过运行语料库来验证微小的更改。
 
-We use fuzzing tests in Loro's CRDTs too. This test suite is like our safety net when we're making big tweaks to the code. It's great at spotting all our little slip-ups.
+我们也在 Loro 的 CRDT 中使用模糊测试。当我们对代码进行重大调整时，这个测试套件就像我们的安全网。它非常擅长发现我们所有的小失误。
 
-# Performance
+# 性能
 
-## Benchmark
+## 基准测试
 
-- Benchmark setup
-  ### **B4: Real-world editing dataset**
-  Replay a real-world editing dataset. This dataset contains the character-by-character editing trace of a large-ish text document, the LaTeX source of this paper: [https://arxiv.org/abs/1608.03960(opens in a new tab)](https://arxiv.org/abs/1608.03960)
-  Source: [https://github.com/automerge/automerge-perf/tree/master/edit-by-index(opens in a new tab)](https://github.com/automerge/automerge-perf/tree/master/edit-by-index)
-  - 182,315 single-character insertion operations
-  - 77,463 single-character deletion operations
-  - 259,778 operations totally
-  - 104,852 characters in the final document
-    We simulate one client replaying all changes and storing each update. We measure the time to replay the changes and the size of all update messages (`updateSize`), the size of the encoded document after the task is performed (`docSize`), the time to encode the document (`encodeTime`), the time to parse the encoded document (`parseTime`), and the memory used to hold the decoded document in memory (`memUsed`).
-  ### **[B4 x 100] Real-world editing dataset 100 times**
-  Replay the [B4] dataset one hundred times. The final document has a size of over 10 million characters. As comparison, the book "Game of Thrones: A Song of Ice and Fire" is only 1.6 million characters long (including whitespace).
-  - 18,231,500 single-character insertion operations
-  - 7,746,300 single-character deletion operations
-  - 25,977,800 operations totally
-  - 10,485,200 characters in the final document
+- 基准测试设置
+  ### **B4: 真实世界的编辑数据集**
+  重放一个真实世界的编辑数据集。该数据集包含一个大型文本文档的逐字符编辑轨迹，该论文的 LaTeX 来源：[https://arxiv.org/abs/1608.03960(在新标签页中打开)](https://arxiv.org/abs/1608.03960)
+  来源：[https://github.com/automerge/automerge-perf/tree/master/edit-by-index(在新标签页中打开)](https://github.com/automerge/automerge-perf/tree/master/edit-by-index)
+  - 182,315 次单字符插入操作
+  - 77,463 次单字符删除操作
+  - 总共 259,778 次操作
+  - 最终文档中有 104,852 个字符
+    我们模拟一个客户端重放所有更改并存储每次更新。我们测量重放更改的时间和所有更新消息的大小 (`updateSize`)、任务执行后编码文档的大小 (`docSize`)、编码文档的时间 (`encodeTime`)、解析编码文档的时间 (`parseTime`) 以及用于在内存中保存解码文档的内存 (`memUsed`)。
+  ### **[B4 x 100] 真实世界的编辑数据集 100 次**
+  重放 [B4] 数据集一百次。最终文档的大小超过 1000 万个字符。作为比较，《权力的游戏：冰与火之歌》一书只有 160 万个字符长（包括空格）。
+  - 18,231,500 次单字符插入操作
+  - 7,746,300 次单字符删除操作
+  - 总共 25,977,800 次操作
+  - 最终文档中有 10,485,200 个字符
 
-The benchmark was conducted on a 2020 M1 MacBook Pro 13-inch on 2023-05-11.
+基准测试于 2023-05-11 在 2020 M1 MacBook Pro 13 英寸上进行。
 
-| N=6000                                                           | crdt-richtext-wasm     | loro-wasm               | automerge-wasm      | tree-fugue                  | yjs                          | ywasm               |
-| ---------------------------------------------------------------- | ---------------------- | ----------------------- | ------------------- | --------------------------- | ---------------------------- | ------------------- |
-| [B4] Apply real-world editing dataset (time)                     | 176 +/- 10 ms          | 141 +/- 15 ms           | 821 +/- 7 ms        | 721 +/- 15 ms               | 1,114 +/- 33 ms              | 23,419 +/- 102 ms   |
-| [B4] Apply real-world editing dataset (memUsed)                  | skipped                | skipped                 | skipped             | 2,373,909 +/- 13725 bytes   | 3,480,708 +/- 168887 bytes   | skipped             |
-| [B4] Apply real-world editing dataset (encodeTime)               | 8 +/- 1 ms             | 8 +/- 1 ms              | 115 +/- 2 ms        | 12 +/- 0 ms                 | 12 +/- 1 ms                  | 6 +/- 1 ms          |
-| [B4] Apply real-world editing dataset (docSize)                  | 127,639 +/- 0 bytes    | 255,603 +/- 8 bytes     | 129,093 +/- 0 bytes | 167,873 +/- 0 bytes         | 159,929 +/- 0 bytes          | 159,929 +/- 0 bytes |
-| [B4] Apply real-world editing dataset (parseTime)                | 11 +/- 0 ms            | 2 +/- 0 ms              | 620 +/- 5 ms        | 8 +/- 0 ms                  | 43 +/- 3 ms                  | 40 +/- 3 ms         |
-| [B4x100] Apply real-world editing dataset 100 times (time)       | 15,324 +/- 3188 ms     | 12,436 +/- 444 ms       | skipped             | 91,902 +/- 863 ms           | 112,563 +/- 3861 ms          | skipped             |
-| [B4x100] Apply real-world editing dataset 100 times (memUsed)    | skipped                | skipped                 | skipped             | 224076566 +/- 2812359 bytes | 318807378 +/- 15737245 bytes | skipped             |
-| [B4x100] Apply real-world editing dataset 100 times (encodeTime) | 769 +/- 37 ms          | 780 +/- 32 ms           | skipped             | 943 +/- 52 ms               | 297 +/- 16 ms                | skipped             |
-| [B4x100] Apply real-world editing dataset 100 times (docSize)    | 12,667,753 +/- 0 bytes | 26,634,606 +/- 80 bytes | skipped             | 17,844,936 +/- 0 bytes      | 15,989,245 +/- 0 bytes       | skipped             |
-| [B4x100] Apply real-world editing dataset 100 times (parseTime)  | 1,252 +/- 14 ms        | 170 +/- 15 ms           | skipped             | 368 +/- 13 ms               | 1,335 +/- 238 ms             | skipped             |
+| N=6000 | crdt-richtext-wasm | loro-wasm | automerge-wasm | tree-fugue | yjs | ywasm |
+| --- | --- | --- | --- | --- | --- | --- |
+| [B4] 应用真实世界的编辑数据集 (时间) | 176 +/- 10 ms | 141 +/- 15 ms | 821 +/- 7 ms | 721 +/- 15 ms | 1,114 +/- 33 ms | 23,419 +/- 102 ms |
+| [B4] 应用真实世界的编辑数据集 (memUsed) | 跳过 | 跳过 | 跳过 | 2,373,909 +/- 13725 字节 | 3,480,708 +/- 168887 字节 | 跳过 |
+| [B4] 应用真实世界的编辑数据集 (encodeTime) | 8 +/- 1 ms | 8 +/- 1 ms | 115 +/- 2 ms | 12 +/- 0 ms | 12 +/- 1 ms | 6 +/- 1 ms |
+| [B4] 应用真实世界的编辑数据集 (docSize) | 127,639 +/- 0 字节 | 255,603 +/- 8 字节 | 129,093 +/- 0 字节 | 167,873 +/- 0 字节 | 159,929 +/- 0 字节 | 159,929 +/- 0 字节 |
+| [B4] 应用真实世界的编辑数据集 (parseTime) | 11 +/- 0 ms | 2 +/- 0 ms | 620 +/- 5 ms | 8 +/- 0 ms | 43 +/- 3 ms | 40 +/- 3 ms |
+| [B4x100] 应用真实世界的编辑数据集 100 次 (时间) | 15,324 +/- 3188 ms | 12,436 +/- 444 ms | 跳过 | 91,902 +/- 863 ms | 112,563 +/- 3861 ms | 跳过 |
+| [B4x100] 应用真实世界的编辑数据集 100 次 (memUsed) | 跳过 | 跳过 | 跳过 | 224076566 +/- 2812359 字节 | 318807378 +/- 15737245 字节 | 跳过 |
+| [B4x100] 应用真实世界的编辑数据集 100 次 (encodeTime) | 769 +/- 37 ms | 780 +/- 32 ms | 跳过 | 943 +/- 52 ms | 297 +/- 16 ms | 跳过 |
+| [B4x100] 应用真实世界的编辑数据集 100 次 (docSize) | 12,667,753 +/- 0 字节 | 26,634,606 +/- 80 字节 | 跳过 | 17,844,936 +/- 0 字节 | 15,989,245 +/- 0 字节 | 跳过 |
+| [B4x100] 应用真实世界的编辑数据集 100 次 (parseTime) | 1,252 +/- 14 ms | 170 +/- 15 ms | 跳过 | 368 +/- 13 ms | 1,335 +/- 238 ms | 跳过 |
 
-The complete benchmark result and code is available at https://github.com/https://twitter.com/zx_loro/fugue-bench.
+完整的基准测试结果和代码可在 https://github.com/https://twitter.com/zx_loro/fugue-bench 获得。
 
-It is worth noting that:
+值得注意的是：
 
-- The benchmark for Automerge is based on `automerge-wasm`, which is not the latest version of Automerge 2.0.
-- `crdt-richtext` and `fugue` are special-purpose CRDTs that tend to be faster and have a smaller encoding size.
-- The encoding of `yjs`, `ywasm`, and `loro-wasm` still contains redundancy that can be compressed significantly. For more details, see [the full report](https://loro.dev/docs/performance/docsize).
-- loro-wasm and fugue only support plain text for now
+- Automerge 的基准测试基于 `automerge-wasm`，它不是 Automerge 2.0 的最新版本。
+- `crdt-richtext` 和 `fugue` 是专用 CRDT，它们往往更快，编码尺寸更小。
+- `yjs`、`ywasm` 和 `loro-wasm` 的编码仍然包含可以显着压缩的冗余。有关更多详细信息，请参阅[完整报告](https://loro.dev/docs/performance/docsize)。
+- loro-wasm 和 fugue 目前仅支持纯文本
 
-# Discussion
+# 讨论
 
 [CRDT-richtext: Rust implementation of Peritext and Fugue | Hacker News](https://news.ycombinator.com/item?id=35988046)

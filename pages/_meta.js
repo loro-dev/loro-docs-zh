@@ -10,19 +10,19 @@ export default {
     collapsible: true
   },
   docs: {
-    title: "Docs",
+    title: "文档",
     type: "page"
   },
   blog: {
-    title: "Blog",
+    title: "博客",
     type: "page"
   },
   changelog: {
-    title: "Changelog",
+    title: "更新日志",
     type: "page"
   },
   about: {
-    title: "About",
+    title: "关于",
     type: "page"
   }
 }

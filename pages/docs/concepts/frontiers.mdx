@@ -1,17 +1,17 @@
 ---
-keywords: "frontiers, version, compact representation, DAG, CRDT"
-description: "Understanding Frontiers in Loro - a compact way to represent document versions"
+keywords: "frontiers, 版本, 紧凑表示, DAG, CRDT"
+description: "了解 Loro 中的 Frontiers —— 一种紧凑表示文档版本的方式"
 ---
 
 # Frontiers
 
-Frontiers are a compact way to represent document versions in Loro by identifying the "frontier" operations - the most recent operations that aren't followed by any other operations.
+Frontiers 是 Loro 通过识别“前沿”操作（即尚未被后续操作覆盖的最新操作）来紧凑表示文档版本的方法。
 
-## What are Frontiers?
+## Frontiers 是什么？
 
-Think of Frontiers as **bookmarks in your document's history**. Instead of listing every change made by every collaborator (like Version Vectors do), Frontiers only point to the boundary operations that implicitly include all their ancestors through causal relationships.
+你可以把 Frontiers 看作文档历史上的**书签**。与列出每位协作者全部更改的版本向量不同，Frontiers 只指向边界操作，所有祖先通过因果关系被隐式包含。
 
-## Basic Usage
+## 基本用法
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -20,38 +20,38 @@ const doc = new LoroDoc();
 const text = doc.getText("content");
 text.insert(0, "Hello World");
 
-// Get current frontiers (usually 1-2 elements)
+// 获取当前 frontiers（通常只有 1~2 个元素）
 const frontiers = doc.frontiers();
 console.log(frontiers); // [{ peer: "...", counter: 0 }]
 
-// Use frontiers for checkpoints
+// 使用 frontiers 保存检查点
 const checkpoint = doc.frontiers();
 text.insert(5, " Beautiful");
 
-// Restore to checkpoint
+// 恢复到检查点
 doc.checkout(checkpoint);
-console.log(text.toString()); // Back to "Hello World"
+console.log(text.toString()); // 回到 "Hello World"
 ```
 
-## When to Use Frontiers
+## 什么时候使用 Frontiers
 
-Frontiers are ideal for:
+Frontiers 适用于：
 
-1. **Creating checkpoints** - Mark specific points in document history
-2. **Time travel** - Navigate to exact operation points efficiently
-3. **Storage optimization** - Remain compact even with many collaborators (usually 1-2 elements vs N entries in Version Vector)
-4. **Recording milestones** - Save important document states
+1. **创建检查点**——为文档历史打标签
+2. **时光旅行**——高效跳转到特定操作
+3. **节省存储**——即便协作者众多仍保持紧凑（通常 1~2 个元素，而版本向量需 N 项）
+4. **记录里程碑**——保存重要状态
 
-## Quick Comparison
+## 快速对比
 
-| Aspect | Frontiers | Version Vectors |
-|--------|-----------|----------------|
-| **Size** | 1-2 elements typically | Grows with peer count |
-| **Use Case** | Checkpoints, time travel | Synchronization, diffing |
-| **Storage** | Very compact | Larger with many peers |
-| **Unknown ops** | Cannot determine included ops | Can determine all included ops |
+| 维度 | Frontiers | 版本向量 |
+|------|-----------|----------|
+| **大小** | 通常 1~2 个元素 | 随节点数量增长 |
+| **用途** | 检查点、时光旅行 | 同步、差异比较 |
+| **存储** | 非常紧凑 | 节点越多越大 |
+| **未知操作** | 无法判断包含哪些操作 | 可以精确获知包含的操作 |
 
-## Practical Example
+## 实战示例
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -60,55 +60,55 @@ const doc = new LoroDoc();
 const text = doc.getText("content");
 const checkpoints = new Map();
 
-// Save checkpoint with frontiers
+// 使用 frontiers 保存检查点
 text.insert(0, "Draft version");
 checkpoints.set("draft", doc.frontiers());
 
-// Make changes
+// 继续修改
 text.delete(0, 5);
 text.insert(0, "Final");
 checkpoints.set("final", doc.frontiers());
 
-// Restore to any checkpoint
+// 恢复任意检查点
 doc.checkout(checkpoints.get("draft"));
 console.log(text.toString()); // "Draft version"
 ```
 
-## Important Limitation
+## 重要限制
 
-Frontiers have a key limitation when dealing with unknown operations:
-- When you have a Frontier pointing to operations you don't know about, you cannot determine the complete set of operation IDs included in that version
-- Version Vectors don't have this limitation - they explicitly list all peers and their operation counts, so you always know exactly which operations are included
+Frontiers 在面对未知操作时有一个限制：
+- 当某个 Frontier 指向你尚未获取的操作时，你无法确定该版本包含了哪些具体操作 ID
+- 版本向量没有此限制：它显式记录所有 peer 及其操作计数，因此总能知道确切包含的操作
 
-**Example**:
+**示例**：
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
-// If you receive a frontier [{ peer: "unknown-peer", counter: 42 }]
-// Without having the operations from "unknown-peer":
-// - Frontiers: Cannot tell which specific operations are included
-// - Version Vector: Would show { "unknown-peer": 43 }, clearly indicating ops 0-42
+// 如果你收到 frontier [{ peer: "unknown-peer", counter: 42 }]
+// 在缺少 "unknown-peer" 的操作时：
+// - Frontiers：无法判断包含哪些具体操作
+// - 版本向量：会显示 { "unknown-peer": 43 }，明确表示包含 0~42 的操作
 
 const doc = new LoroDoc();
 const frontiers = doc.frontiers();
-// Frontiers are compact but require operation history for full information
+// Frontiers 虽然紧凑，但要了解完整信息需要操作历史
 ```
 
-This limitation is why Frontiers are best for scenarios where you have access to the operation history (like checkpoints in a local document), while Version Vectors are preferred for synchronization between peers who may not share complete history.
+因此，Frontiers 更适合你能访问操作历史的场景（例如本地文档的检查点），而在不同节点之间同步时，如果无法共享完整历史，则更建议使用版本向量。
 
-## Conversion with Version Vectors
+## 与版本向量互转
 
-Loro allows seamless conversion between representations:
+Loro 支持两种表示之间的无缝转换：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const frontiers = doc.frontiers();
-const vv = doc.frontiersToVV(frontiers);        // Convert to Version Vector
-const backToFrontiers = doc.vvToFrontiers(vv);  // Convert back
+const vv = doc.frontiersToVV(frontiers);        // 转成版本向量
+const backToFrontiers = doc.vvToFrontiers(vv);  // 再转回 frontiers
 ```
 
-## Learn More
+## 进一步了解
 
-For detailed technical explanation of how Frontiers work with Loro's DAG structure and causal ordering, see [Version Deep Dive](/docs/advanced/version_deep_dive).
+想深入理解 Frontiers 如何结合 DAG 结构与因果顺序，请参阅[版本深潜](/docs/advanced/version_deep_dive)。

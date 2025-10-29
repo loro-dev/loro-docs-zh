@@ -1,17 +1,13 @@
 ---
 keywords: "crdt, version, frontier, DAG, git, history, time travel"
-description: "The concept of several versions in Loro, DAG, Frontiers, and Version Vectors"
+description: "Loro 中多个版本的概念、DAG、前沿和版本向量"
 ---
 
-# Loro's Versioning Deep Dive: DAG, Frontiers, and Version Vectors
+# Loro 版本系统深度解析：DAG、前沿与版本向量
 
-In centralized environments, we can use linear version numbers to represent a
-version, such as incrementing a number each time or using timestamps. However,
-CRDTs can be used in decentralized environments, and their version
-representation is different.
+在中心化环境中，我们通常用线性递增的数字或时间戳来表示版本。然而 CRDT 面向的是去中心化场景，版本的表达方式也随之改变。
 
-In Loro, you can express a document's version through a
-[Version Vector](https://en.wikipedia.org/wiki/Version_vector) or Frontiers.
+在 Loro 中，可以通过[版本向量（Version Vector）](https://en.wikipedia.org/wiki/Version_vector)或前沿（Frontiers）来描述文档版本。
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -23,28 +19,19 @@ doc.frontiers();      // State Frontiers
 doc.oplogFrontiers(); // OpLog Frontiers
 ```
 
-In most cases, you might only need the Version Vector, which can be used for
-data synchronization and version comparison.
+大多数情况下，版本向量已经足以满足同步与比较版本的需求。
 
-Frontiers are more space-efficient than Version Vectors but come with more
-limitations.
+前沿比版本向量更节省空间，但也带来更多限制。
 
-The following sections detail these two different ways of version description.
+接下来我们会逐一介绍这两种版本描述方式。
 
-## Background Knowledge
+## 背景知识
 
-Loro belongs to Operation-Based CRDTs. Two Loro documents are consistent if they
-have the same set of activated Operations. Version is a compact way to describe
-which ops belong to this set.
+Loro 属于基于操作的 CRDT。只要两个 Loro 文档包含的已生效操作集合相同，它们就是一致的。版本就是用于紧凑描述“这个集合里有哪些操作”的方法。
 
-Each operation has a unique ID, known as OpId. For example, each user's deletion
-or insertion of characters will have a corresponding unique OpId (don't worry
-about the overhead here; we've compressed them in memory and Encoding). OpId
-consists of PeerId and Counter.
+每个操作都会拥有一个唯一的 ID，称为 OpId。比如，每次用户删除或插入字符都会生成独一无二的 OpId（无需担心体积，我们在内存和编码阶段做了压缩）。OpId 由 PeerId 与 Counter 组成。
 
-> 💡 Note: To simplify, the specific type descriptions below may not be accurate
-> (e.g., the type of peer), but this does not affect the understanding of the
-> content.
+> 💡 提示：为了讲解方便，下文会简化具体的类型定义（例如 peer 的类型），不影响对概念的理解。
 
 ```ts
 interface OpId {
@@ -55,20 +42,18 @@ interface OpId {
 }
 ```
 
-PeerId represents the unique identifier of the device operating the document,
-and Counter is a number that starts from 0 and increments on that device.
+PeerId 表示操作该文档的设备 ID；Counter 是该设备上从 0 开始递增的数字。
 
-## Version Vector
+## 版本向量
 
-A Version Vector is a vector that describes how many Operations starting from 0
-need to be included for each Peer.
+版本向量是一个向量，描述每个 Peer 从 0 开始需要包含多少个操作。
 
 ```ts
 // In TypeScript
 type VersionVector = { [peerId in number]: number };
 ```
 
-For example, for the following version vector A,
+以版本向量 A 为例：
 
 ```tsx
 const A = {
@@ -77,15 +62,12 @@ const A = {
 };
 ```
 
-It includes:
+它包含：
 
-- All operations where PeerId == 0 && Counter < 2
-- Or PeerId == 1 && Counter < 3
+- PeerId == 0 且 Counter < 2 的所有操作
+- 或 PeerId == 1 且 Counter < 3 的所有操作
 
-This expression allows us to easily compare two versions and get the operations
-they are missing from each other. For example, in the following case, suppose we
-know that the document on the server has reached version B, and the device has
-version A. To let the user's device get the Operations it is missing,
+这种表达方式让我们可以轻松比较两个版本，找出彼此缺失的操作。例如假设服务器上的文档已经到达版本 B，而用户设备仍停留在版本 A。为了让用户设备补齐缺失的操作：
 
 ```tsx
 const A = {
@@ -100,16 +82,12 @@ const B = {
 };
 ```
 
-We can easily calculate the Operations the device is missing:
+我们就能算出设备缺失的操作：
 
-- All Ops where PeerId == 0 && 2 ≤ Counter < 5
-- Or PeerId == 2 && Counter < 9
+- PeerId == 0 且 2 ≤ Counter < 5 的所有操作
+- 或 PeerId == 2 且 Counter < 9 的所有操作
 
-Version Vectors help us identify a version and allow us to quickly calculate the
-differences between two versions (quickly calculating the set of Ops missing in
-two documents to be synchronized). For example, currently in Loro, you can use
-the following method to synchronize two documents, where they only import the
-Ops missing from each other:
+版本向量不仅能标识版本，还能快速计算两个版本之间的差异（也就是待同步的操作集合）。在 Loro 中，可以用下面的方法同步两个文档，只导入对方缺失的操作：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -121,47 +99,31 @@ a.import(b.export({ mode: "update", from: a.version() }));
 b.import(a.export({ mode: "update", from: b.version() }));
 ```
 
-## Directed Acyclic Graph (DAG) History
+## 有向无环图（DAG）历史
 
-In Loro, we record an operation history similar to Git's Directed Acyclic Graph
-(DAG). We represent DAG by recording Dependencies links on each Op. Like
-document states, when the Op set is the same, the DAG is consistent across all
-endpoints.
+Loro 还会记录一份类似 Git 的有向无环图（DAG）操作历史。我们在每个操作上记录依赖关系（Dependencies）来表示 DAG。只要操作集合一致，所有端上的 DAG 就保持一致。
 
 ![DAG Illustration](./images/version-3.png)
 
-When a new Op is added, its Dependencies link points to the current Operations
-that are not being pointed to.
+当有新操作写入时，它的依赖指向当前未被指向的操作。
 
-> 💡 Note: The order of Ops is a partial order relationship. An Op may be
-> before, after, or parallel to another Op. The structure of the DAG allows us
-> to compactly express this partial order.
+> 💡 提示：操作之间只存在偏序关系，可能彼此前后，也可能并行。DAG 的结构让我们能够紧凑地表达这种偏序。
 
-DAG history information helps us design some special CRDT algorithms and
-facilitates time-travel implementation. Moreover, when automatic merges don't
-meet expectations, DAG allows users a better chance to manually resolve
-potential conflicts.
+DAG 历史既能帮助我们设计特殊的 CRDT 算法，也支持时间旅行能力；当自动合并效果不理想时，DAG 还能帮助用户手动化解潜在冲突。
 
-> 💡 We use Counter@PeerId for a more compact description of OpId.
+> 💡 我们会用 `Counter@PeerId` 的记法来更紧凑地描述 OpId。
 
-Below is an example of how a DAG is formed:
+下面是 DAG 形成的示意：
 
 ![DAG Formation Example](./images/version-0.png)
 
-## Frontiers
+## 前沿（Frontiers）
 
-Version Vectors increase in size with the number of Peers. Most CRDTs Lib, to
-prevent PeerId conflicts, use a random new PeerId each time a document is
-opened, which increases the overhead of Version Vectors.
+版本向量的大小会随 Peer 数量增加而膨胀。为了避免 PeerId 冲突，多数 CRDT 库在每次打开文档时都会生成新的随机 PeerId，这进一步抬高了版本向量的开销。
 
-> 📌 If PeerId repeats, there's a high probability of duplicate OpId,
-> potentially leading to inconsistent CRDT documents. Automerge has solved this
-> problem, ensuring document consistency even with duplicate OpId, but at the
-> cost of higher sync complexity.
+> 📌 如果 PeerId 重复，就很可能出现重复的 OpId，从而导致 CRDT 文档不一致。Automerge 通过增加同步复杂度解决了这个问题，让文档即便出现重复 OpId 也能保持一致。
 
-Based on DAG information, we have a more compact way to describe versions: given
-one or multiple OpIds, include all with a Causal Order less than or equal to
-them. We call this method Frontiers.
+基于 DAG 信息，我们可以用更紧凑的方式描述版本：给定一个或多个 OpId，包含所有因果顺序小于等于它们的操作。这种方式称为前沿（Frontiers）。
 
 ```ts twoslash
 import { OpId } from "loro-crdt";
@@ -169,16 +131,16 @@ import { OpId } from "loro-crdt";
 type Frontiers = OpId[];
 ```
 
-> 💡 We use Counter@PeerId for a more compact description of OpId.
+> 💡 同样使用 `Counter@PeerId` 来表达 OpId。
 
 ![Frontiers Illustration](./images/version-1.png)
 
-`Frontiers = [3@0]` in the above DAG includes 6 operations:
+在上图中，`Frontiers = [3@0]` 覆盖 6 个操作：
 
-- PeerId == 0 && Counter < 4
-- PeerId == 1 && Counter < 2
+- PeerId == 0 且 Counter < 4
+- PeerId == 1 且 Counter < 2
 
-It is equivalent to the Version Vector:
+它等价于以下版本向量：
 
 ```tsx
 {
@@ -187,11 +149,11 @@ It is equivalent to the Version Vector:
 }
 ```
 
-Frontiers can also specify multiple parallel operations:
+前沿也可以描述多条并行的操作：
 
 ![Parallel Operations Example](./images/version-2.png)
 
-In this example, `Frontiers = [1@1, 1@2]`, corresponding Version Vector is:
+在这个例子中，`Frontiers = [1@1, 1@2]` 对应的版本向量是：
 
 ```tsx
 {
@@ -201,11 +163,7 @@ In this example, `Frontiers = [1@1, 1@2]`, corresponding Version Vector is:
 }
 ```
 
-One great property of Frontiers as a version is that `Frontiers = [A]` actually
-represents the document version right after operation A was executed. Thus,
-combined with Loro's time machine capability, you can easily return to any
-document version corresponding to a specific operation. Here is a complete
-example:
+前沿的一个重要特性是：`Frontiers = [A]` 其实就表示执行完操作 A 后的文档版本。因此结合 Loro 的时间机器能力，可以轻松回到任意特定操作对应的版本。以下示例演示了整个过程：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -228,8 +186,7 @@ expect(doc.toJSON()).toStrictEqual({
 });
 ```
 
-You can convert between Version Vectors and Frontiers in Loro if the specified
-version is included in the document's history:
+只要目标版本仍在文档历史中，Loro 就支持在版本向量与前沿之间互转：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";

@@ -1,20 +1,20 @@
-# Operations and Changes
+# Operations 与 Changes
 
-## Quick Reference
+## 快速概览
 
-**Operations** are atomic edits. **Changes** are logical groups of operations with metadata. Understanding these helps optimize sync and performance.
+**Operation** 是原子级编辑；**Change** 是带有元数据的逻辑操作组。理解二者有助于你优化同步与性能。
 
-## Key Concepts
+## 核心概念
 
 ### Operations
-- Atomic units of change (insert a single Unicode character, delete a single character, insert an new entry to a map, etc.)
-- Automatically merged internally for efficiency
-- Each has unique ID: `(peerId, counter)`
+- 改变的原子单元（插入单个 Unicode 字符、删除单个字符、向 Map 插入条目等）
+- 内部会自动合并以提升效率
+- 每个操作都有唯一 ID：`(peerId, counter)`
 
 ### Changes
-- Groups of consecutive operations
-- Include metadata (timestamp, dependencies, peer ID)
-- Created by `commit()` or auto-commit
+- 连续操作的集合
+- 包含元数据（时间戳、依赖、peer ID）
+- 通过 `commit()` 或自动提交创建
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -24,12 +24,12 @@ const text = doc.getText("text");
 
 text.insert(0, "Hello");     // Operation
 text.insert(5, " World");    // Operation
-doc.commit();                // Groups into one Change
+doc.commit();                // 合并为一个 Change
 ```
 
-## Automatic Merging
+## 自动合并
 
-Consecutive operations from same peer merge into one Change:
+来自同一 peer 的连续操作会自动合并到一个 Change 中：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -41,14 +41,14 @@ text.insert(0, "abc");
 doc.commit();  // Change #1
 
 text.insert(3, "def");
-doc.commit();  // Merges with #1 (same peer, consecutive)
+doc.commit();  // 与 #1 合并（同一 peer，连续操作）
 ```
 
-## When New Changes Are Created
+## 何时会创建新的 Change
 
-1. **Cross-peer dependencies**: After importing remote operations
-2. **Time separation**: When timestamps enabled and > the merge interval (default 1000s) between commits
-3. **Different commit messages**: 
+1. **跨 peer 依赖**：在导入远端操作之后
+2. **时间间隔**：启用时间戳时，若提交间隔超过合并阈值（默认 1000 秒）
+3. **不同的提交信息**：
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -57,26 +57,25 @@ const doc = new LoroDoc();
 doc.getText("text").insert(0, "v1");
 doc.commit(); // Change #1
 
-// Import from another peer
+// 导入其他 peer 的操作
 const doc2 = new LoroDoc();
 doc2.getText("text").insert(0, "v1");
 const remote = doc2.export({ mode: "update" });
 doc.import(remote);
 
-// Next commit creates new Change (dependency on remote)
+// 下一次提交会新建 Change（存在远端依赖）
 doc.getText("text").insert(0, "v2");
 doc.commit(); // Change #2
 ```
 
+## 对同步与存储的影响
 
-## Impact on Sync & Storage
+- **历史记录**：Change 追踪逻辑工作单元
+- **同步**：依赖关系保证因果顺序
+- **存储**：自动合并减少元数据开销
 
-- **History**: Changes track logical units of work
-- **Sync**: Dependencies ensure causal ordering
-- **Storage**: Auto-merging reduces metadata overhead
+## 相关文档
 
-## Related Documentation
-
-- [Transaction Model](./transaction_model) - Grouping operations
-- [Version Vector](./version_vector) - How Changes form versions
-- [Synchronization](../tutorial/sync) - Using Changes for sync
+- [事务模型](./transaction_model)——如何分组操作
+- [版本向量](./version_vector)——Change 如何构成版本
+- [同步](../tutorial/sync)——利用 Change 进行同步

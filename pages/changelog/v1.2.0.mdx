@@ -1,32 +1,32 @@
 ---
 version: "v1.2.0"
-title: "Release Loro v1.2.0"
+title: "发布 Loro v1.2.0"
 date: 2024/12/10
 ---
 
-## New
+## 新增
 
-- Add `isDeleted()` method to all container types (Text, Map, List, Tree, etc.)
+- 为所有容器类型（Text、Map、List、Tree 等）添加 `isDeleted()` 方法
 
 ### LoroDoc
 
-- `changeCount()`: Get the number of changes in the oplog.
-- `opCount()`: Get the number of ops in the oplog.
+- `changeCount()`: 获取 oplog 中的更改数。
+- `opCount()`: 获取 oplog 中的操作数。
 
 ### VersionVector
 
-- `setEnd(id: ID)`: Set the exclusive ending point. target id will NOT be included by self.
-- `setLast(id: ID)`: Set the inclusive ending point. target id will be included.
-- `remove(peer: PeerID)`: Remove the specific peer id.
-- `length()`: Get the number of peers in the VersionVector.
+- `setEnd(id: ID)`: 设置独占结束点。目标 id 将不被 self 包含。
+- `setLast(id: ID)`: 设置包含结束点。目标 id 将被包含。
+- `remove(peer: PeerID)`: 移除特定的 peer id。
+- `length()`: 获取 VersionVector 中的 peer 数。
 
-## Change
+## 变更
 
-- Return `ImportStatus` in the `importUpdateBatch` method.
-- Fractional index is enabled by default now.
+- 在 `importUpdateBatch` 方法中返回 `ImportStatus`。
+- 现在默认启用小数索引。
 
 
-## Fix
+## 修复
 
-- fix: getOrCreateContainer should not throw if value is null [#576](https://github.com/loro-dev/loro/pull/576)
-- fix: dead loop when importing updates [#570](https://github.com/loro-dev/loro/pull/570)
+- 修复：当值为 null 时，getOrCreateContainer 不应抛出异常 [#576](https://github.com/loro-dev/loro/pull/576)
+- 修复：导入更新时出现死循环 [#570](https://github.com/loro-dev/loro/pull/570)

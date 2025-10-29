@@ -1,32 +1,32 @@
 ---
-keywords: "crdt, event graph walker, eg-walker, synchronization, collaboration, algorithm, innovation"
-description: "Comprehensive guide to Event Graph Walker (Eg-Walker), a revolutionary CRDT algorithm that enables simpler metadata and better performance in Loro"
+keywords: "crdt, event graph walker, eg-walker, 同步, 协作, 算法, 创新"
+description: "Event Graph Walker（Eg-Walker）全指南：这一革命性 CRDT 算法如何让 Loro 以更简单的元数据获得更高性能"
 ---
 
-# Event Graph Walker (Eg-Walker)
+# Event Graph Walker（Eg-Walker）
 
-Event Graph Walker (Eg-Walker) is a revolutionary CRDT algorithm that fundamentally changes how collaborative editing systems handle concurrent operations. Instead of storing complex CRDT metadata, Eg-Walker enables the use of simple indices by efficiently replaying relevant history when needed.
+Event Graph Walker（Eg-Walker）是一种颠覆性的 CRDT 算法，从根本上改变了协同编辑系统处理并发操作的方式。它不再依赖复杂的 CRDT 元数据，而是通过在需要时高效回放相关历史，让我们可以使用简单的索引值。
 
-> **Important Note**: Loro is not a strict implementation of Event Graph Walker. Rather, Loro is heavily inspired by Eg-Walker's design philosophy and incorporates its key insights to achieve similar properties - particularly the ability to use simple indices instead of complex CRDT metadata, and the efficient replay mechanism for handling concurrent operations.
+> **重要提示**：Loro 并不是对 Event Graph Walker 的严格实现。Loro 深受 Eg-Walker 设计理念的启发，吸收了其中的关键洞见，从而获得类似的能力——尤其是用简单索引取代复杂元数据，以及在处理并发操作时的高效回放机制。
 
-## The Problem: Complex CRDT Metadata
+## 问题：复杂的 CRDT 元数据
 
-Traditional CRDTs require extensive metadata to maintain consistency across distributed systems:
+传统 CRDT 为了在分布式系统中保持一致性，需要维护大量元数据：
 
-- **RGA algorithm**: Requires operation ID and Lamport timestamp of the left neighbor
-- **Yjs/Fugue**: Needs operation IDs of both left and right neighbors
-- **Storage overhead**: Each operation carries significant metadata for position tracking
-- **Tombstone accumulation**: Deleted content must be retained indefinitely
+- **RGA 算法**：需要记录左侧邻居的操作 ID 与 Lamport 时间戳
+- **Yjs / Fugue**：需要记录左右两侧邻居的操作 ID
+- **存储开销**：每个操作都要携带用于定位的大量元数据
+- **墓碑堆积**：被删除的内容必须永久保留
 
-This metadata complexity leads to:
-- Increased storage requirements
-- Slower performance as documents grow
-- Complex garbage collection challenges
-- Higher network bandwidth usage
+这些复杂度会导致：
+- 存储需求显著增加
+- 文档越大性能越慢
+- 垃圾回收策略复杂
+- 更高的网络带宽消耗
 
-## The Innovation: Simple Indices with Smart Replay
+## 创新：简单索引 + 智能回放
 
-Eg-Walker introduces a paradigm shift: **record simple indices, replay when needed**.
+Eg-Walker 提出全新范式：**记录简单索引，需要时再回放**。
 
 import { ReactPlayer } from "../../../components/video";
 
@@ -41,42 +41,42 @@ import { ReactPlayer } from "../../../components/video";
   playing={true}
 />
 
-### Core Concept
+### 核心理念
 
-Instead of storing complex position descriptors, Eg-Walker:
-1. Records operations with **simple indices** at the time of execution
-2. Maintains a directed acyclic graph (DAG) of the edit history
-3. **Replays relevant portions** of history when merging concurrent changes
-4. Reconstructs the exact CRDT state only when needed
+Eg-Walker 不再存储复杂的位置描述，而是：
+1. 在执行操作时记录**简单索引**
+2. 维护一张编辑历史的有向无环图（DAG）
+3. 在合并并发修改时**按需回放**相关历史
+4. 仅在需要时重建精确的 CRDT 状态
 
-## How It Works
+## 工作原理
 
-### The Event Graph
+### 事件图（Event Graph）
 
-In collaborative editing, parallel edits naturally form a directed acyclic graph (DAG), similar to Git's history:
+在协同编辑中，并行操作天然会形成类似 Git 历史的有向无环图（DAG）：
 
 ```
-    A --- B --- C     (User 1)
+    A --- B --- C     (用户 1)
    /             \
 Root              Merge
    \             /
-    D --- E --- F     (User 2)
+    D --- E --- F     (用户 2)
 ```
 
-Each node represents an operation, and edges represent causal dependencies.
+每个节点代表一个操作，边表示因果依赖关系。
 
-### The Algorithm
+### 算法流程
 
-#### 1. **Local Operations: Direct and Fast**
+#### 1. **本地操作：直接且高效**
 
-When a user makes a local edit:
-- Record the operation with its **current index position**
-- No complex metadata calculation needed
-- Immediate application to the document
+当用户执行本地编辑时：
+- 使用当前的**索引位置**记录操作
+- 无需计算复杂元数据
+- 立即应用到文档
 
-Example:
+示例：
 ```javascript no_run
-// Traditional CRDT (e.g., RGA)
+// 传统 CRDT（例如 RGA）
 insert({
   char: 'a',
   leftId: 'op-123',
@@ -84,102 +84,102 @@ insert({
   siteId: 'user-1'
 })
 
-// With Eg-Walker
+// Eg-Walker
 insert({
   char: 'a',
-  index: 5  // Simple index!
+  index: 5  // 只需索引！
 })
 ```
 
-#### 2. **Merging Remote Operations: Smart Replay**
+#### 2. **合并远端操作：智能回放**
 
-When receiving remote operations:
+当接收到远端操作时：
 
-1. **Find the Lowest Common Ancestor (LCA)** between local and remote versions
-2. **Replay operations** from the LCA to both versions
-3. **Construct temporary CRDT state** to calculate effects
-4. **Apply the merged result**
+1. 找到本地与远端版本之间的**最近公共祖先（LCA）**
+2. 从公共祖先开始，**回放历史**到双方版本
+3. **构建临时 CRDT 状态**计算影响
+4. **应用合并结果**
 
-The key insight: You only replay the **divergent portion** of history, not the entire document.
+关键点：只需回放**分叉部分**的历史，而非整个文档。
 
-#### 3. **Index Transformation**
+#### 3. **索引变换**
 
-Consider this scenario:
-- You highlight text from index 10 to 20
-- Concurrently, someone inserts 5 characters at index 3
-- Your highlight should shift to indices 15 to 25
+例如：
+- 你高亮选中索引 10 到 20 的文本
+- 同时有人在索引 3 插入了 5 个字符
+- 你的选区应该移动到 15 到 25
 
-Eg-Walker handles this by:
-1. Identifying concurrent operations through the event graph
-2. Replaying operations in causal order
-3. Transforming indices based on the replay sequence
+Eg-Walker 的做法：
+1. 通过事件图识别并发操作
+2. 按因果顺序回放操作
+3. 根据回放序列转换索引
 
-## Performance Benefits
+## 性能收益
 
-### 1. **Reduced Storage**
+### 1. 更小的存储
 
-| Aspect | Traditional CRDT | Eg-Walker |
-|--------|-----------------|-----------|
-| Tombstone storage | Permanent | Can be garbage collected |
-| Document growth | Linear with all operations | Linear with active operations |
+| 项目 | 传统 CRDT | Eg-Walker |
+|------|-----------|-----------|
+| 墓碑存储 | 永久保留 | 可安全回收 |
+| 文档增长 | 随全部操作线性增长 | 随有效内容线性增长 |
 
-### 2. **Faster Local Updates**
+### 2. 更快的本地更新
 
-- **No metadata computation**: Direct index-based operations
-- **No tombstone traversal**: Clean document state
-- **Predictable performance**: O(1) or O(logN) for most local operations
+- **无需元数据计算**：直接基于索引操作
+- **无需遍历墓碑**：文档状态干净
+- **性能可预期**：大多数本地操作为 O(1) 或 O(logN)
 
-### 3. **Efficient Synchronization**
+### 3. 更高效的同步
 
-- **Minimal replay**: Only divergent history portions
-- **Bounded computation**: Proportional to concurrent edits, not document size
-- **Smart caching**: Reuse computed states when possible
+- **最小化回放**：仅处理分叉历史
+- **有界计算量**：与并发操作数量相关，而非文档大小
+- **智能缓存**：复用已计算的临时状态
 
-## Implementation in Loro
+## Loro 中的实现
 
-While Loro is not a pure Eg-Walker implementation, it draws heavily from Eg-Walker's innovations to achieve similar benefits. Loro implements Fugue (a modern CRDT algorithm) with Eg-Walker-inspired optimizations:
+虽然 Loro 不是纯粹的 Eg-Walker 实现，但它大量借鉴了 Eg-Walker 的创新，以实现类似的优势。Loro 在实现 Fugue（现代 CRDT 算法）的同时，融入了 Eg-Walker 式的优化：
 
-- **Fugue's correctness guarantees** for text editing
-- **Eg-Walker-inspired efficiency** in storage and computation
-- **Simple index-based operations** at the API level
-- **Smart replay mechanisms** for merging concurrent changes
+- **Fugue** 提供文本编辑的正确性保证
+- **Eg-Walker 式高效性** 降低存储和计算成本
+- **简单的索引化 API** 让开发者易于使用
+- **智能回放机制** 用于合并并发更改
 
-This hybrid approach provides:
+由此带来如下体验：
 ```javascript no_run
-// Simple API with powerful internals
+// 简洁的 API，强大的内部实现
 const doc = new Loro();
 const text = doc.getText("content");
 
-// Just use indices - Eg-Walker handles the complexity
+// 只需使用索引，Eg-Walker 处理复杂细节
 text.insert(5, "Hello");
 text.delete(2, 3);
 
-// Efficient merging happens automatically
+// 合并高效自动完成
 doc.import(remoteUpdate);
 ```
 
-## Garbage Collection Revolution
+## 垃圾回收的变革
 
-One of Eg-Walker's most significant advantages is **safe garbage collection**:
+Eg-Walker 最大的优势之一是**安全的垃圾回收**：
 
-### Traditional CRDTs
-- Must keep all tombstones forever
-- Document size grows unbounded
-- Complex protocols for coordinated cleanup
+### 传统 CRDT
+- 必须永久保留所有墓碑
+- 文档体积无限增长
+- 需要复杂的协调清理协议
 
-### With Eg-Walker
-- Operations synchronized across all endpoints can be **safely removed**
-- No new operations will be concurrent with fully-synchronized ones
-- Document size remains proportional to **active content**
+### 使用 Eg-Walker
+- 各端已完全同步的操作可以**安全删除**
+- 不会再有新操作与这些旧操作并发
+- 文档大小始终与**有效内容**成正比
 
-## Research Foundation
+## 研究基础
 
-Eg-Walker is based on rigorous academic research:
+Eg-Walker 来自严谨的学术研究：
 
 > [Collaborative Text Editing with Eg-walker: Better, Faster, Smaller](https://arxiv.org/abs/2409.14252)  
-> By: Joseph Gentle, Martin Kleppmann
+> 作者：Joseph Gentle, Martin Kleppmann
 
-The algorithm has been proven to:
-- Maintain strong eventual consistency
-- Preserve all CRDT correctness properties
-- Significantly reduce computational and storage overhead
+该算法已经证明：
+- 保持强最终一致性
+- 保留 CRDT 的全部正确性特性
+- 显著降低计算与存储开销

@@ -1,9 +1,9 @@
-# Storing Timestamps
+# 存储时间戳
 
-You can enable timestamp recording through `setRecordTimestamp`, allowing Unix timestamps to be logged in each `Change`. Consequently, these timestamps will be preserved in exported `Updates` or `Snapshots`.
+可以通过 `setRecordTimestamp` 启用时间戳记录，让每个 `Change` 都写入 Unix 时间戳。随后这些时间戳会保留在导出的 `Update` 或 `Snapshot` 中。
 
-Enabling this feature affects the merge behavior of `Changes`, as `Changes` with too long a time gap cannot share the same timestamp. In such cases, you can adjust the mergeable duration range using `setChangeMergeInterval`, with a default setting of 1,000,000, equating to a 1000s threshold for merging `Changes`.
+开启该功能会影响 `Change` 的合并行为：时间间隔过长的 `Change` 无法共享同一个时间戳。此时可以使用 `setChangeMergeInterval` 调整可合并的时间范围，默认值为 1,000,000（约等于 1000 秒）。
 
-> Each insertion or deletion by the user generates an `op`, and multiple consecutive `op`s can merge into a larger `Change`. `Change`s log a `Timestamp`, but each `Change` can only associate with one `Timestamp`. Hence, if the time gap is too wide, merging `Changes` becomes impractical. However, treating each Change as new based on slight timestamp differences (e.g., key presses milliseconds apart) introduces significant additional overhead for each Change. Therefore, users can customize the `change merge interval` according to their needs.
+> 用户每次插入或删除都会生成一个 `op`，连续的多个 `op` 可以合并为一个较大的 `Change`。`Change` 会记录一个 `Timestamp`，且每个 `Change` 只能关联一个时间戳。如果间隔太久就无法合并；但若因为毫秒级差异（例如按键间隔）就把每个 Change 都视为新的，又会显著增加 Change 的数量。因此用户可以根据需求自定义 `change merge interval`。
 
-Note that these settings do not persist in exported `Updates` or `Snapshots`. Thus, if custom configurations are required, they must be reapplied upon each initialization of `LoroDoc`. Without timestamp recording enabled, the `Timestamp` defaults to the current maximum known `Timestamp`.
+需要注意，这些设置不会写入导出的 `Update` 或 `Snapshot`。如果需要自定义配置，必须在每次初始化 `LoroDoc` 时重新设置。未开启时间戳记录时，`Timestamp` 会默认取当前已知的最大值。

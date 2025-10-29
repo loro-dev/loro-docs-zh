@@ -2,13 +2,13 @@
 title: "Loro 1.0"
 date: 2024/10/23
 keywords: "loro, crdt, event graph walker"
-description: "Announcing Loro 1.0: Introducing a stable encoding schema, 10-100x faster document import, advanced version control, and more for efficient real-time collaboration and local-first software development."
+description: "宣布 Loro 1.0：引入稳定的编码模式、10-100 倍的文档导入速度、高级版本控制等，以实现高效的实时协作和本地优先的软件开发。"
 image: https://i.ibb.co/T1x1bSf/IMG-8191.jpg
 ---
 
 # Loro 1.0
 
-import Authors, { Author } from "../../components/authors";
+import Authors, { Author } from "../../../components/authors";
 
 <Author
   name="Zixuan Chen"
@@ -18,62 +18,36 @@ import Authors, { Author } from "../../components/authors";
 
 import Image from "next/image";
 
-Loro is a [Conflict-free Replicated Data Type (CRDT)](https://crdt.tech/)
-library that developers can use to implement real-time collaboration and version
-control in their applications. You can use Loro to create
-[local-first software](https://www.inkandswitch.com/local-first/). Loro 1.0 has
-a stable data format, excellent performance, and rich features. You can use it
-in Rust, JS (via WASM), and Swift.
+Loro 是一个[无冲突复制数据类型 (CRDT)](https://crdt.tech/) 库，开发人员可以使用它在他们的应用程序中实现实时协作和版本控制。您可以使用 Loro 创建[本地优先软件](https://www.inkandswitch.com/local-first/)。Loro 1.0 具有稳定的数据格式、出色的性能和丰富的功能。您可以在 Rust、JS (通过 WASM) 和 Swift 中使用它。
 
 <details>
-<summary>What is CRDT? What is it used for?</summary>
+<summary>什么是 CRDT？它有什么用？</summary>
 
-Distributed states are now ubiquitous in multi-user collaborative applications
-and applications that need multi-device synchronization. You need to ensure
-consistency across devices. CRDTs provide a decentralized way to automatically
-solve this problem.
+分布式状态现在在多用户协作应用程序和需要多设备同步的应用程序中无处不在。您需要确保跨设备的一致性。CRDTs 提供了一种分散的方式来自动解决这个问题。
 
-> CRDTs automatically resolve conflicts and ensure the consistency of the data.
-> Some CRDT algorithms provide extra properties for merge results, which should align with user expectations as much as possible.
+> CRDTs 自动解决冲突并确保数据的一致性。一些 CRDT 算法为合并结果提供了额外的属性，这些属性应尽可能与用户期望保持一致。
 
-CRDT provides a decentralized way to solve this problem. The decentralization here not only means that it can synchronize through P2P methods, but it also means:
+CRDT 提供了一种分散的方式来解决这个问题。这里的去中心化不仅意味着它可以通过 P2P 方法进行同步，还意味着：
 
-- It allows applications to naturally support offline editing
-- It allows users to store and implement two-way synchronization of data in
-  multiple different locations
-- It makes it easier for the backend to implement horizontal scaling
-- It can easily support end-to-end encryption
+- 它允许应用程序自然地支持离线编辑
+- 它允许用户在多个不同位置存储和实现数据的双向同步
+- 它使后端更容易实现水平扩展
+- 它可以轻松支持端到端加密
 
-CRDTs were once considered unable to be used in serious and complex scenarios,
-such as rich text, but optimizations in recent years have greatly expanded its
-application scenarios, making it a practical and easy-to-use technology.
+CRDTs 曾被认为无法用于严肃和复杂的场景，例如富文本，但近年来的优化极大地扩展了其应用场景，使其成为一种实用且易于使用的技术。
 
-Based on CRDT, we can create applications that
-allow users to fully control data ownership. These applications can be like
-Git-managed repositories, not relying on specific software service providers.
-Users can switch between GitHub, GitLab, self-hosted Git servers, and the data
-is always available locally. This is the vision of
-[local-first software](https://www.inkandswitch.com/local-first/).
+基于 CRDT，我们可以创建允许用户完全控制数据所有权的应用程序。这些应用程序可以像 Git 管理的存储库一样，不依赖于特定的软件服务提供商。用户可以在 GitHub、GitLab、自托管的 Git 服务器之间切换，数据始终在本地可用。这是[本地优先软件](https://www.inkandswitch.com/local-first/)的愿景。
 
 <aside>
-❓ **What's the difference between sync via CRDT and sync via Git?**
+❓ **通过 CRDT 同步和通过 Git 同步有什么区别？**
 
-Git's protocol doesn't support real-time collaboration. When there are concurrent
-edits, Git needs to resolve conflicts manually; while CRDT can support real-time
-collaboration, can be extended to support rich text, and supports data with
-JSON-like schemas.
+Git 的协议不支持实时协作。当存在并发编辑时，Git 需要手动解决冲突；而 CRDT 可以支持实时协作，可以扩展以支持富文本，并支持具有类似 JSON 模式的数据。
 
 </aside>
 
-CRDTs often also provides a simpler and easier-to-use sync method,
-because for Op-based CRDTs like Loro, as long as the sets of CRDT operations
-received by two peers are consistent, the CRDT document states of these two
-peers are consistent. You don't have to worry about idempotency, the order of
-operation application, and network exception handling. For Loro's CRDT document,
-just two rounds of data exchange can transmit the missing operations between two
-documents to achieve final consistency:
+CRDTs 通常还提供一种更简单、更易于使用的同步方法，因为对于像 Loro 这样的基于操作的 CRDTs，只要两个对等方接收到的 CRDT 操作集一致，这两个对等方的 CRDT 文档状态就一致。您不必担心幂等性、操作应用顺序和网络异常处理。对于 Loro 的 CRDT 文档，只需两轮数据交换即可传输两个文档之间缺失的操作，以实现最终一致性：
 
-> You can find all the code samples in this blog [here](https://github.com/https://twitter.com/zx_loro/loro-blog-examples)
+> 您可以在[此处](https://github.com/https://twitter.com/zx_loro/loro-blog-examples)找到本博客中的所有代码示例
 
 ```jsx
 import { LoroDoc, VersionVector } from "npm:loro-crdt@1.0.0-beta.3";
@@ -88,7 +62,7 @@ docB.getText("text").insert(0, "Hi!");
 const versionA: Uint8Array = docA.version().encode();
 const versionB: Uint8Array = docB.version().encode();
 
-// Exchange versionA and versionB Info
+// 交换 versionA 和 versionB 信息
 const bytesA: Uint8Array = docA.export({
     mode: "update",
     from: VersionVector.decode(versionB),
@@ -98,7 +72,7 @@ const bytesB: Uint8Array = docB.export({
     from: VersionVector.decode(versionA),
 });
 
-// Exchange bytesA and bytesB
+// 交换 bytesA 和 bytesB
 docB.import(bytesA);
 docA.import(bytesB);
 
@@ -108,7 +82,7 @@ console.log(docB.getText("text").toString()); // Hello!Hi!
 
 <details>
 <summary>
-A minimum of one round of data exchange can ensure consistency
+最少一轮数据交换即可确保一致性
 </summary>
 
 ```jsx
@@ -121,7 +95,7 @@ docA.setPeerId(1);
 docA.getText("text").insert(0, "Hello!");
 docB.getText("text").insert(0, "Hi!");
 
-// Exchange versionA and versionB Info
+// 交换 versionA 和 versionB 信息
 const bytesA: Uint8Array = docA.export({
     mode: "update",
 });
@@ -129,7 +103,7 @@ const bytesB: Uint8Array = docB.export({
     mode: "update",
 });
 
-// Exchange bytesA and bytesB
+// 交换 bytesA 和 bytesB
 docB.import(bytesA);
 docA.import(bytesB);
 
@@ -140,43 +114,32 @@ console.log(docB.getText("text").toString()); // Hello!Hi!
 </details>
 </details>
 
-## Features of Loro 1.0
+## Loro 1.0 的特性
 
-### High-performance CRDTs
+### 高性能 CRDTs
 
-High-performance, general-purpose CRDTs can significantly reduce data synchronization
-complexity and are crucial for local-first development.
+高性能、通用的 CRDTs 可以显着降低数据同步的复杂性，对于本地优先的开发至关重要。
 
-However, large CRDT documents may face challenges with loading speed and memory consumption,
-especially when dealing with those with extensive editing histories.
-Loro 1.0 addresses this challenge through a new storage format, achieving a 10x improvement in
-loading speed. In [benchmarks using Loro with real-world editing data](#document-import-speed-benchmarks),
-we've reduced the loading time for a document with millions of operations from 16ms to 1ms. When utilizing the
-shallow snapshot format (discussed later), the time can be further reduced to 0.37ms.
-As a result, Loro will not become a bottleneck for applications dealing with such large documents.
-It expands the potential use cases for CRDTs, making them viable for a wider range of applications.
+然而，大型 CRDT 文档可能会面临加载速度和内存消耗的挑战，尤其是在处理具有大量编辑历史的文档时。
+Loro 1.0 通过一种新的存储格式解决了这一挑战，实现了 10 倍的加载速度提升。在[使用 Loro 和真实世界编辑数据的基准测试](#document-import-speed-benchmarks)中，我们将一个包含数百万次操作的文档的加载时间从 16 毫秒减少到 1 毫秒。当使用浅快照格式（稍后讨论）时，时间可以进一步减少到 0.37 毫秒。
+因此，Loro 不会成为处理此类大型文档的应用程序的瓶颈。
+它扩展了 CRDTs 的潜在用例，使其适用于更广泛的应用程序。
 
-### Rich CRDT types
+### 丰富的 CRDT 类型
 
-Loro now supports
-[rich text CRDT](https://loro.dev/blog/loro-richtext),
-which enhances the merge result of rich text (text with formatting and styling) to better align with user expectations.
-Our text/list CRDT is based on the [Fugue](https://arxiv.org/abs/2305.00583) algorithm.
-It prevents interleaving issues when merging concurrent edits. For example,
-it can avoid unintended merges like "1H2i3" when "123" and "Hi" are inserted concurrently.
+Loro 现在支持[富文本 CRDT](https://loro.dev/blog/loro-richtext)，它增强了富文本（带有格式和样式的文本）的合并结果，以更好地与用户期望保持一致。
+我们的文本/列表 CRDT 基于 [Fugue](https://arxiv.org/abs/2305.00583) 算法。
+它在合并并发编辑时可以防止交错问题。例如，当并发插入“123”和“Hi”时，它可以避免像“1H2i3”这样的意外合并。
 
-We also support:
+我们还支持：
 
-- Movable List: Supports set, insert, delete, and move operations. The algorithm ensures that after
-  merging concurrent moves, each element occupies only one position.
-- Map: Similar to a JavaScript object.
-- [Movable Tree](https://loro.dev/blog/movable-tree): Used to model file directories, outliners, and
-  other hierarchical structures that may need moving. It ensures no cyclic dependencies exist in the
-  tree after merging concurrent move operations.
+- 可移动列表：支持设置、插入、删除和移动操作。该算法确保在合并并发移动后，每个元素只占据一个位置。
+- Map：类似于 JavaScript 对象。
+- [可移动树](https://loro.dev/blog/movable-tree)：用于对文件目录、大纲编辑器和其他可能需要移动的层次结构进行建模。它确保在合并并发移动操作后，树中不存在循环依赖。
 
-Loro also supports nesting between types, so you can model edits on JSON documents through them:
+Loro 还支持类型之间的嵌套，因此您可以通过它们对 JSON 文档上的编辑进行建模：
 
-> You can find all the code samples in this blog [here](https://github.com/https://twitter.com/zx_loro/loro-blog-examples)
+> 您可以在[此处](https://github.com/https://twitter.com/zx_loro/loro-blog-examples)找到本博客中的所有代码示例
 
 ```tsx
 import {
@@ -186,7 +149,7 @@ import {
   LoroText,
 } from "npm:loro-crdt@1.0.0-beta.2";
 
-// Create a JSON structure of
+// 创建一个 JSON 结构
 interface JsonStructure {
   users: LoroList<
     LoroMap<{
@@ -210,16 +173,16 @@ firstNote.insert(0, "Hello, world!");
 console.log(doc.toJSON());
 ```
 
-### Version control
+### 版本控制
 
-Like Git, Loro saves a complete directed acyclic graph (DAG) of edit history. In Loro, the DAG is used to represent the dependencies between edits, similar to how Git represents commit history.
+与 Git 类似，Loro 保存了编辑历史的完整有向无环图 (DAG)。在 Loro 中，DAG 用于表示编辑之间的依赖关系，类似于 Git 表示提交历史的方式。
 
-Loro supports primitives that allow users to switch between different versions, fork new branches, edit on new branches, and merge branches.
+Loro 支持允许用户在不同版本之间切换、创建新分支、在新分支上编辑和合并分支的原语。
 
-Based on this operation primitive, applications can build various Git-like capabilities:
+基于此操作原语，应用程序可以构建各种类似 Git 的功能：
 
-- You can merge multiple versions without needing to manually resolve conflicts
-- You can rebase/squash updates from the current branch to the target branch (WIP)
+- 您可以合并多个版本，而无需手动解决冲突
+- 您可以将当前分支的更新变基/压缩到目标分支 (WIP)
 
 ```jsx
 import { LoroDoc } from "npm:loro-crdt@1.0.0-beta.2";
@@ -234,7 +197,7 @@ console.log(doc.getText("text").toString()); // "Hello,"
 doc.checkoutToLatest();
 console.log(doc.getText("text").toString()); // "Hello, world!"
 
-// Simulate a concurrent edit
+// 模拟并发编辑
 doc.checkout([{ peer: "0", counter: 5 }]);
 doc.setDetachedEditing(true);
 doc.setPeerId("1");
@@ -250,7 +213,7 @@ doc.checkoutToLatest();
 console.log(doc.getText("text").toString()); // "Hello, world! Alice!"
 ```
 
-You can also use `doc.fork()` to create a separate doc at the current version. It is independent of the current doc, and works like a fork:
+您还可以使用 `doc.fork()` 在当前版本创建一个独立的文档。它独立于当前文档，工作方式类似于 fork：
 
 ```tsx
 import { LoroDoc } from "npm:loro-crdt@1.0.0-beta.4";
@@ -275,27 +238,23 @@ console.log(doc.getText("text").toString()); // "Hello, world! Alice!"
 ```
 
 <aside>
-**Current limitations of version control in Loro**
+**Loro 中版本控制的当前限制**
 
-The application layer still needs a lot of code to provide users with more
-complete version control capabilities, such as:
+应用层仍然需要大量代码来为用户提供更完整的版本控制功能，例如：
 
-- Storing and synchronizing version tags and branches
-- Presenting diff view
-- Handling rebase and merge interactions
+- 存储和同步版本标签和分支
+- 显示差异视图
+- 处理变基和合并交互
 - ...
 
-These problems are not suitable to be solved in the current Loro CRDTs Lib, as
-too many assumptions about the schema and environment would make it difficult to
-use in other scenarios, so we won't build these parts in. But they all can be
-solved through additional libraries.
+这些问题不适合在当前的 Loro CRDTs Lib 中解决，因为对模式和环境的过多假设会使其难以在其他场景中使用，因此我们不会构建这些部分。但它们都可以通过额外的库来解决。
 
 </aside>
 
-### Leveraging the potential of the [Eg-walker](https://arxiv.org/abs/2409.14252)
+### 利用 [Eg-walker](https://arxiv.org/abs/2409.14252) 的潜力
 
-import { ReactPlayer } from "../../components/video";
-import Caption from "../../components/caption";
+import { ReactPlayer } from "../../../components/video";
+import Caption from "../../../components/caption";
 
 <ReactPlayer
   url="/static/REG.mp4"
@@ -308,108 +267,51 @@ import Caption from "../../components/caption";
   playing={true}
 />
 
-[Event Graph Walker (Eg-walker)](/docs/advanced/event_graph_walker) is a pioneering collaboration algorithm that combines the strengths of
-Operational Transformation (OT) and CRDT, two widely used algorithms for real-time collaboration.
+[Event Graph Walker (Eg-walker)](/docs/advanced/event_graph_walker) 是一种开创性的协作算法，它结合了操作转换 (OT) 和 CRDT 的优点，这两种算法是实时协作中广泛使用的两种算法。
 
-While OT is centralized and CRDT is decentralized, OT traditionally had an advantage
-in terms of lower document overhead. CRDTs initially had higher overhead, but recent
-optimizations have significantly reduced this gap, making CRDTs increasingly competitive.
-Eg-walker leverages the best aspects of both approaches.
+虽然 OT 是集中式的，CRDT 是分散式的，但 OT 传统上在文档开销方面具有优势。CRDTs 最初具有较高的开销，但最近的优化已显着缩小了这一差距，使 CRDTs 越来越具有竞争力。
+Eg-walker 利用了两种方法的最佳方面。
 
-Not only have we use the idea of Eg-walker for Text and List CRDTs in Loro, but
-Loro's overall architecture has also been greatly inspired by Eg-walker. As a
-result, Loro closely resembles Eg-walker in terms of algorithmic properties.
+我们不仅在 Loro 中将 Eg-walker 的思想用于文本和列表 CRDTs，而且 Loro 的整体架构也深受 Eg-walker 的启发。因此，Loro 在算法属性方面与 Eg-walker 非常相似。
 
 <aside>
-In terms of implementation details, Loro differs from the Eg-walker described
-in the paper. So it might be controversial to say Loro implements Eg-walker.
+在实现细节方面，Loro 与论文中描述的 Eg-walker 不同。因此，说 Loro 实现了 Eg-walker 可能存在争议。
 
-For example, Loro supports types other than text, and in Loro we store the ID
-of each character in the document state (but do not store tombstones), and so on.
+例如，Loro 支持除文本之外的其他类型，在 Loro 中，我们存储文档状态中每个字符的 ID（但不存储墓碑），等等。
 
-But it implements the idea of Eg-walker that travels the graph to
-construct temporary CRDTs for conflict resolution. And, like
-Eg-walker, Loro doesn't need to keep the CRDT structures in memory to edit
-a document.
+但它实现了 Eg-walker 的思想，即遍历图以构建用于冲突解决的临时 CRDTs。而且，与 Eg-walker 一样，Loro 不需要将 CRDT 结构保存在内存中即可编辑文档。
 
 </aside>
 
-[The Eg-walker paper](https://arxiv.org/abs/2409.14252) was released in
-September 2023. Prior to its official publication, Joseph Gentle shared an
-initial version of the algorithm in the Diamond-Type repository. Excited by
-the design, I implemented a similar algorithm in Loro two years ago. A brief
-introduction to this algorithm can be found
-[here](https://loro.dev/docs/advanced/event_graph_walker).
+[Eg-walker 论文](https://arxiv.org/abs/2409.14252) 于 2023 年 9 月发布。在其正式发布之前，Joseph Gentle 在 Diamond-Type 存储库中分享了该算法的初始版本。受该设计的启发，我两年前在 Loro 中实现了类似的算法。该算法的简要介绍可以在[此处](https://loro.dev/docs/advanced/event_graph_walker)找到。
 
-The properties of Eg-walker includes:
+Eg-walker 的属性包括：
 
-- It itself conforms to the definition of CRDT, so it has the strong eventual
-  consistency property of CRDT, thus can be used in distributed environments
-- Fast local operation speed: compared to previous CRDTs, it processes
-  operations extremely fast because it doesn't need to generate corresponding
-  Operations based on CRDT data structures
-- Fast merging of remote operations: The complexity of OT merging remote
-  operations is O(n^2), while Eg-walker, like mainstream CRDTs, is O(nlogn),
-  only reaching O(n^2) in extremely rare worst-case scenarios. This means that
-  when the number of concurrent operations reaches 10,000, OT will start to show
-  noticeable lag to users, while CRDTs can handle it easily. And in most
-  real-world scenario benchmarks, it's faster than other CRDTs.
-- Lower memory usage: Because it doesn't need to persistently store CRDT
-  structures in memory, its memory usage is lower than general CRDTs
-- Faster import speed: CRDT documents often take a long time to load because
-  they need to parse the corresponding CRDT structures or operations to build the CRDT
-  data structures. Without these structures, they cannot continue subsequent
-  editing, resulting in long import times. Eg-walker, like OT algorithms, only
-  needs the current document state and does not need to build these additional
-  structures to allow users to start editing the document directly, thus
-  achieving much faster import speed
+- 它本身符合 CRDT 的定义，因此具有 CRDT 的强最终一致性属性，因此可用于分布式环境
+- 快速的本地操作速度：与以前的 CRDTs 相比，它处理操作的速度极快，因为它不需要根据 CRDT 数据结构生成相应的操作
+- 快速合并远程操作：OT 合并远程操作的复杂度为 O(n^2)，而 Eg-walker 与主流 CRDTs 一样，为 O(nlogn)，仅在极少数最坏情况下达到 O(n^2)。这意味着当并发操作数达到 10,000 时，OT 会开始向用户显示明显的延迟，而 CRDTs 可以轻松处理。在大多数真实世界场景的基准测试中，它比其他 CRDTs 更快。
+- 较低的内存使用率：因为它不需要在内存中持久存储 CRDT 结构，所以其内存使用率低于通用 CRDTs
+- 更快的导入速度：CRDT 文档通常需要很长时间才能加载，因为它们需要解析相应的 CRDT 结构或操作来构建 CRDT 数据结构。没有这些结构，它们就无法继续后续的编辑，从而导致导入时间过长。Eg-walker 与 OT 算法一样，只需要当前的文档状态，而不需要构建这些额外的结构即可让用户直接开始编辑文档，从而实现更快的导入速度
 
 <aside>
-💡 **Differences between Loro and Eg-walker**
+💡 **Loro 和 Eg-walker 之间的差异**
 
-Although Loro is inspired by Eg-walker, overall, Loro's features differ
-from those of Eg-walker as described in the paper. The following are the
-specific differences:
+虽然 Loro 的灵感来自 Eg-walker，但总的来说，Loro 的功能与论文中描述的 Eg-walker 的功能不同。以下是具体差异：
 
-- In terms of performance characteristics of local operations and importing
-  updates, Loro and Eg-walker are similar.
-- Loro supports multiple data types besides text, such as Map, List, Movable
-  List, Tree, Counter, etc. Some CRDT types are not easily combined with
-  Eg-walker directly, so we need to make additional adaptations and adjustments
-  in Loro.
-- Loro's document state has additional metadata, including the ID of each
-  character. This metadata is used to support cursor synchronization and other
-  features. The IDs on the text can provide a stable position information
-  expression for functions like commenting.
-- In the algorithm described in the Eg-walker paper, users A and B can
-  initialize a CRDT document from the same plain text document and begin
-  collaboration without any historical information. Moreover, the histories that
-  formed these two plain text documents can be different. In Loro, however, it
-  is necessary to ensure that the histories of the documents on which A and B
-  collaborate are the same.
-- Our text supports not only plain text but also rich text, which includes formatting
-  attributes like bold, italic, and font styles. This makes our text data format different
-  from plain text and cannot be described directly using plain text description methods.
-- Loro's design supports not only real-time collaboration but also version
-  control. Therefore, we have additional data structures and information for
-  each op to make it faster to switch versions.
+- 在本地操作和导入更新的性能特征方面，Loro 和 Eg-walker 相似。
+- Loro 支持除文本之外的多种数据类型，例如 Map、List、Movable List、Tree、Counter 等。某些 CRDT 类型不容易直接与 Eg-walker 结合，因此我们需要在 Loro 中进行额外的适配和调整。
+- Loro 的文档状态具有额外的元数据，包括每个字符的 ID。此元数据用于支持光标同步和其他功能。文本上的 ID 可以为评论等功能提供稳定的位置信息表达。
+- 在 Eg-walker 论文中描述的算法中，用户 A 和 B 可以从同一个纯文本文档初始化一个 CRDT 文档并开始协作，而无需任何历史信息。此外，形成这两个纯文本文档的历史可以不同。然而，在 Loro 中，有必要确保 A 和 B 协作的文档的历史是相同的。
+- 我们的文本不仅支持纯文本，还支持富文本，其中包括粗体、斜体和字体样式等格式属性。这使得我们的文本数据格式与纯文本不同，无法直接使用纯文本描述方法进行描述。
+- Loro 的设计不仅支持实时协作，还支持版本控制。因此，我们为每个操作提供了额外的数据结构和信息，以便更快地切换版本。
 
 </aside>
 
-In the past quarter, we have made significant architectural adjustments to allow
-Loro to further leverage the advantages of the Eg-walker algorithm. Here are our
-achievements
+在过去的一个季度里，我们进行了重大的架构调整，以使 Loro 能够进一步利用 Eg-walker 算法的优势。以下是我们的成就
 
-#### Shallow Snapshot
+#### 浅快照
 
-By default, Loro stores the complete editing history of the document like Git,
-because
-[the Eg-walker algorithm needs to load edits that are parallel to them and to the least common ancestor when merging remote edits](https://loro.dev/docs/advanced/event_graph_walker).
-Shallow Snapshot is like Git's Shallow Clone, which can remove old historical
-operations that users don't need, greatly reducing document size and improving
-document import and export speed. This allows you to cold store document history
-that is too old and mainly use shallow doc for collaboration. Here's
-an example usage:
+默认情况下，Loro 像 Git 一样存储文档的完整编辑历史，因为[Eg-walker 算法在合并远程编辑时需要加载与它们并行且与最低共同祖先并行的编辑](https://loro.dev/docs/advanced/event_graph_walker)。浅快照就像 Git 的浅克隆，可以移除用户不需要的旧历史操作，从而大大减小文档大小并提高文档导入和导出速度。这使您可以冷存储过旧的文档历史，并主要使用浅文档进行协作。以下是一个用法示例：
 
 ```jsx
 import { LoroDoc } from "npm:loro-crdt@1.0.0-beta.2";
@@ -428,239 +330,156 @@ console.log(snapshotBytes.length); // 5421
 console.log(shallowSnapshotBytes.length); // 869
 ```
 
-For details on the implementation principle, see
-[Shallow Snapshot](/docs/advanced/shallow_snapshot).
+有关实现原理的详细信息，请参阅[浅快照](/docs/advanced/shallow_snapshot)。
 
-#### Optimized Document Format
+#### 优化的文档格式
 
-Loro version 1.0 has achieved a 10x to 100x improvement in document import speed
-compared to version 0.16, which already has a fast import speed.
-It makes it possible to load a large text document with several million operations
-in under a frame time.
+Loro 1.0 版本的文档导入速度比 0.16 版本提高了 10 到 100 倍，而 0.16 版本已经具有很快的导入速度。
+这使得在不到一帧的时间内加载一个包含数百万次操作的大型文本文档成为可能。
 
-This is because we introduced a new snapshot format.
-When a LoroDoc is initialized through this snapshot format, we don't
-parse the corresponding document state and historical information until the user
-actually needs that information.
+这是因为我们引入了一种新的快照格式。
+当通过此快照格式初始化 LoroDoc 时，我们不会解析相应的文档状态和历史信息，直到用户实际需要该信息。
 
 <aside>
-💡 **Loro performs integrity checks before importing updates/snapshots**
+💡 **Loro 在导入更新/快照之前执行完整性检查**
 
-We append a 4-byte xxhash32 checksum to each export to prevent data corruption.
-While this doesn't protect against malicious tampering, it's fast and effective
-at detecting issues caused by transmission errors or storage failures.
+我们在每次导出时附加一个 4 字节的 xxhash32 校验和，以防止数据损坏。
+虽然这不能防止恶意篡改，但它在检测由传输错误或存储故障引起的问题方面既快速又有效。
 
-Our main motivation for including integrity checks is to avoid bugs caused by
-data errors at a relatively low cost. Because Loro uses its own binary encoding
-format, which is different from user-understandable document formats like JSON,
-it would be extremely difficult to troubleshoot if data errors occur.
+我们包含完整性检查的主要动机是以相对较低的成本避免由数据错误引起的错误。因为 Loro 使用自己的二进制编码格式，这与用户可理解的文档格式（如 JSON）不同，如果发生数据错误，故障排除将极其困难。
 
 </aside>
 
-In Loro 1.0's snapshot format, without compression algorithms, its document size
-is twice that of the old version (and other mainstream CRDTs). This additional
-size mainly comes from encoding historical operations + document state in the
-1.0 snapshot format, without reusing stored data between the two, while in the
-old version we used the order of historical operations to encode the current
-state of the document (the old version's encoding learned from
-[Automerge encoding's Value Column](https://automerge.org/automerge-binary-format-spec/#_value_column)).
+在 Loro 1.0 的快照格式中，不使用压缩算法，其文档大小是旧版本的两倍（以及其他主流 CRDTs）。这种额外的大小主要来自于在 1.0 快照格式中编码历史操作+文档状态，而没有在两者之间重用存储的数据，而在旧版本中，我们使用历史操作的顺序来编码文档的当前状态（旧版本的编码借鉴了[Automerge 编码的 Value Column](https://automerge.org/automerge-binary-format-spec/#_value_column)）。
 
-Trading twice the document size for ten times the import speed is worthwhile
-because import speed affects the performance of many aspects, and the import
-speed of CRDT documents
-[is often noticeable to users on large documents](https://loro.dev/docs/performance)
-(> 16ms). It also leaves possibilities for more optimizations in the future.
+用两倍的文档大小换取十倍的导入速度是值得的，因为导入速度影响许多方面的性能，而 CRDT 文档的导入速度[在大型文档上通常对用户是可感知的](https://loro.dev/docs/performance)（> 16ms）。它也为将来更多的优化留下了可能性。
 
 <aside>
-❓ **Does this affect the efficiency of data transmission?**
+❓ **这会影响数据传输的效率吗？**
 
-It depends on the scenario:
+这取决于场景：
 
-1. For real-time collaboration:
-   - We don't need to continuously transmit the entire snapshot.
-   - We only need document updates (operations that are missing from other peers).
-   - The snapshot format mentioned above isn't used, so the transmission volume remains unchanged.
+1. 对于实时协作：
+   - 我们不需要连续传输整个快照。
+   - 我们只需要文档更新（其他对等方缺失的操作）。
+   - 不使用上面提到的快照格式，因此传输量保持不变。
 
-2. When a document needs to be loaded from remote:
-   - If using the complete snapshot, it would be twice as large as before.
-   - However, you have options:
-     1. Use the shallow snapshot format.
-     2. Export a complete set of updates for other peers, allowing them to calculate the latest document state.
+2. 当需要从远程加载文档时：
+   - 如果使用完整的快照，它将是以前的两倍大。
+   - 但是，您有选择：
+     1. 使用浅快照格式。
+     2. 为其他对等方导出一整套更新，让他们计算最新的文档状态。
 
-3. For local storage:
-   - Users are generally less sensitive to local storage costs.
-   - The snapshot format can be used for local persistence without significant impact.
+3. 对于本地存储：
+   - 用户通常对本地存储成本不太敏感。
+   - 快照格式可用于本地持久化，而不会产生重大影响。
 
 </aside>
 
-Inspired by the design of Key-Value Databases, we have also divided the storage
-of document state and history into blocks, with each block roughly 4KB in size,
-so that when users really need a piece of history, we only need to decompress
-and read this 4KB of content, without parsing the entire document. This has led
-to a qualitative improvement in import speed, and because the serialization
-format can better compress history and state, memory usage is also lower than
-before.
+受键值数据库设计的启发，我们还将文档状态和历史的存储划分为块，每个块大约 4KB，这样当用户真正需要一段历史时，我们只需要解压缩并读取这 4KB 的内容，而无需解析整个文档。这导致了导入速度的质的提高，并且由于序列化格式可以更好地压缩历史和状态，内存使用率也比以前更低。
 
-The lazy loading optimization takes advantage of Eg-walker's property that "it
-doesn't need to keep the complete CRDT data structure in memory at all times,
-and only needs to access historical operations when parallel edits occur".
+延迟加载优化利用了 Eg-walker 的特性，即“它不需要始终在内存中保留完整的 CRDT 数据结构，并且只有在发生并行编辑时才需要访问历史操作”。
 
 <details>
-<summary>How we implemented lazy loading</summary>
+<summary>我们如何实现延迟加载</summary>
 
-In Loro 1.0, we implemented a simple [LSM (Log-structured merge-tree)](https://en.wikipedia.org/wiki/Log-structured_merge-tree) engine internally. LSM is a data structure often used to
-implement Key-Value Databases, and Loro 1.0 is heavily inspired by its design.
-Currently, Loro's storage implementation uses get, set, and range operations of
-Key-Value Database as primitives. For example, Loro stores history as a series of
-ChangeBlocks, with each ChangeBlock serialized to about 4KB. Each ChangeBlock
-uses its first Op Id as the Key, and the serialized binary data of the
-ChangeBlock as the Value, stored in the internal LSM engine.
+在 Loro 1.0 中，我们在内部实现了一个简单的 [LSM (Log-structured merge-tree)](https://en.wikipedia.org/wiki/Log-structured_merge-tree) 引擎。LSM 是一种通常用于实现键值数据库的数据结构，Loro 1.0 的设计深受其启发。
+目前，Loro 的存储实现使用键值数据库的 get、set 和 range 操作作为原语。例如，Loro 将历史存储为一系列 ChangeBlocks，每个 ChangeBlock 序列化为大约 4KB。每个 ChangeBlock 使用其第一个 Op Id 作为键，并将 ChangeBlock 的序列化二进制数据作为值，存储在内部 LSM 引擎中。
 
-In our simple LSM Engine implementation, each Block is compressed during
-serialization, and decompression only occurs when the corresponding Value is
-actually retrieved. This allows the import speed of the new data format to be up
-to a hundred times faster than before, with even lower memory usage. So in Loro
-1.0:
+在我们简单的 LSM 引擎实现中，每个块在序列化期间都会被压缩，并且只有在实际检索到相应的值时才会进行解压缩。这使得新数据格式的导入速度比以前快一百倍，内存使用率甚至更低。因此，在 Loro 1.0 中：
 
-1. Data integrity is checked during import
-2. Loro internally stores history (History/OpLog) and state (DocState) in
-   blocks, loading the corresponding blocks as needed
-3. The Eg-walker algorithm that Loro is based on allows documents to start
-   editing without complete CRDTs meta information, thus easily working with
-   lazy loading behavior
+1. 在导入期间检查数据完整性
+2. Loro 在内部将历史 (History/OpLog) 和状态 (DocState) 存储在块中，根据需要加载相应的块
+3. Loro 所基于的 Eg-walker 算法允许文档在没有完整的 CRDTs 元信息的情况下开始编辑，因此可以轻松地与延迟加载行为配合使用
 
-Why is lazy loading valuable? Because in many use cases, we don't need to fully
-load the document's history and state:
+为什么延迟加载很有价值？因为在许多用例中，我们不需要完全加载文档的历史和状态：
 
-- For example, when we receive a set of remote updates, but the Loro document
-  data is still in the database, and we want to know the latest state of the
-  document, we need to load the LoroDoc snapshot from the database, then import
-  the remote update set, and then get the latest document state. At this point,
-  most of the historical information won't be accessed.
-- Sometimes in data synchronization scenarios, peer A needs to send historical
-  data that peer B doesn't have. It needs to import the snapshot and then
-  extract the historical information that B doesn't have. In this case, the
-  document's state doesn't need to be parsed, and the unused part of the history
-  doesn't need to be parsed either.
-- Users don't need document history when initializing a document; only parsing
-  the State is necessary at this point
+- 例如，当我们收到一组远程更新，但 Loro 文档数据仍在数据库中，并且我们想知道文档的最新状态时，我们需要从数据库加载 LoroDoc 快照，然后导入远程更新集，然后获取最新的文档状态。此时，大多数历史信息将不会被访问。
+- 有时在数据同步场景中，对等方 A 需要发送对等方 B 没有的历史数据。它需要导入快照，然后提取 B 没有的历史信息。在这种情况下，不需要解析文档的状态，也不需要解析未使用的历史部分。
+- 用户在初始化文档时不需要文档历史；此时只需要解析状态
 
-  ![When merging remote operations, only the modified containers and some of the related historical operations need to be visited](./v1/merge-edit.png)
+  ![合并远程操作时，只需要访问已修改的容器和一些相关的历史操作](./v1/merge-edit.png)
 
-  When merging remote operations, only the modified containers and some of the
-  related historical operations need to be visited
+  合并远程操作时，只需要访问已修改的容器和一些相关的历史操作
 
-What happens during import and export in the new version? Let's take a common
-scenario as an example:
+在新版本中导入和导出期间会发生什么？让我们以一个常见的场景为例：
 
-In real-time collaboration sessions or local storage, we recommend developers
-first store the operations from users, and then periodically perform compaction.
-This compaction involves importing the old snapshot and all scattered updates
-into the same LoroDoc, then exporting uniformly through the Snapshot format. In
-the new version, this will involve the following:
+在实时协作会话或本地存储中，我们建议开发人员首先存储用户的操作，然后定期执行压缩。此压缩涉及将旧快照和所有分散的更新导入到同一个 LoroDoc 中，然后通过快照格式统一导出。在新版本中，这将涉及以下内容：
 
-- First, the old version of the snapshot is imported
-- The received updates may contain parallel edits, so a part of the related
-  parallel edit history from the old version needs to be loaded to construct the
-  CRDT and complete the diff calculation
-  - Loro internally loads and parses the data of the corresponding block to get
-    the corresponding history; at this point, complete document parsing does not
-    occur
-- After the diff calculation is complete, it needs to be applied to the
-  corresponding States
-  - Loro will internally load and parse the corresponding state, and at this
-    point, complete document parsing does not occur either
-- Export
-  - Unaffected history blocks or state blocks are exported as they are
-  - Affected blocks will be serialized to overwrite the original block, then
-    exported
-  - During export, we use a method similar to SSTable internally for the final
-    export
+- 首先，导入旧版本的快照
+- 收到的更新可能包含并行编辑，因此需要从旧版本加载一部分相关的并行编辑历史以构建 CRDT 并完成差异计算
+  - Loro 在内部加载并解析相应块的数据以获取相应的历史；此时，不会发生完整的文档解析
+- 差异计算完成后，需要将其应用于相应的状态
+  - Loro 将在内部加载并解析相应的状态，此时也不会发生完整的文档解析
+- 导出
+  - 未受影响的历史块或状态块按原样导出
+  - 受影响的块将被序列化以覆盖原始块，然后导出
+  - 在导出期间，我们内部使用类似于 SSTable 的方法进行最终导出
 
-The only data that needs to be parsed in this entire process are:
+在整个过程中唯一需要解析的数据是：
 
-- Meta information for each stored block
-- Blocks that need to be read will be decompressed
-- History Blocks / state Blocks that will be affected by Updates
+- 每个存储块的元信息
+- 需要读取的块将被解压缩
+- 将受更新影响的历史块/状态块
 
 <aside>
-❓ Do we still need to load the entire document blob with these optimizations?
+❓ 我们是否仍然需要通过这些优化来加载整个文档 blob？
 
-We still need to load the entire document blob into memory. However, our current architecture has implemented internal block-based loading and storage, making it easier for us to implement true block-based retrieval and saving from disk in the future. This could make Loro function more like a database. While theoretically feasible, we'll assess if there are practical scenarios that require this capability. For most documents, Loro's current performance is already quite sufficient.
+我们仍然需要将整个文档 blob 加载到内存中。然而，我们当前的架构已经实现了内部基于块的加载和存储，这使我们将来更容易实现从磁盘选择性地加载/保存块。这可以使 Loro 的功能更像一个数据库。虽然理论上可行，但我们将评估是否有实际场景需要此功能。对于大多数文档，Loro 当前的性能已经相当足够。
 
 </aside>
 
 </details>
 
-#### Benchmarks
+#### 基准测试
 
-> All benchmarks results below were performed on a MacBook Pro M1 2020
+> 以下所有基准测试结果均在 MacBook Pro M1 2020 上执行
 
-Below is a comparison of Snapshot import and export speeds between Loro versions
-1.0.0-beta.1 and 0.16.12. The benchmark is based on document editing history
-from the real world. Thanks to [latch.bio](http://latch.bio) for sharing the
-document data. The benchmark code is available [here](https://github.com/loro-dev/latch-bench).
-The document contains 1,659,541 operations.
+以下是 Loro 1.0.0-beta.1 和 0.16.12 版本之间快照导入和导出速度的比较。基准测试基于真实世界的文档编辑历史。感谢 [latch.bio](http://latch.bio) 分享文档数据。基准测试代码可在[此处](https://github.com/loro-dev/latch-bench)获得。该文档包含 1,659,541 次操作。
 
-> In Loro, a Snapshot stores the document history along with its current state.
-> The Shallow Snapshot format, similar to Git's Shallow Clone, can exclude
-> history. In the benchmark below, the Shallow Snapshot has a depth=1 (only the
-> most recent operation history is retained, other historical operations are
-> removed)
+> 在 Loro 中，快照存储文档历史及其当前状态。
+> 浅快照格式类似于 Git 的浅克隆，可以排除历史。在下面的基准测试中，浅快照的深度=1（仅保留最近的操作历史，其他历史操作被移除）
 
-| task                            | Old Snapshot Format on 0.16.12 | New Snapshot Format        | Shallow Snapshot Format |
+| 任务                            | 0.16.12 上的旧快照格式 | 新快照格式        | 浅快照格式 |
 | ------------------------------- | ------------------------------ | -------------------------- | ----------------------- |
-| Import                          | 17.3ms +- 0.0298ms             | 1.15ms +- 0.0101ms (15x)   | 375µs +- 8.47µs (47x)   |
-| Import+GetAllValues             | 17.4ms +- 0.0437ms             | 1.19ms +- 0.0122ms (14.5x) | 375µs +- 1.60µs (46x)   |
-| Import+GetAllValues+Edit        | 17.5ms +- 0.0263ms             | 1.21ms +- 0.0120ms (14.5x) | 375µs +- 1.40µs (46.5x) |
-| Import+GetAllValues+Edit+Export | 32.4ms +- 0.0560ms             | 5.46ms +- 0.0772ms (6x)    | 844µs +- 5.12µs (38.5x) |
+| 导入                          | 17.3ms +- 0.0298ms             | 1.15ms +- 0.0101ms (15x)   | 375µs +- 8.47µs (47x)   |
+| 导入+GetAllValues             | 17.4ms +- 0.0437ms             | 1.19ms +- 0.0122ms (14.5x) | 375µs +- 1.60µs (46x)   |
+| 导入+GetAllValues+编辑        | 17.5ms +- 0.0263ms             | 1.21ms +- 0.0120ms (14.5x) | 375µs +- 1.40µs (46.5x) |
+| 导入+GetAllValues+编辑+导出 | 32.4ms +- 0.0560ms             | 5.46ms +- 0.0772ms (6x)    | 844µs +- 5.12µs (38.5x) |
 
-Here are the key points of this benchmark:
+以下是此基准测试的要点：
 
-- The Shallow Snapshot has a depth of 1, meaning it only contains the document
-  state and a single historical operation, which is why it's significantly
-  faster
-- _GetAllValue_ refers to calling `doc.get_deep_value()` (in JS, it's
-  `doc.toJSON()` ). It loads the complete state of the document and
-  obtains the corresponding JSON-like structure. This represents the time spent
-  on CRDT parsing before a user loads a document.
-- _Edit_ refers to making a local modification. As you can see, it has little
-  impact on the time taken because Loro doesn't need to load the complete CRDT
-  data structure for local operations.
-- _Export_ refers to exporting the complete document data again. We expect to
-  further reduce the time spent here in the future, as we can continue to reuse
-  the encoding of unmodified Blocks from the import.
+- 浅快照的深度为 1，这意味着它只包含文档状态和单个历史操作，这就是它明显更快的原因
+- _GetAllValue_ 指的是调用 `doc.get_deep_value()`（在 JS 中是 `doc.toJSON()`）。它加载文档的完整状态并获取相应的类似 JSON 的结构。这表示用户加载文档之前在 CRDT 解析上花费的时间。
+- _Edit_ 指的是进行本地修改。如您所见，它对所用时间影响不大，因为 Loro 不需要为本地操作加载完整的 CRDT 数据结构。
+- _Export_ 指的是再次导出完整的文档数据。我们希望将来能进一步减少此处花费的时间，因为我们可以继续重用导入中未修改块的编码。
 
-The following shows the performance on a document after applying the editing
-history from the
-[Automerge Paper](https://github.com/automerge/automerge-perf/tree/master/edit-by-index)
-**100 times**. You can reproduce the results [here](https://github.com/https://twitter.com/zx_loro/automerge-paper-bench).
-The document contains:
+以下显示了在应用[Automerge 论文](https://github.com/automerge/automerge-perf/tree/master/edit-by-index)中的编辑历史 **100 次**后文档的性能。您可以在[此处](https://github.com/https://twitter.com/zx_loro/automerge-paper-bench)重现结果。
+该文档包含：
 
-- 18,231,500 single-character insertion operations
-- 7,746,300 single-character deletion operations
-- 25,977,800 operations totally
-- 10,485,200 characters in the final document
+- 18,231,500 次单字符插入操作
+- 7,746,300 次单字符删除操作
+- 总共 25,977,800 次操作
+- 最终文档中有 10,485,200 个字符
 
-| Snapshot Type    | Size (bytes) |
+| 快照类型    | 大小 (字节) |
 | ---------------- | ------------ |
-| Old snapshot     | 27,347,374   |
-| New snapshot     | 23,433,380   |
-| Shallow Snapshot | 4,388,215    |
+| 旧快照     | 27,347,374   |
+| 新快照     | 23,433,380   |
+| 浅快照 | 4,388,215    |
 
-- The New snapshot data is smaller because it performs additional simple
-  compression on each Block during encoding internally
+- 新快照数据更小，因为它在内部编码时对每个块执行了额外的简单压缩
 
-| task                       | Old Snapshot     | New Snapshot           | Shallow Snapshot       |
+| 任务                       | 旧快照     | 新快照           | 浅快照       |
 | -------------------------- | ---------------- | ---------------------- | ---------------------- |
-| Parse                      | 538ms +- 3.23ms  | 17.9ms +- 48.5µs (30x) | 14.4ms +- 114µs (37x)  |
-| Parse+ToString             | 568ms +- 1.78ms  | 20.2ms +- 57.2µs (28x) | 16.8ms +- 81.4µs (34x) |
-| Parse+ToString+Edit        | 561ms +- 940µs   | 119ms +- 180µs (4.5x)  | 113ms +- 185µs (5x)    |
-| Parse+ToString+Edit+Export | 1460ms +- 22.9ms | 251ms +- 1.60ms (6x)   | 206ms +- 360µs (7x)    |
+| 解析                      | 538ms +- 3.23ms  | 17.9ms +- 48.5µs (30x) | 14.4ms +- 114µs (37x)  |
+| 解析+ToString             | 568ms +- 1.78ms  | 20.2ms +- 57.2µs (28x) | 16.8ms +- 81.4µs (34x) |
+| 解析+ToString+编辑        | 561ms +- 940µs   | 119ms +- 180µs (4.5x)  | 113ms +- 185µs (5x)    |
+| 解析+ToString+编辑+导出 | 1460ms +- 22.9ms | 251ms +- 1.60ms (6x)   | 206ms +- 360µs (7x)    |
 
-## Next Steps for Loro
+## Loro 的下一步
 
-### Loro Version Controller
+### Loro 版本控制器
 
 <ReactPlayer
   url="/static/loro-cli-import-repo.mp4"
@@ -670,57 +489,37 @@ The document contains:
   controls={true}
 />
 
-<Caption>Importing Loro Git Repo into Loro Version Controller</Caption>
+<Caption>将 Loro Git 仓库导入 Loro 版本控制器</Caption>
 
-Loro's performance on a single document is now sufficient to cover the real-time
-collaboration and version management needs of most documents. So our next step
-will be to explore real-time collaboration and version control across a
-collection of documents.
+Loro 在单个文档上的性能现在足以满足大多数文档的实时协作和版本管理需求。因此，我们的下一步将是探索跨文档集合的实时协作和版本控制。
 
-We believe that CRDTs can create a Git for Everyone and Everything:
+我们相信 CRDTs 可以为每个人和每件事创建一个 Git：
 
-- It's for Everyone because by leveraging the power of CRDTs, we can make version
-  control much easier to reason about and use for the average person.
-- It's (nearly) for Everything because Loro provides a rich set of data
-  synchronization types. We're no longer limited to synchronizing plain text
-  data, but can solve semantic automatic merging of JSON-like schema, which can meet
-  most needs of creative tools and collaborative tools.
+- 它适用于每个人，因为通过利用 CRDTs 的力量，我们可以使版本控制对于普通人来说更容易理解和使用。
+- 它（几乎）适用于所有事物，因为 Loro 提供了一组丰富的数据同步类型。我们不再局限于同步纯文本数据，而是可以解决类似 JSON 模式的语义自动合并，这可以满足大多数创意工具和协作工具的需求。
 
-We've created a demo of the Loro version controller, which is based on our
-sub-document implementation (implemented in the application layer) with Version information.
-It can import the entire React repository (about 20,000 commits, thousands of
-collaborators), and it supports real-time collaboration on such
-repositories. However, how to better manage versions and seamlessly integrate with Git still needs to be explored.
+我们创建了一个 Loro 版本控制器的演示，它基于我们的子文档实现（在应用层实现）和版本信息。
+它可以导入整个 React 存储库（约 20,000 次提交，数千名协作者），并支持在此类存储库上进行实时协作。然而，如何更好地管理版本并与 Git 无缝集成仍有待探索。
 
 <aside>
-  When merging extensive concurrent edits, CRDTs can automatically merge
-  changes, but the result may not always meet expectations. Fortunately, Loro
-  stores the complete editing history. This allows us to offer Git-like manual
-  conflict resolution at the application layer when needed.
+  在合并大量并发编辑时，CRDTs 可以自动合并更改，但结果可能并不总是符合预期。幸运的是，Loro 存储了完整的编辑历史。这使我们可以在需要时在应用层提供类似 Git 的手动冲突解决。
 </aside>
 
-Loro CRDTs still have significant room for optimization in these scenarios.
-Currently, the Loro CRDTs library doesn't involve network or disk I/O, which
-enhances its ease of use but also constrains its capabilities and potential
-optimizations.
-For example, while we've implemented block-level storage, documents are still
-imported and exported as whole units. Adding I/O capabilities to selectively
-load/save blocks would enable significant performance optimizations.
+在这些场景中，Loro CRDTs 仍有很大的优化空间。
+目前，Loro CRDTs 库不涉及网络或磁盘 I/O，这增强了其易用性，但也限制了其功能和潜在的优化。
+例如，虽然我们已经实现了块级存储，但文档仍然作为整个单元导入和导出。添加 I/O 功能以选择性地加载/保存块将实现显着的性能优化。
 
-## Conclusion
+## 结论
 
-Loro 1.0 features great performance improvements, rich CRDT types, and advanced
-version control features. Our optimized document format has yielded promising
-results on the import speed and the memory usage.
+Loro 1.0 具有出色的性能改进、丰富的 CRDT 类型和高级版本控制功能。我们优化的文档格式在导入速度和内存使用方面取得了可喜的成果。
 
-Now that Loro CRDTs are stable, we are able to develop a better ecosystem.
-We're excited to see it being applied in various scenarios.
-If you're interested in using Loro, welcome to join our
-[Discord community](https://discord.gg/tUsBSVfqzf) for discussions.
+既然 Loro CRDTs 已经稳定，我们就可以开发一个更好的生态系统。
+我们很高兴看到它被应用于各种场景。
+如果您有兴趣使用 Loro，欢迎加入我们的
+[Discord 社区](https://discord.gg/tUsBSVfqzf) 进行讨论。
 
 <aside>
-  🚀 **Want early access to our upcoming local-first apps built with Loro?**
-  [Sign up
-  here](https://noteforms.com/forms/request-early-access-for-loro-apps-vkbt9p)
-  to be among the first to try them out!
+  🚀 **想提前体验我们即将推出的基于 Loro 的本地优先应用程序吗？**
+  [在此处注册](https://noteforms.com/forms/request-early-access-for-loro-apps-vkbt9p)
+  成为第一批试用者！
 </aside>

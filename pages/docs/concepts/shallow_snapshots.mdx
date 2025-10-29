@@ -1,32 +1,31 @@
-# Shallow Snapshots
+# 浅快照（Shallow Snapshots）
 
-## Quick Reference
+## 快速概览
 
-**Shallow snapshots** are like Git's shallow clone - maintain current state while removing old history. Essential for privacy compliance, storage optimization, and performance.
+**浅快照** 类似于 Git 的浅克隆：保留当前状态，同时裁剪旧的历史。它是满足隐私合规、优化存储与提升性能的关键工具。
 
-
-## Basic Usage
+## 基本用法
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
-// ... extensive editing history ...
+// ... 这里经历了大量编辑历史 ...
 
-// Regular snapshot - full history
+// 常规快照 —— 包含完整历史
 const full = doc.export({ mode: "snapshot" });
 
-// Shallow snapshot - trimmed history
+// 浅快照 —— 裁剪后的历史
 const shallow = doc.export({
   mode: "shallow-snapshot",
   frontiers: doc.frontiers(),
 });
 
-// Typically 70-90% smaller
+// 通常可以缩小 70%~90%
 console.log(`Size reduction: ${100 - (shallow.length / full.length * 100)}%`);
 ```
 
-## Content Redaction
+## 内容删除（Redaction）
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -34,38 +33,37 @@ import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const text = doc.getText("content");
 
-// Sensitive data added
+// 写入敏感数据
 text.insert(0, "SSN: 123-45-6789. ");
 text.insert(18, "Public info.");
 
-// Redact sensitive part
+// 删除敏感部分
 text.delete(0, 18);
 
-// Create clean snapshot
+// 生成干净的快照
 const redacted = doc.export({
   mode: "shallow-snapshot",
   frontiers: doc.frontiers(),
 });
-// Sensitive data permanently removed from history
+// 历史中的敏感数据被永久移除
 ```
 
-## Synchronization Limitations
+## 同步限制
 
-⚠️ **Important**: Peers can only sync if they have versions after the shallow snapshot point.
+⚠️ **注意**：只有在浅快照时间点之后拥有版本的节点才能继续同步。
 
+## 常见模式
 
-## Common Patterns
-
-### Archive and Trim
+### 归档并裁剪
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 async function archiveAndTrim(doc: LoroDoc) {
-  // 1. Archive full history
+  // 1. 归档完整历史
   const full = doc.export({ mode: "snapshot" });
   await saveToArchive(full);
   
-  // 2. Create shallow for active use
+  // 2. 为活跃使用生成浅快照
   const shallow = doc.export({
     mode: "shallow-snapshot",
     frontiers: doc.frontiers(),
@@ -75,11 +73,11 @@ async function archiveAndTrim(doc: LoroDoc) {
 }
 
 async function saveToArchive(data: Uint8Array) {
-  // Save to cold storage
+  // 保存到冷存储
 }
 ```
 
-### Privacy-Aware Design
+### 隐私优先的设计
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
@@ -87,10 +85,10 @@ class PrivacyDoc {
   constructor(private doc: LoroDoc) {}
   
   async redactSensitive() {
-    // Delete sensitive content
+    // 删除敏感内容
     this.doc.getText("private").delete(0, this.doc.getText("private").length);
     
-    // Create clean snapshot
+    // 生成干净的快照
     return this.doc.export({
       mode: "shallow-snapshot",
       frontiers: this.doc.frontiers(),
@@ -99,13 +97,13 @@ class PrivacyDoc {
 }
 ```
 
-## Best Practices
+## 最佳实践
 
-- **Coordinate before trimming**: Ensure all peers synchronized
-- **Archive before deletion**: Keep full history backup if needed
+- **裁剪前先协调**：确保所有节点已完成同步
+- **删除前先归档**：如需保留完整历史，先做备份
 
-## Related Documentation
+## 相关文档
 
-- [Encoding](../tutorial/encoding) - Different export options
-- [Version Tutorial](../tutorial/version) - Managing document versions
-- [Event Graph Walker](./event_graph_walker) - Algorithm powering shallow snapshots
+- [编码](../tutorial/encoding)——了解不同导出选项
+- [版本教程](../tutorial/version)——管理文档版本
+- [Event Graph Walker](./event_graph_walker)——支撑浅快照的算法

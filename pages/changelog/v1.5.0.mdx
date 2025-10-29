@@ -1,16 +1,16 @@
 ---
 version: "v1.5.0"
-title: "Release Loro v1.5.0"
+title: "发布 Loro v1.5.0"
 date: 2025/04/04
 ---
 
-## New
+## 新增
 
-### 1. New Hooks
+### 1. 新的钩子
 
-`doc.subscribePreCommit(listener)` - Modify commit options before processing:
+`doc.subscribePreCommit(listener)` - 在处理前修改提交选项：
 
-This hook is particularly useful because doc.commit() is often invoked implicitly in various methods such as doc.import, doc.export, doc.checkout, and doc.exportJsonUpdates. Without this hook, users attempting to add custom messages to each commit might miss these implicit commit triggers.
+这个钩子特别有用，因为 `doc.commit()` 通常在各种方法中被隐式调用，例如 `doc.import`、`doc.export`、`doc.checkout` 和 `doc.exportJsonUpdates`。没有这个钩子，试图为每个提交添加自定义消息的用户可能会错过这些隐式提交触发器。
 
 ```ts
 const doc = new LoroDoc();
@@ -23,7 +23,7 @@ doc.commit();
 expect(doc.getChangeAt({ peer: "0", counter: 0 }).message).toBe("test");
 ```
 
-Advanced Example - Creating a Merkle DAG:
+高级示例 - 创建一个 Merkle DAG：
 
 ```ts no_run
 const doc = new LoroDoc();
@@ -52,9 +52,9 @@ expect(doc.getChangeAt({ peer: "0", counter: 0 }).message).toBe(
 );
 ```
 
-`doc.subscribeFirstCommitFromPeer(listener)` - Triggers on first peer interaction:
+`doc.subscribeFirstCommitFromPeer(listener)` - 在第一次对等交互时触发：
 
-This hook provides an ideal point to associate peer information (such as author identity) with the document.
+这个钩子为将对等信息（例如作者身份）与文档关联提供了一个理想的点。
 
 ```ts
 const doc = new LoroDoc();
@@ -69,9 +69,9 @@ expect(doc.getMap("users").get("0")).toBe("user-0");
 
 ### 2. EphemeralStore
 
-EphemeralStore is a better alternative to Awareness for ephemeral states:
+EphemeralStore 是 Awareness 用于临时状态的更好替代方案：
 
-Awareness is commonly used as a state-based CRDT for handling ephemeral states in real-time collaboration scenarios, such as cursor positions and application component highlights. As application complexity grows, Awareness may be set in multiple places, from cursor positions to user presence. However, the current version of Awareness doesn't support partial state updates, which means even minor mouse movements require synchronizing the entire Awareness state.
+Awareness 通常用作基于状态的 CRDT，用于处理实时协作场景中的临时状态，例如光标位置和应用程序组件高亮。随着应用程序复杂性的增长，Awareness 可能会在多个地方设置，从光标位置到用户在线状态。然而，当前版本的 Awareness 不支持部分状态更新，这意味着即使是轻微的鼠标移动也需要同步整个 Awareness 状态。
 
 ```ts no_run
 awareness.setLocalState({
@@ -79,7 +79,7 @@ awareness.setLocalState({
   x: 167,
 });
 ```
-Since Awareness is primarily used in real-time collaboration scenarios where consistency requirements are relatively low, we can make it more flexible. We've introduced EphemeralStore as an alternative to Awareness. Think of it as a simple key-value store that uses timestamp-based last-write-wins for conflict resolution. You can choose the appropriate granularity for your key-value pairs based on your application's needs, and only modified key-value pairs are synchronized.
+由于 Awareness 主要用于一致性要求相对较低的实时协作场景，我们可以使其更加灵活。我们引入了 EphemeralStore 作为 Awareness 的替代方案。可以把它想象成一个简单的键值存储，它使用基于时间戳的最后写入获胜来解决冲突。您可以根据应用程序的需求为键值对选择适当的粒度，并且只同步修改后的键值对。
 
 
 ```ts
@@ -90,18 +90,18 @@ import {
 } from "loro-crdt";
 
 const store = new EphemeralStore();
-// Set ephemeral data
+// 设置临时数据
 store.set("user-alice", {
     anchor: 10,
     focus: 20,
     user: "Alice"
 });
 
-// Encode only the data for `loro-prosemirror`
+// 仅编码 `loro-prosemirror` 的数据
 const encoded = store.encode("user-alice")
 const newStore = new EphemeralStore();
 newStore.subscribe((e: EphemeralStoreEvent) => {
-    // Listen to changes from `local`, `remote`, or `timeout` events
+    // 监听来自 `local`、`remote` 或 `timeout` 事件的更改
 });
 
 newStore.apply(encoded);
@@ -113,9 +113,8 @@ console.log(newStore.get("user-alice"))
 // }
 ```
 
-## Fix
+## 修复
 
-- Fixed text styling at end "\n" character
-- Added JSON support for current transaction operations
-- For environments that support multi-threading such as Rust and Swift, LoroDoc can now be directly and safely 
-  shared and accessed in parallel across multiple threads without triggering the previous WouldBlock panic.
+- 修复了在末尾“\n”字符处的文本样式问题
+- 为当前事务操作添加了 JSON 支持
+- 对于支持多线程的环境，例如 Rust 和 Swift，LoroDoc 现在可以直接且安全地在多个线程之间并行共享和访问，而不会触发之前的 WouldBlock panic。

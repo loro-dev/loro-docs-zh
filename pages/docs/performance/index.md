@@ -1,107 +1,74 @@
 ---
-keywords: "loro, yjs, automerge, benchmark, memory, crdt"
-description: "CRDT benchmarks, comparing the performance of Loro and popular CRDTs"
+keywords: "loro, yjs, automerge, 基准测试, 内存, crdt"
+description: "CRDT 基准测试，用于比较 Loro 与主流 CRDT 的性能"
 ---
 
-# JS/WASM Benchmarks
+# JS/WASM 基准测试
 
-> The primary role of these benchmarks should be to serve as indicators of the absence of performance pitfalls rather than as measures of which project is superior. This is because different projects consistently make different trade-offs. It is inaccurate to claim that Project A is superior to Project B simply because A performs better in certain benchmarks, while Project B may excel in other areas by a significant margin.
+> 这些基准测试的主要作用是提示是否存在性能隐患，而不是用来判定哪一个项目更优秀。不同项目始终会做出不同的取舍。仅因为项目 A 在某些基准中表现更好就断言它优于项目 B 并不准确，因为项目 B 很可能在其他方面有着显著优势。
 
-The benchmark can be reproduced using the [crdt-benchmarks](https://github.com/https://twitter.com/zx_loro/crdt-benchmarks) repo.
+可以通过 [crdt-benchmarks](https://github.com/https://twitter.com/zx_loro/crdt-benchmarks) 仓库复现这些测试。
 
-- The benchmarks were performed on MacBook Pro M1 2020 with 16GB RAM
-- loro-old is the version of loro on 2023-11-10, it's compiled from
-  [this commit](https://github.com/loro-dev/loro/tree/c1613ee680c6a4757e55fcda76e4f5f627daeb56).
-  Loro has undergone numerous changes since then, particularly in terms of
-  [encoding schema](https://github.com/loro-dev/loro/pull/219), shifting from a
-  performance-focused version to one that prioritizes compatibility. Because we
-  want Loro to have good backward and forward compatibility after reaching
-  version 1.0, we have adopted a more easily extensible encoding method. It is
-  slower than the encoding method used in the `loro-old` version, but it better
-  ensures our ability to iterate quickly after reaching version 1.0 without
-  introducing breaking changes.
-- There is a more exchaustive benchmark at the bottom that only runs benchmarks
-  on Yjs.
-- Automerge can perform the `B4` benchmark in about 1 second (see `time`) if all
-  changes are applied within a single `change` transaction. However, our
-  benchmarks test individual edits that generate individual update events as
-  this more closely simulates actual user behavior.
-- Note that `parseTime` is significantly higher with `automerge` and `loro` when
-  the initial document is not empty (e.g. when syncing content from a remote
-  server).
-- Loro and Automerge can store a complete DAG of editing history for each
-keystroke, but Yjs requires additional storage for a Version Vector + Delete
-Set for each version saved, which incurs significant extra overhead beyond the
-document size reported.
+- 基准测试在 MacBook Pro M1 2020（16GB RAM）上执行。
+- `loro-old` 指 2023-11-10 的 loro 版本，编译自
+  [这个提交](https://github.com/loro-dev/loro/tree/c1613ee680c6a4757e55fcda76e4f5f627daeb56)。
+  从那以后 Loro 做了大量改动，尤其是
+  [编码方案](https://github.com/loro-dev/loro/pull/219)。
+  为了在 1.0 之后保持良好的前后向兼容性，我们改用了更易扩展的编码方式。
+  它确实比 `loro-old` 使用的编码更慢，但能在不破坏兼容性的前提下更快迭代。
+- 文末还有一个更全面的基准组，仅针对 Yjs。
+- 如果所有变更都在一次 `change` 事务中提交，Automerge 可以在约 1 秒内完成 `B4` 基准（见 `time` 字段）。
+  但为了更贴近真实用户行为，我们的测试会模拟逐条编辑，并让每次编辑都生成独立的更新事件。
+- 当初始文档非空时（例如同步远端内容），`automerge` 与 `loro` 的 `parseTime` 会明显更高。
+- Loro 和 Automerge 可以为每次按键保存完整的编辑历史 DAG；
+  而 Yjs 若要为每个版本保存状态则需要额外存储版本向量与删除集合，这会带来超出文中统计的额外开销。
+
 <details>
-<summary>Benchmark setup</summary>
+<summary>基准设置</summary>
 
-#### B1: No conflicts
+#### B1：无冲突
 
-Simulate two clients. One client modifies a text object and sends update
-messages to the other client. We measure the time to perform the task (`time`),
-the amount of data exchanged (`avgUpdateSize`), the size of the encoded document
-after the task is performed (`docSize`), the time to parse the encoded document
-(`parseTime`), and the memory used to hold the decoded document (`memUsed`).
+模拟两个客户端。一方修改文本对象并将更新消息发送给另一方。我们统计执行任务的耗时（`time`）、通信数据量（`avgUpdateSize`）、任务结束后文档的编码大小（`docSize`）、解析编码文档的时间（`parseTime`），以及持有解码文档所需的内存（`memUsed`）。
 
-#### B2: Two users producing conflicts
+#### B2：两个用户产生冲突
 
-Simulate two clients. Both start with a synced text object containing 100
-characters. Both clients modify the text object in a single transaction and then
-send their changes to the other client. We measure the time to sync concurrent
-changes into a single client (`time`), the size of the update messages
-(`updateSize`), the size of the encoded document after the task is performed
-(`docSize`), the time to parse the encoded document (`parseTime`), and the
-memory used to hold the decoded document (`memUsed`).
+模拟两个客户端。双方从包含 100 个字符的同步文本对象开始，各自在单次事务中完成修改，再将变更发送给对端。我们统计将冲突变更合并到单个客户端的时间（`time`）、更新消息大小（`updateSize`）、任务结束后文档的编码大小（`docSize`）、解析编码文档的时间（`parseTime`），以及持有解码文档所需的内存（`memUsed`）。
 
-#### B3: Many conflicts
+#### B3：大量冲突
 
-Simulate `√N` concurrent actions. We measure the time to perform the task and
-sync all clients (`time`), the size of the update messages (`updateSize`), the
-size of the encoded document after the task is performed (`docSize`), the time
-to parse the encoded document (`parseTime`), and the memory used to hold the
-decoded document (`memUsed`). The logarithm of `N` was chosen because `√N`
-concurrent actions may result in up to `√N^2 - 1` conflicts (apply action 1: 0
-conflict; apply action2: 1 conflict, apply action 2: 2 conflicts, ..).
+模拟 `√N` 个并发操作。我们统计执行任务并同步所有客户端的时间（`time`）、更新消息大小（`updateSize`）、任务结束后文档的编码大小（`docSize`）、解析编码文档的时间（`parseTime`），以及持有解码文档所需的内存（`memUsed`）。`√N` 的对数是因为 `√N` 个并发操作最多可能产生 `√N^2 - 1` 个冲突（执行操作 1：0 个冲突；执行操作 2：1 个冲突；执行操作 3：2 个冲突……）。
 
-#### B4: Real-world editing dataset
+#### B4：真实编辑数据集
 
-Replay a real-world editing dataset. This dataset contains the
-character-by-character editing trace of a large-ish text document, the LaTeX
-source of this paper: https://arxiv.org/abs/1608.03960
+重放真实世界的编辑数据集。该数据集记录了一份大型文本的逐字符编辑历史，原始 LaTeX 文档见：https://arxiv.org/abs/1608.03960
 
-Source: https://github.com/automerge/automerge-perf/tree/master/edit-by-index
+来源：https://github.com/automerge/automerge-perf/tree/master/edit-by-index
 
-- 182,315 single-character insertion operations
-- 77,463 single-character deletion operations
-- 259,778 operations totally
-- 104,852 characters in the final document
+- 182,315 次单字符插入
+- 77,463 次单字符删除
+- 共 259,778 次操作
+- 最终文档包含 104,852 个字符
 
-We simulate one client replaying all changes and storing each update. We measure
-the time to replay the changes and the size of all update messages
-(`updateSize`), the size of the encoded document after the task is performed
-(`docSize`), the time to encode the document (`encodeTime`), the time to parse
-the encoded document (`parseTime`), and the memory used to hold the decoded
-document in memory (`memUsed`).
+我们模拟单个客户端重放全部变更并保存每次更新。统计指标包括重放全部变更的耗时以及所有更新消息的大小（`updateSize`）、任务结束后文档的编码大小（`docSize`）、编码文档所需时间（`encodeTime`）、解析编码文档的时间（`parseTime`），以及文档解码后常驻内存的占用（`memUsed`）。
 
-##### [B4 x 100] Real-world editing dataset 100 times
+##### [B4 × 100] 将真实编辑数据集重放 100 次
 
-Replay the [B4] dataset one hundred times. The final document has a size of over
-10 million characters. As comparison, the book "Game of Thrones: A Song of Ice
-and Fire" is only 1.6 million characters long (including whitespace).
+将 [B4] 数据集重放一百遍，最终文档超过一千万个字符。作为对比，《权力的游戏：冰与火之歌》全书（含空白）也只有约 160 万字符。
 
-- 18,231,500 single-character insertion operations
-- 7,746,300 single-character deletion operations
-- 25,977,800 operations totally
-- 10,485,200 characters in the final document
+- 18,231,500 次单字符插入
+- 7,746,300 次单字符删除
+- 共 25,977,800 次操作
+- 最终文档包含 10,485,200 个字符
 
 </details>
 
+下表保留了基准脚本输出时的英文任务名称，便于与原始数据对照。
+
 | N = 6000                                                                 |              yjs |           ywasm |             loro |         loro-old |        automerge |  automerge-wasm |
 | :----------------------------------------------------------------------- | ---------------: | --------------: | ---------------: | ---------------: | ---------------: | --------------: |
-| Version                                                                  |          13.6.15 |          0.17.4 |     1.0.0-beta.2 |           0.15.2 |           2.1.10 |           0.9.0 |
-| Bundle size                                                              |     84,017 bytes |   938,991 bytes |  2,919,363 bytes |  1,583,094 bytes |  1,696,176 bytes | 1,701,136 bytes |
-| Bundle size (gzipped)                                                    |     25,105 bytes |   284,616 bytes |    894,460 bytes |    592,039 bytes |    591,049 bytes |   594,071 bytes |
+| 版本                                                                      |          13.6.15 |          0.17.4 |     1.0.0-beta.2 |           0.15.2 |           2.1.10 |           0.9.0 |
+| 包体积                                                                    |     84,017 bytes |   938,991 bytes |  2,919,363 bytes |  1,583,094 bytes |  1,696,176 bytes | 1,701,136 bytes |
+| 包体积（gzip）                                                            |     25,105 bytes |   284,616 bytes |    894,460 bytes |    592,039 bytes |    591,049 bytes |   594,071 bytes |
 | [B1.1] Append N characters (time)                                        |           141 ms |          171 ms |           164 ms |           115 ms |           279 ms |          110 ms |
 | [B1.1] Append N characters (avgUpdateSize)                               |         27 bytes |        27 bytes |         88 bytes |         58 bytes |        121 bytes |       121 bytes |
 | [B1.1] Append N characters (encodeTime)                                  |             1 ms |            0 ms |             3 ms |             0 ms |             5 ms |            6 ms |

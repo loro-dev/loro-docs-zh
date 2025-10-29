@@ -1,85 +1,84 @@
 ---
 version: "v1.0.0"
-title: "Release Loro v1.0.0"
+title: "发布 Loro v1.0.0"
 date: 2024/10/21
 # breakingChange: false
 # category: ["Encoding", "Tree"]
 ---
 
-We are very excited to announce the release of Loro v1.0, a major milestone.
+我们非常激动地宣布 Loro v1.0 的发布，这是一个重要的里程碑。
 
-It has a stable encoding format, faster document import and export speed, better version control capabilities, and a shallow snapshot. For more information, please check [the blog](https://loro.dev/blog/v1.0).
+它具有稳定的编码格式、更快的文档导入和导出速度、更好的版本控制功能以及浅快照。有关更多信息，请查看[博客](https://loro.dev/blog/v1.0)。
 
-The following are the specific API changes:
+以下是具体的 API 更改：
 
-## New
+## 新增
 
 ### LoroDoc
 
-- `getChange(id: ID)`: get `ChangeMeta` by `ID`.
-- `setDetachedEditing(flag: boolean)`: Enables editing in detached mode, which is disabled by default.
-- `isDetachedEditingEnabled()`: Whether the editing is enabled in detached mode.
-- `setNextCommitMessage(msg: string)`: Set the commit message of the next commit.
-- `shallowSinceVV()`: The doc only contains the history since this version.
-- `shallowSinceFrontiers()`: The doc only contains the history since this version.
-- `export(mode: ExportMode)`: Export the document based on the specified ExportMode. see more details [here](/docs/tutorial/encoding).
-- `getDeepValueWithID()`: Get deep value of the document with container id.
-- `subscribeLocalUpdates(callback:(bytes: Uint8Array) => void)`: Subscribe to updates from local edits.
-- `getPathToContainer(id: ContainerID)`: Get the path from the root to the container.
-- `JSONPath(jsonPath: string)`: Evaluate JSONPath against a LoroDoc.
-- `forkAt(frontiers: Frontiers): LoroDoc`: Creates a new LoroDoc at a specified version (Frontiers)
-- `getPendingTxnLength():number`: Get the number of operations in the pending transaction.
-- `travelChangeAncestors(ids: ID[], callback: (meta: ChangeMeta)->bool)`: Iterate over all changes including the input id in order, and stop iterating if the callback returns false.
+- `getChange(id: ID)`: 通过 `ID` 获取 `ChangeMeta`。
+- `setDetachedEditing(flag: boolean)`: 启用分离模式下的编辑，默认禁用。
+- `isDetachedEditingEnabled()`: 分离模式下的编辑是否已启用。
+- `setNextCommitMessage(msg: string)`: 设置下一次提交的提交消息。
+- `shallowSinceVV()`: 文档仅包含此版本之后的历史记录。
+- `shallowSinceFrontiers()`: 文档仅包含此版本之后的历史记录。
+- `export(mode: ExportMode)`: 根据指定的 ExportMode 导出文档。更多详情请参阅[此处](/docs/tutorial/encoding)。
+- `getDeepValueWithID()`: 获取带有容器 ID 的文档的深层值。
+- `subscribeLocalUpdates(callback:(bytes: Uint8Array) => void)`: 订阅本地编辑的更新。
+- `getPathToContainer(id: ContainerID)`: 获取从根到容器的路径。
+- `JSONPath(jsonPath: string)`: 对 LoroDoc 执行 JSONPath。
+- `forkAt(frontiers: Frontiers): LoroDoc`: 在指定版本 (Frontiers) 创建一个新的 LoroDoc
+- `getPendingTxnLength():number`: 获取待处理事务中的操作数。
+- `travelChangeAncestors(ids: ID[], callback: (meta: ChangeMeta)->bool)`: 按顺序遍历所有更改，包括输入 id，如果回调返回 false，则停止遍历。
 
 ### LoroText
 
-- `updateByLine(text: string)`: Update the current text based on the provided text line by line like git.
+- `updateByLine(text: string)`: 像 git 一样，逐行根据提供的文本更新当前文本。
 
 ### LoroList
 
-- `toArray(): ValueOrContainer[]`: Get elements of the list. If the value is a child container, the corresponding `Container` will be returned.
-- `clear()`: Delete all elements in the list.
+- `toArray(): ValueOrContainer[]`: 获取列表的元素。如果值是子容器，则返回相应的 `Container`。
+- `clear()`: 删除列表中的所有元素。
 
 ### LoroMovableList
 
-- `toArray(): ValueOrContainer[]`: Get elements of the list. If the value is a child container, the corresponding `Container` will be returned.
-- `clear()`: Delete all elements in the list.
+- `toArray(): ValueOrContainer[]`: 获取列表的元素。如果值是子容器，则返回相应的 `Container`。
+- `clear()`: 删除列表中的所有元素。
 
 ### LoroMap
 
-- `clear()`: Delete all key-value pairs in the map.
+- `clear()`: 删除 map 中的所有键值对。
 
 ### LoroTree
 
-- `enableFractionalIndex(jitter: number)`: Set whether to generate fractional index for Tree Position.
-- `disableFractionalIndex()`: Disable the fractional index generation for Tree Position when
-  you don't need the Tree's siblings to be sorted. The fractional index will be always default.
-- `isFractionalIndexEnabled()`: Whether the tree enables the fractional index generation.
-- `isNodeDeleted(id: TreeID)`: Return `undefined` if the node is not exist, otherwise return `true` if the node is deleted.
-- `getNodes(prop: getNodesProp): LoroTreeNode[]`: Get the flat array of the forest. If `with_deleted` is true, the deleted nodes will be included.
+- `enableFractionalIndex(jitter: number)`: 设置是否为树位置生成小数索引。
+- `disableFractionalIndex()`: 当您不需要对树的兄弟节点进行排序时，禁用树位置的小数索引生成。小数索引将始终为默认值。
+- `isFractionalIndexEnabled()`: 树是否启用了小数索引生成。
+- `isNodeDeleted(id: TreeID)`: 如果节点不存在，则返回 `undefined`，否则如果节点已删除，则返回 `true`。
+- `getNodes(prop: getNodesProp): LoroTreeNode[]`: 获取森林的扁平数组。如果 `with_deleted` 为 true，则将包括已删除的节点。
 
 ### UndoManager
 
-- `clear()`: Clear the Undo and Redo stack of `UndoManager`
+- `clear()`: 清除 `UndoManager` 的撤销和重做堆栈
 
-## Changes
+## 变更
 
 ### LoroDoc
 
-- Move `setFractionalIndexJitter()` to `LoroTree`, you can set whether to enable or disable it for each `Tree Container`.
-- `import()`, `importWith()` and `importJsonUpdates` will return `ImportStatus` for indicating which ops have been successfully applied and which ops are pending.
-- New Subscription for event.
-- In Loro 1.0, `doc.version()` `doc.frontiers()` `doc.oplogVersion()` and `doc.oplogFrontiers()` even if ops has not been committed, it indicates the latest version of all operations.
-- rename `Loro` to `LoroDoc`.
+- 将 `setFractionalIndexJitter()` 移动到 `LoroTree`，您可以为每个 `Tree Container` 设置是启用还是禁用它。
+- `import()`、`importWith()` 和 `importJsonUpdates` 将返回 `ImportStatus`，以指示哪些操作已成功应用，哪些操作正在等待。
+- 新的事件订阅。
+- 在 Loro 1.0 中，即使操作尚未提交，`doc.version()` `doc.frontiers()` `doc.oplogVersion()` 和 `doc.oplogFrontiers()` 也表示所有操作的最新版本。
+- 将 `Loro` 重命名为 `LoroDoc`。
 
 ### LoroTree
 
-- `contains(id: TreeID)`: Return true even if the node exists in the internal state and has been deleted.
-- `nodes()`: deleted nodes will be included now, you can use `isDeleted()` to filter.
-- `toJSON()`: Now use the hierarchical approach to express the tree structure.
+- `contains(id: TreeID)`: 即使节点存在于内部状态中并已被删除，也返回 true。
+- `nodes()`: 现在将包括已删除的节点，您可以使用 `isDeleted()` 进行过滤。
+- `toJSON()`: 现在使用分层方法来表示树结构。
 
-## Deprecation
+## 弃用
 
 ### LoroDoc
 
-- `exportFrom(version)` and `exportSnapshot()` are deprecated, use `export(mode: ExportMode)` instead.
+- `exportFrom(version)` 和 `exportSnapshot()` 已被弃用，请改用 `export(mode: ExportMode)`。

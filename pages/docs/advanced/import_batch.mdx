@@ -1,8 +1,8 @@
-# Batch Import
+# 批量导入
 
-## Performance Differences and Their Causes
+## 性能差异及原因
 
-When importing multiple updates into a document, using `doc.importBatch(updates)` is significantly faster than importing updates individually. This performance difference stems from how data merging is handled in each approach.
+当需要向文档导入多份更新时，调用 `doc.importBatch(updates)` 比逐条导入快得多。这种性能差异来自两种方式在合并数据时的开销差异。
 
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
@@ -15,26 +15,26 @@ doc.getText("text").update("Hello World");
 const update2 = doc.export({ mode: "update", from: version });
 
 const newDoc1 = new LoroDoc();
-newDoc1.importBatch([update1, update2]); // faster
+newDoc1.importBatch([update1, update2]); // 更快
 
 const newDoc2 = new LoroDoc();
-for (const update of [update1, update2]) { // slower
+for (const update of [update1, update2]) { // 更慢
   newDoc2.import(update);
 }
 ```
 
-### Key Advantages of Import Batch
+### 批量导入的核心优势
 
-#### 1. Single Diff Calculation
+#### 1. 只需一次 diff 计算
 
-The most significant advantage is that import batch performs only one diff calculation. In contrast, each individual import follows these steps:
+最大的优势是批量导入只计算一次 diff。单次导入则需要依次执行：
 
-- Merge remote updates into local history
-- Calculate document state changes from the current version to the merged version
-- Apply the diff to the current document state
+- 将远端更新合并进本地历史；
+- 计算当前版本到合并后版本之间的状态变更；
+- 将 diff 应用到当前文档状态。
 
-This diff calculation has fixed overhead costs that accumulate with each import. But `doc.importBatch(...)` only performs one diff calculation, which is faster than multiple individual diff calculations.
+diff 计算有固定开销，逐条导入会重复支付。而 `doc.importBatch(...)` 只做一次 diff，自然更快。
 
-#### 2. Reduced Communication Overhead
+#### 2. 降低事件沟通成本
 
-Import batch also results in more concise events. Each individual import generates a new event, but `doc.importBatch(...)` generates only a single event that contains all the changes.
+批量导入还会生成更精简的事件。逐条导入每次都会产生一个新事件，而 `doc.importBatch(...)` 只创建一个包含所有变更的事件。

@@ -4,7 +4,7 @@ export default function CustomerWall() {
             {/* Section Header */}
             <div className="text-center mb-20">
                 <h2 className="text-4xl md:text-5xl not-italic font-bold bg-clip-text mb-8 bg-blue-green text-fill-transparent" style={{ lineHeight: 1.5 }}>
-                    Who's Using Loro
+                    谁在使用 Loro
                 </h2>
             </div>
 
