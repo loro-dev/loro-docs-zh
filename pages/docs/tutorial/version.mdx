@@ -1,0 +1,23 @@
+# Version
+
+In centralized environments, we can use linear version numbers to represent a version, such as incrementing a number each time or using timestamps. However, CRDTs can be used in decentralized environments, and their version representation is different.
+
+In Loro, you can express a document's version through a [Version Vector](/docs/concepts/version_vector) or [Frontiers](/docs/concepts/frontiers).
+
+```ts twoslash
+import { LoroDoc } from "loro-crdt";
+// ---cut---
+const doc = new LoroDoc();
+doc.version(); // State Version vector
+doc.oplogVersion(); // OpLog Version vector
+doc.frontiers(); // State Frontiers
+doc.oplogFrontiers(); // OpLog Frontiers
+```
+
+In most cases, you might only need the Version Vector, which can be used for data synchronization and version comparison.
+
+## Learn More
+
+- [Version Vector](/docs/concepts/version_vector) - Complete peer state tracking for synchronization
+- [Frontiers](/docs/concepts/frontiers) - Compact version representation for checkpoints
+- [Version Deep Dive](/docs/advanced/version_deep_dive) - Technical details about DAG, causality, and version implementations

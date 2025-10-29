@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Loro Changelog</title>
+        <link>https://loro.dev/changelog/</link>
+        <description>Changelog of Loro CRDT.</description>
+        <lastBuildDate>Mon, 22 Sep 2025 13:16:41 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <item>
+            <title><![CDATA[Release Loro v1.8.0]]></title>
+            <link>https://loro.dev/changelog/v1.8.0</link>
+            <guid>https://loro.dev/changelog/v1.8.0</guid>
+            <pubDate>Sun, 21 Sep 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Events now fire <strong>synchronously</strong></p>
+<p>In the JavaScript package <code>loro-crdt@1.8.0</code>, we changed event emission from <strong>“after a microtask”</strong> to <strong>synchronous</strong> dispatch. This makes event handling simpler and less error‑prone.</p>
+<h3>Why we changed it</h3>
+<p>Historically, the JS binding emitted events <strong>after a microtask</strong>. The reason was to avoid Rust borrow/aliasing issues: if an event triggered inside <code>doc.commit()</code> re‑entered the same <code>doc</code>, Rust could panic because <code>commit()</code> holds a borrow and reusing the object would violate borrowing rules. Deferring events to a microtask avoided that re‑entrancy. (Background: Loro’s JS API exposes subscriptions via <code>doc.subscribe(...)</code>; the docs note that events used to arrive after a microtask. ([Loro][1]))</p>
+<p>However, this deferral made app logic fragile. There was a window between the mutation and the event callback. Example: the app receives the event from CRDT “delete the 3rd character of <code>Hi!</code>”, but during the microtask gap the app state changed <code>Hi!</code> → <code>Hi</code>. When the deferred event arrives, applying a “delete index 2” delta can be wrong. In practice, users had to maintain an awkward invariant: <strong>don’t mutate the app state during that microtask</strong> if you consume delta updates.</p>
+<h3>What’s new in 1.8.0</h3>
+<p>Events are now <strong>dispatched synchronously</strong>—that is, your listeners run <strong>before</strong> the top‑level JS call (e.g., <code>doc.commit()</code>) returns. To keep this safe with Rust’s borrowing:</p>
+<ul>
+<li>We keep a <strong>global queue</strong> of “pending (listener, event)” pairs.</li>
+<li>JS wrappers decorate APIs that can borrow the Rust doc (e.g., <code>commit</code>, import/export, checkout).</li>
+<li>The wrapper calls into WASM/Rust, <strong>returns from the borrow</strong>, then <strong>flushes the queue</strong> and clears it.</li>
+<li>Because callbacks run <strong>outside</strong> the borrowed region, listeners can freely call <code>doc</code> APIs without triggering borrow violations.</li>
+</ul>
+<h3>What this means for your app</h3>
+<ul>
+<li><strong>Simpler state updates.</strong> No more microtask gap; event ordering matches your mutation order.</li>
+<li><strong>Fewer footguns with deltas.</strong> You no longer need to uphold “don’t touch the doc during the microtask” when applying delta‑style updates.</li>
+<li><strong>Listeners can still safely use <code>doc</code>.</strong></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.6.0]]></title>
+            <link>https://loro.dev/changelog/v1.6.0</link>
+            <guid>https://loro.dev/changelog/v1.6.0</guid>
+            <pubDate>Thu, 28 Aug 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Snapshot import speed is now 2x.</p>
+<p>This is implemented by skipping the scan when importing a snapshot, which avoids running the decompression during the import process (but we need to ensure the parent-child link is still accessible in Arena). It also skips the checksum check in the import_all method on MemKV because we already check the checksum in the header of the snapshot/update.</p>
+<h2>v1.0.0 vs v1.6.0</h2>
+<p>You can find the benchmark <a href="https://github.com/loro-dev/latch-bench/tree/cmp-loro-160">here</a>.</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>task</th>
+<th>time</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Shallow Snapshot on v1.0.0</td>
+<td>Import</td>
+<td>150.667µs +- 1.823µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues</td>
+<td>163.957µs +- 1.841µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit</td>
+<td>173.971µs +- 2.03µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit+Export</td>
+<td>488.848µs +- 3.621µs</td>
+</tr>
+<tr>
+<td>Shallow Snapshot on v1.6.0</td>
+<td>Import</td>
+<td>82.82µs +- 507ns</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues</td>
+<td>90.376µs +- 393ns</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit</td>
+<td>103.358µs +- 1.916µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit+Export</td>
+<td>419.463µs +- 2.316µs</td>
+</tr>
+<tr>
+<td>Snapshot on v1.0.0</td>
+<td>Import</td>
+<td>466.425µs +- 3.879µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues</td>
+<td>487.06µs +- 3.523µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit</td>
+<td>541.477µs +- 9.067µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit+Export</td>
+<td>2.98382ms +- 80.537µs</td>
+</tr>
+<tr>
+<td>Snapshot on v1.6.0</td>
+<td>Import</td>
+<td>201.934µs +- 854ns</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues</td>
+<td>370.108µs +- 4.049µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit</td>
+<td>386.497µs +- 3.509µs</td>
+</tr>
+<tr>
+<td></td>
+<td>Import+GetAllValues+Edit+Export</td>
+<td>2.362296ms +- 28.258µs</td>
+</tr>
+</tbody></table>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro Inspector v0.1.0]]></title>
+            <link>https://loro.dev/changelog/inspector-v0.1.0</link>
+            <guid>https://loro.dev/changelog/inspector-v0.1.0</guid>
+            <pubDate>Tue, 29 Apr 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Try it here: <a href="https://inspector.loro.dev/">Loro Inspector</a></p>
+<p>Now you can directly browse the current state and complete edit history of your Loro 
+documents in the browser. You can also use this tool to time travel to any version 
+in the history of your Loro document.</p>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.5.0]]></title>
+            <link>https://loro.dev/changelog/v1.5.0</link>
+            <guid>https://loro.dev/changelog/v1.5.0</guid>
+            <pubDate>Thu, 03 Apr 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>New</h2>
+<h3>1. New Hooks</h3>
+<p><code>doc.subscribePreCommit(listener)</code> - Modify commit options before processing:</p>
+<p>This hook is particularly useful because doc.commit() is often invoked implicitly in various methods such as doc.import, doc.export, doc.checkout, and doc.exportJsonUpdates. Without this hook, users attempting to add custom messages to each commit might miss these implicit commit triggers.</p>
+<pre><code class="language-ts">const doc = new LoroDoc();
+doc.setPeerId(0);
+doc.subscribePreCommit((e) =&gt; {
+  e.modifier.setMessage(&quot;test&quot;).setTimestamp(Date.now());
+});
+doc.getList(&quot;list&quot;).insert(0, 100);
+doc.commit();
+expect(doc.getChangeAt({ peer: &quot;0&quot;, counter: 0 }).message).toBe(&quot;test&quot;);
+</code></pre>
+<p>Advanced Example - Creating a Merkle DAG:</p>
+<pre><code class="language-ts">const doc = new LoroDoc();
+doc.setPeerId(0);
+doc.subscribePreCommit((e) =&gt; {
+  const changes = doc.exportJsonInIdSpan(e.changeMeta);
+  expect(changes).toHaveLength(1);
+  const hash = crypto.createHash(&quot;sha256&quot;);
+  const change = {
+    ...changes[0],
+    deps: changes[0].deps.map((d) =&gt; {
+      const depChange = doc.getChangeAt(idStrToId(d));
+      return depChange.message;
+    }),
+  };
+  hash.update(JSON.stringify(change));
+  const sha256Hash = hash.digest(&quot;hex&quot;);
+  e.modifier.setMessage(sha256Hash);
+});
+
+doc.getList(&quot;list&quot;).insert(0, 100);
+doc.commit();
+
+expect(doc.getChangeAt({ peer: &quot;0&quot;, counter: 0 }).message).toBe(
+  &quot;2af99cf93869173984bcf6b1ce5412610b0413d027a5511a8f720a02a4432853&quot;,
+);
+</code></pre>
+<p><code>doc.subscribeFirstCommitFromPeer(listener)</code> - Triggers on first peer interaction:</p>
+<p>This hook provides an ideal point to associate peer information (such as author identity) with the document.</p>
+<pre><code class="language-ts">const doc = new LoroDoc();
+doc.setPeerId(0);
+doc.subscribeFirstCommitFromPeer((e) =&gt; {
+  doc.getMap(&quot;users&quot;).set(e.peer, &quot;user-&quot; + e.peer);
+});
+doc.getList(&quot;list&quot;).insert(0, 100);
+doc.commit();
+expect(doc.getMap(&quot;users&quot;).get(&quot;0&quot;)).toBe(&quot;user-0&quot;);
+</code></pre>
+<h3>2. EphemeralStore</h3>
+<p>EphemeralStore is a better alternative to Awareness for ephemeral states:</p>
+<p>Awareness is commonly used as a state-based CRDT for handling ephemeral states in real-time collaboration scenarios, such as cursor positions and application component highlights. As application complexity grows, Awareness may be set in multiple places, from cursor positions to user presence. However, the current version of Awareness doesn&#39;t support partial state updates, which means even minor mouse movements require synchronizing the entire Awareness state.</p>
+<pre><code class="language-ts">awareness.setLocalState({
+  ...awareness.getLocalState(),
+  x: 167,
+});
+</code></pre>
+<p>Since Awareness is primarily used in real-time collaboration scenarios where consistency requirements are relatively low, we can make it more flexible. We&#39;ve introduced EphemeralStore as an alternative to Awareness. Think of it as a simple key-value store that uses timestamp-based last-write-wins for conflict resolution. You can choose the appropriate granularity for your key-value pairs based on your application&#39;s needs, and only modified key-value pairs are synchronized.</p>
+<pre><code class="language-ts">    EphemeralStore,
+    EphemeralListener,
+    EphemeralStoreEvent,
+} from &quot;loro-crdt&quot;;
+
+const store = new EphemeralStore();
+// Set ephemeral data
+store.set(&quot;user-alice&quot;, {
+    anchor: 10,
+    focus: 20,
+    user: &quot;Alice&quot;
+});
+
+// Encode only the data for `loro-prosemirror`
+const encoded = store.encode(&quot;user-alice&quot;)
+const newStore = new EphemeralStore();
+newStore.subscribe((e: EphemeralStoreEvent) =&gt; {
+    // Listen to changes from `local`, `remote`, or `timeout` events
+});
+
+newStore.apply(encoded);
+console.log(newStore.get(&quot;user-alice&quot;))
+// {
+//     anchor: 10,
+//     focus: 20,
+//     user: &quot;Alice&quot;
+// }
+</code></pre>
+<h2>Fix</h2>
+<ul>
+<li>Fixed text styling at end &quot;\n&quot; character</li>
+<li>Added JSON support for current transaction operations</li>
+<li>For environments that support multi-threading such as Rust and Swift, LoroDoc can now be directly and safely 
+shared and accessed in parallel across multiple threads without triggering the previous WouldBlock panic.</li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.4.7]]></title>
+            <link>https://loro.dev/changelog/v1.4.7</link>
+            <guid>https://loro.dev/changelog/v1.4.7</guid>
+            <pubDate>Mon, 31 Mar 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>New</h2>
+<ul>
+<li>You can get the version of Loro by <code>LORO_VERSION</code></li>
+<li><code>setNextCommitOrigin(origin: string)</code>: Set the origin of the next commit.</li>
+<li><code>setNextCommitTimestamp(timestamp: number)</code>: Set the timestamp of the next commit.</li>
+<li><code>setNextCommitOptions(options: CommitOption)</code>: Set the options of the next commit.</li>
+<li><code>clearNextCommitOptions()</code>: Clear the options of the next commit.</li>
+<li><code>configDefaultTextStyle(style: TextStyle)</code>: Configures the default text style for the document.</li>
+<li><code>getUncommittedOpsAsJson()</code>: Get the pending operations from the current transaction in JSON format</li>
+</ul>
+<h2>Fix</h2>
+<ul>
+<li>fix: memory leak issue <a href="https://github.com/loro-dev/loro/pull/647">#647</a></li>
+<li>fix: mark err on detached LoroText <a href="https://github.com/loro-dev/loro/pull/659">#659</a></li>
+<li>fix: detached loro text issues <a href="https://github.com/loro-dev/loro/pull/665">#665</a></li>
+<li>fix: entity index when the tree is empty <a href="https://github.com/loro-dev/loro/pull/670">#670</a></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.4.0]]></title>
+            <link>https://loro.dev/changelog/v1.4.0</link>
+            <guid>https://loro.dev/changelog/v1.4.0</guid>
+            <pubDate>Wed, 12 Feb 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>New</h2>
+<ul>
+<li>add <code>unsubscribe()</code> for Subscription.</li>
+</ul>
+<h2>Fix</h2>
+<ul>
+<li>fix: getting values by path in LoroTree <a href="https://github.com/loro-dev/loro/pull/643">#643</a></li>
+<li>fix: should be able to call subscription after diffing [#637]</li>
+<li>fix: update long text may fail <a href="https://github.com/loro-dev/loro/pull/633">#633</a></li>
+<li>fix: map.keys() may return keys from deleted entries <a href="https://github.com/loro-dev/loro/pull/618">#618</a></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.3.0]]></title>
+            <link>https://loro.dev/changelog/v1.3.0</link>
+            <guid>https://loro.dev/changelog/v1.3.0</guid>
+            <pubDate>Wed, 08 Jan 2025 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>New</h2>
+<ul>
+<li>UndoManager&#39;s <code>onPush</code> now can access the change event.</li>
+<li>add getShallowValue for each container.</li>
+</ul>
+<h3>LoroDoc</h3>
+<ul>
+<li><code>toJsonWithReplacer(replacer: (k, v)=&gt;Value)</code>: Convert the document to a JSON value with a custom replacer function.</li>
+<li><code>revertTo(frontiers: Frontiers)</code>: Revert the document to the given frontiers.</li>
+<li><code>findIdSpansBetween(from: Frontiers, to: Frontiers)</code>: Find the op id spans that between the <code>from</code> version and the <code>to</code> version.</li>
+<li><code>exportJsonInIdSpan(idSpan: IdSpan)</code>: Export the readable [<code>Change</code>]s in the given [<code>IdSpan</code>].</li>
+</ul>
+<h2>Fix</h2>
+<ul>
+<li>fix: prevent merging remote changes based on local <code>changeMergeInterval</code> config <a href="https://github.com/loro-dev/loro/pull/643">#643</a></li>
+<li>fix: should commit before travel_change_ancestors <a href="https://github.com/loro-dev/loro/pull/599">#599</a></li>
+<li>fix: panic when detach then attach <a href="https://github.com/loro-dev/loro/pull/592">#592</a></li>
+<li>fix: move child in current parent <a href="https://github.com/loro-dev/loro/pull/589">#589</a></li>
+<li>fix: panic when returned non-boolean value from text.iter(f) <a href="https://github.com/loro-dev/loro/pull/578">#578</a></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.2.0]]></title>
+            <link>https://loro.dev/changelog/v1.2.0</link>
+            <guid>https://loro.dev/changelog/v1.2.0</guid>
+            <pubDate>Mon, 09 Dec 2024 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>New</h2>
+<ul>
+<li>Add <code>isDeleted()</code> method to all container types (Text, Map, List, Tree, etc.)</li>
+</ul>
+<h3>LoroDoc</h3>
+<ul>
+<li><code>changeCount()</code>: Get the number of changes in the oplog.</li>
+<li><code>opCount()</code>: Get the number of ops in the oplog.</li>
+</ul>
+<h3>VersionVector</h3>
+<ul>
+<li><code>setEnd(id: ID)</code>: Set the exclusive ending point. target id will NOT be included by self.</li>
+<li><code>setLast(id: ID)</code>: Set the inclusive ending point. target id will be included.</li>
+<li><code>remove(peer: PeerID)</code>: Remove the specific peer id.</li>
+<li><code>length()</code>: Get the number of peers in the VersionVector.</li>
+</ul>
+<h2>Change</h2>
+<ul>
+<li>Return <code>ImportStatus</code> in the <code>importUpdateBatch</code> method.</li>
+<li>Fractional index is enabled by default now.</li>
+</ul>
+<h2>Fix</h2>
+<ul>
+<li>fix: getOrCreateContainer should not throw if value is null <a href="https://github.com/loro-dev/loro/pull/576">#576</a></li>
+<li>fix: dead loop when importing updates <a href="https://github.com/loro-dev/loro/pull/570">#570</a></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.1.0]]></title>
+            <link>https://loro.dev/changelog/v1.1.0</link>
+            <guid>https://loro.dev/changelog/v1.1.0</guid>
+            <pubDate>Fri, 08 Nov 2024 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>New</h2>
+<h3>LoroDoc</h3>
+<ul>
+<li><code>forkAt(frontiers: Frontiers)</code>: Fork the document at the given frontiers.</li>
+<li><code>getChangedContainersIn(id: ID, len: number)</code>: Gets container IDs modified in the given ID range.</li>
+<li>``</li>
+</ul>
+<h3>LoroText</h3>
+<ul>
+<li><code>getEditorOf(pos: number)</code>: Get the editor of the text at the given position.</li>
+<li><code>push(s: string)</code>: Push a string to the end of the text.</li>
+</ul>
+<h3>LoroMap</h3>
+<ul>
+<li><code>getLastEditor(key: string)</code>: Get the peer id of the last editor on the given entry</li>
+</ul>
+<h3>LoroList</h3>
+<ul>
+<li><code>getIdAt(pos: number)</code>: Get the ID of the list item at the given position.</li>
+<li><code>pushContainer(child: Container)</code>: Push a container to the end of the list.</li>
+</ul>
+<h3>LoroMovableList</h3>
+<ul>
+<li><code>getCreatorAt(pos: number)</code>: Get the creator of the list item at the given position.</li>
+<li><code>getLastMoverAt(pos: number)</code>: Get the last mover of the list item at the given position.</li>
+<li><code>getLastEditorAt(pos: number)</code>: Get the last editor of the list item at the given position.</li>
+<li><code>pushContainer(child: Container)</code>: Push a container to the end of the list.</li>
+</ul>
+<h3>LoroTree</h3>
+<ul>
+<li><code>toJSON()</code>: Get JSON format of the LoroTreeNode.</li>
+</ul>
+<h2>Fix</h2>
+<ul>
+<li>fix get correct encode blob info <a href="https://github.com/loro-dev/loro/pull/545">#545</a></li>
+<li>fix: avoid creating non-root containers that doesn&#39;t exist by get_container api <a href="https://github.com/loro-dev/loro/pull/541">#541</a></li>
+<li>fix: define the fork behavior when the doc is detached <a href="https://github.com/loro-dev/loro/pull/537">#537</a></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release Loro v1.0.0]]></title>
+            <link>https://loro.dev/changelog/v1.0.0-beta</link>
+            <guid>https://loro.dev/changelog/v1.0.0-beta</guid>
+            <pubDate>Sun, 20 Oct 2024 16:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>We are very excited to announce the release of Loro v1.0, a major milestone.</p>
+<p>It has a stable encoding format, faster document import and export speed, better version control capabilities, and a shallow snapshot. For more information, please check <a href="https://loro.dev/blog/v1.0">the blog</a>.</p>
+<p>The following are the specific API changes:</p>
+<h2>New</h2>
+<h3>LoroDoc</h3>
+<ul>
+<li><code>getChange(id: ID)</code>: get <code>ChangeMeta</code> by <code>ID</code>.</li>
+<li><code>setDetachedEditing(flag: boolean)</code>: Enables editing in detached mode, which is disabled by default.</li>
+<li><code>isDetachedEditingEnabled()</code>: Whether the editing is enabled in detached mode.</li>
+<li><code>setNextCommitMessage(msg: string)</code>: Set the commit message of the next commit.</li>
+<li><code>shallowSinceVV()</code>: The doc only contains the history since this version.</li>
+<li><code>shallowSinceFrontiers()</code>: The doc only contains the history since this version.</li>
+<li><code>export(mode: ExportMode)</code>: Export the document based on the specified ExportMode. see more details <a href="/docs/tutorial/encoding">here</a>.</li>
+<li><code>getDeepValueWithID()</code>: Get deep value of the document with container id.</li>
+<li><code>subscribeLocalUpdates(callback:(bytes: Uint8Array) =&gt; void)</code>: Subscribe to updates from local edits.</li>
+<li><code>getPathToContainer(id: ContainerID)</code>: Get the path from the root to the container.</li>
+<li><code>JSONPath(jsonPath: string)</code>: Evaluate JSONPath against a LoroDoc.</li>
+<li><code>forkAt(frontiers: Frontiers): LoroDoc</code>: Creates a new LoroDoc at a specified version (Frontiers)</li>
+<li><code>getPendingTxnLength():number</code>: Get the number of operations in the pending transaction.</li>
+<li><code>travelChangeAncestors(ids: ID[], callback: (meta: ChangeMeta)-&gt;bool)</code>: Iterate over all changes including the input id in order, and stop iterating if the callback returns false.</li>
+</ul>
+<h3>LoroText</h3>
+<ul>
+<li><code>updateByLine(text: string)</code>: Update the current text based on the provided text line by line like git.</li>
+</ul>
+<h3>LoroList</h3>
+<ul>
+<li><code>toArray(): ValueOrContainer[]</code>: Get elements of the list. If the value is a child container, the corresponding <code>Container</code> will be returned.</li>
+<li><code>clear()</code>: Delete all elements in the list.</li>
+</ul>
+<h3>LoroMovableList</h3>
+<ul>
+<li><code>toArray(): ValueOrContainer[]</code>: Get elements of the list. If the value is a child container, the corresponding <code>Container</code> will be returned.</li>
+<li><code>clear()</code>: Delete all elements in the list.</li>
+</ul>
+<h3>LoroMap</h3>
+<ul>
+<li><code>clear()</code>: Delete all key-value pairs in the map.</li>
+</ul>
+<h3>LoroTree</h3>
+<ul>
+<li><code>enableFractionalIndex(jitter: number)</code>: Set whether to generate fractional index for Tree Position.</li>
+<li><code>disableFractionalIndex()</code>: Disable the fractional index generation for Tree Position when
+you don&#39;t need the Tree&#39;s siblings to be sorted. The fractional index will be always default.</li>
+<li><code>isFractionalIndexEnabled()</code>: Whether the tree enables the fractional index generation.</li>
+<li><code>isNodeDeleted(id: TreeID)</code>: Return <code>undefined</code> if the node is not exist, otherwise return <code>true</code> if the node is deleted.</li>
+<li><code>getNodes(prop: getNodesProp): LoroTreeNode[]</code>: Get the flat array of the forest. If <code>with_deleted</code> is true, the deleted nodes will be included.</li>
+</ul>
+<h3>UndoManager</h3>
+<ul>
+<li><code>clear()</code>: Clear the Undo and Redo stack of <code>UndoManager</code></li>
+</ul>
+<h2>Changes</h2>
+<h3>LoroDoc</h3>
+<ul>
+<li>Move <code>setFractionalIndexJitter()</code> to <code>LoroTree</code>, you can set whether to enable or disable it for each <code>Tree Container</code>.</li>
+<li><code>import()</code>, <code>importWith()</code> and <code>importJsonUpdates</code> will return <code>ImportStatus</code> for indicating which ops have been successfully applied and which ops are pending.</li>
+<li>New Subscription for event.</li>
+<li>In Loro 1.0, <code>doc.version()</code> <code>doc.frontiers()</code> <code>doc.oplogVersion()</code> and <code>doc.oplogFrontiers()</code> even if ops has not been committed, it indicates the latest version of all operations.</li>
+<li>rename <code>Loro</code> to <code>LoroDoc</code>.</li>
+</ul>
+<h3>LoroTree</h3>
+<ul>
+<li><code>contains(id: TreeID)</code>: Return true even if the node exists in the internal state and has been deleted.</li>
+<li><code>nodes()</code>: deleted nodes will be included now, you can use <code>isDeleted()</code> to filter.</li>
+<li><code>toJSON()</code>: Now use the hierarchical approach to express the tree structure.</li>
+</ul>
+<h2>Deprecation</h2>
+<h3>LoroDoc</h3>
+<ul>
+<li><code>exportFrom(version)</code> and <code>exportSnapshot()</code> are deprecated, use <code>export(mode: ExportMode)</code> instead.</li>
+</ul>
+]]></content:encoded>
+        </item>
+    </channel>
+</rss>

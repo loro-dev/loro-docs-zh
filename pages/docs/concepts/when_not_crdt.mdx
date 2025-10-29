@@ -1,0 +1,72 @@
+---
+keywords: "crdt, limitations, constraints, business logic, invariants"
+description: "When CRDTs are not the right tool: hard invariants, exclusivity, ordering, and validation"
+---
+
+# When Not to Use CRDTs
+
+CRDTs shine for collaborative editing and offline-friendly applications. 
+But they are not a universal replacement for coordination, transactions, 
+or authorization. Use this guide to recognize when CRDTs are a poor fit and what to use instead.
+
+## Quick Reference
+
+CRDTs merge; they do not reject. This clashes with requirements that demand global agreement at the time of the action:
+- **Hard invariants**: Must never be violated (e.g., balance ≥ 0)
+- **Exclusive ownership**: Only one winner per slot/resource
+
+## Why CRDTs fall short here
+
+- Merging is monotonic: remote edits cannot be “rolled back” on arrival
+- No locks or transactions across replicas
+- Check-then-set across peers needs coordination, not just convergence
+
+## Common problem scenarios
+
+### 1) Exclusive resource management
+
+Multiple users book the same room/time concurrently.
+
+```ts no_run
+// With a CRDT-only model both intents exist after merge
+// The app must pick a winner out-of-band
+book("A101@2pm", { by: "A" })
+book("A101@2pm", { by: "B" })
+// After sync: both entries are present → invariant violated without coordination
+```
+
+Use instead:
+- Transactional authority (central server or database)
+- Distributed consensus (Raft/Paxos) for ownership
+- Hybrid: CRDT for UI drafts, authoritative booking via server
+
+### 2) Financial transactions
+
+Two withdrawals race on a $100 account.
+
+```ts no_run
+// Each client applies its own withdrawal locally
+withdraw(60) // A
+withdraw(60) // B
+// After merge, naive addition overdrafts without an authority
+```
+
+Use instead:
+- ACID transactions on an authoritative store
+- Command validation with a single writer per account
+- Event-sourced ledger with server-side checks
+
+### Other cases to avoid CRDT-as-the-only-source
+
+- Uniqueness constraints (usernames, slugs, one primary per group)
+- Authorization decisions that must be enforced at write time
+- Global invariants (referential integrity, cross-document totals)
+
+## When CRDTs work well
+
+CRDTs excel when merged results are meaningful and temporary inconsistency is acceptable:
+
+- ✅ Collaborative text, lists, maps, rich presence
+- ✅ Comments, reactions, drafts, annotations
+- ✅ Offline edits where convergence is enough
+
