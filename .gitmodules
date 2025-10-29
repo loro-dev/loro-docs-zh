@@ -1,0 +1,3 @@
+[submodule "loro-docs"]
+	path = loro-docs
+	url = git@github.com:loro-dev/loro-docs.git
