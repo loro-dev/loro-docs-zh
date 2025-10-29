@@ -1,13 +1,13 @@
-import styles from './api-reference.module.css'
-import Indent from './indent';
-import Method from './method';
-import CopyRawMdxButton from '@/components/CopyRawMdxButton';
+import styles from "./api-reference.module.css";
+import Indent from "./indent";
+import Method from "./method";
+import CopyRawMdxButton from "@/components/CopyRawMdxButton";
 
 <div className={styles.apiReference}>
 
 # API 参考
 
-> *最后更新：2025-08-09 loro-crdt@1.5.10*
+> _最后更新：2025-08-09 loro-crdt@1.5.10_
 
 <CopyRawMdxButton />
 
@@ -114,15 +114,18 @@ configDefaultTextStyle(style?: { expand: "after" | "before" | "both" | "none" })
 配置 LoroText 的默认样式。如果传入 undefined，则会重置默认样式。
 
 **参数：**
+
 - `style` - 可选的默认样式配置
 
 **示例：**
+
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.configDefaultTextStyle({ expand: "after" });
 ```
+
 </Indent>
 
 ### 容器访问方法
@@ -130,14 +133,17 @@ doc.configDefaultTextStyle({ expand: "after" });
 **📝 提示：** 创建根容器（例如 `doc.getText("...")`）不会记录操作；创建嵌套容器（如 `map.setContainer(...)`）会记录操作。
 
 **⚠️ 注意：** 避免在同一个 LoroMap 中以相同键并发创建子容器。不要这样：
+
 ```ts no_run
 // 危险：可能发生覆盖
-doc.getMap("user").getOrCreateContainer(userId, new LoroMap())
+doc.getMap("user").getOrCreateContainer(userId, new LoroMap());
 ```
+
 请改用：
+
 ```ts no_run
 // 安全：每个用户使用独立的根容器
-doc.getMap("user." + userId)
+doc.getMap("user." + userId);
 ```
 
 <Method id="LoroDoc.getText">
@@ -149,11 +155,13 @@ getText(name: string): LoroText
 获取或创建指定名称的文本容器。如果你对 LoroText 与标记还不熟悉，请参阅[文本](/docs/tutorial/text)。
 
 **参数：**
+
 - `name` - 容器名称
 
 **返回值：** LoroText 实例
 
 **示例：**
+
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
@@ -161,6 +169,7 @@ const doc = new LoroDoc();
 const text = doc.getText("editor");
 text.insert(0, "Hello");
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getList">
@@ -172,11 +181,13 @@ getList(name: string): LoroList
 获取或创建指定名称的列表容器。不确定该用 List 还是 MovableList？参阅[列表与可移动列表](/docs/tutorial/list)以及[选择 CRDT 类型](/docs/concepts/choose_crdt_type)。
 
 **参数：**
-- `name` - 容器名称  
+
+- `name` - 容器名称
 
 **返回值：** `LoroList` 实例
 
 **示例：**
+
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
@@ -184,6 +195,7 @@ const doc = new LoroDoc();
 const list = doc.getList("items");
 list.push("Item 1");
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getMap">
@@ -195,11 +207,13 @@ getMap(name: string): LoroMap
 获取或创建指定名称的 Map 容器。基础用法与最佳实践参阅[Map](/docs/tutorial/map)。
 
 **参数：**
+
 - `name` - 容器名称
 
 **返回值：** `LoroMap` 实例
 
 **示例：**
+
 ```ts twoslash
 import { LoroDoc } from "loro-crdt";
 
@@ -207,6 +221,7 @@ const doc = new LoroDoc();
 const map = doc.getMap("settings");
 map.set("theme", "dark");
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getTree">
@@ -218,11 +233,13 @@ getTree(name: string): LoroTree
 获取或创建指定名称的树形容器。关于分层编辑与节点移动，参阅[Tree](/docs/tutorial/tree)。
 
 **参数：**
+
 - `name` - 容器名称
 
 **返回值：** `LoroTree` 实例
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -230,6 +247,7 @@ const doc = new LoroDoc();
 const tree = doc.getTree("fileSystem");
 const root = tree.createNode();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getCounter">
@@ -241,11 +259,13 @@ getCounter(name: string): LoroCounter
 获取或创建指定名称的计数器容器。计数器是专门用于累加并发增量的 CRDT；详见[Counter](/docs/tutorial/counter)。
 
 **参数：**
+
 - `name` - 容器名称
 
 **返回值：** `LoroCounter` 实例
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -253,6 +273,7 @@ const doc = new LoroDoc();
 const counter = doc.getCounter("likes");
 counter.increment(1);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getMovableList">
@@ -264,11 +285,13 @@ getMovableList(name: string): LoroMovableList
 获取或创建指定名称的可移动列表容器。MovableList 专为并发重排设计。参阅[列表与可移动列表](/docs/tutorial/list)以及[选择 CRDT 类型](/docs/concepts/choose_crdt_type)。
 
 **参数：**
+
 - `name` - 容器名称
 
 **返回值：** `LoroMovableList` 实例
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -279,6 +302,7 @@ movableList.push("Task 2");
 movableList.push("Task 3");
 movableList.move(0, 2); // 将第一个条目移动到第三个位置
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getContainerById">
@@ -290,11 +314,13 @@ getContainerById(id: ContainerID): Container | undefined
 根据唯一 ID 获取容器。容器 ID（CID）可在不同更新之间唯一定位容器；参阅[容器 ID](/docs/advanced/cid)与[容器](/docs/concepts/container)。
 
 **参数：**
+
 - `id` - 容器 ID
 
 **返回值：** 找到则返回容器实例，否则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -303,6 +329,7 @@ const text = doc.getText("text");
 const textId = text.id;
 const sameText = doc.getContainerById(textId);
 ```
+
 </Indent>
 
 ### 导入 / 导出方法
@@ -316,25 +343,29 @@ export(mode?: ExportMode): Uint8Array
 以不同模式导出文档，用于同步或持久化。关于快照、增量、浅快照与区间更新等模式的说明，参阅[导出模式](/docs/tutorial/encoding)。浅快照在保留当前状态的同时移除历史；详见[浅快照](/docs/concepts/shallow_snapshots)。VersionVector 与 Frontiers 是两种表示版本的方式，可参考[版本向量](/docs/concepts/version_vector)与[Frontiers](/docs/concepts/frontiers)。
 
 **参数：**
+
 - `mode` - 可选的导出配置
 
 **ExportMode 选项：**
+
 ```typescript no_run
-type ExportMode = 
+type ExportMode =
   | { mode: "snapshot" }
-  | { mode: "update", from?: VersionVector }
-  | { mode: "shallow-snapshot", frontiers: Frontiers }
-  | { mode: "updates-in-range", spans: { id: OpId; len: number }[] }
+  | { mode: "update"; from?: VersionVector }
+  | { mode: "shallow-snapshot"; frontiers: Frontiers }
+  | { mode: "updates-in-range"; spans: { id: OpId; len: number }[] };
 ```
 
 **返回值：** 编码后的二进制数据
 
 **⚠️ 注意事项：**
+
 - **浅快照**：无法导入浅快照起点之前的更新，节点需拥有之后的版本才能继续同步。
 - **自动提交**：导出前会自动提交待处理操作。
 - **性能**：建议定期导出新快照，以缩短新节点初次导入的耗时。
 
 **示例：**
+
 ```typescript no_run
 import { LoroDoc, VersionVector } from "loro-crdt";
 
@@ -347,17 +378,18 @@ const snapshot = doc.export({ mode: "snapshot" });
 // 基于指定版本导出增量
 const lastSyncVersion = doc.version(); // 当前版本
 // ... 再进行一些修改 ...
-const updates = doc.export({ 
-  mode: "update", 
-  from: lastSyncVersion 
+const updates = doc.export({
+  mode: "update",
+  from: lastSyncVersion,
 });
 
 // 在当前版本导出浅快照
-const shallowSnapshot = doc.export({ 
+const shallowSnapshot = doc.export({
   mode: "shallow-snapshot",
-  frontiers: doc.frontiers()
+  frontiers: doc.frontiers(),
 });
 ```
+
 </Indent>
 
 <Method id="LoroDoc.import">
@@ -369,11 +401,13 @@ import(data: Uint8Array): ImportStatus
 将更新或快照导入文档。返回的 `ImportStatus` 会说明哪些 peer 区间已应用或仍待处理。了解 Loro 如何处理乱序与部分更新，可参阅[同步](/docs/tutorial/sync)与[导入状态](/docs/concepts/import_status)。
 
 **参数：**
+
 - `data` - 待导入的二进制数据，或来自其他 LoroDoc 的导出
 
 **⚠️ 重要提示：** 导入前 LoroDoc 会自动提交尚未提交的操作。如果文档处于分离模式，导入的操作会写入 OpLog，但在调用 `attach()` 之前不会应用到 DocState。详见[附着与分离状态](/docs/concepts/attached_detached)与[OpLog 与 DocState](/docs/concepts/oplog_docstate)。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -387,6 +421,7 @@ const updates: Uint8Array = otherDoc.export({ mode: "update" });
 const status = doc.import(updates);
 console.log(status.success);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.importBatch">
@@ -398,9 +433,11 @@ importBatch(data: Uint8Array[]): ImportStatus
 高效地批量导入多个更新。性能考量与使用方式参阅[批量导入](/docs/advanced/import_batch)。
 
 **参数：**
+
 - `data` - 二进制更新数组
 
 **示例：**
+
 ```typescript no_run
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -412,6 +449,7 @@ declare const update3: Uint8Array;
 const updates = [update1, update2, update3];
 const status = doc.importBatch(updates);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.exportJsonUpdates">
@@ -423,12 +461,14 @@ exportJsonUpdates(start?: VersionVector, end?: VersionVector, withPeerCompressio
 以 JSON 格式导出更新，适合调试或采用不同的存储方案。格式细节与权衡请参考[导出模式](/docs/tutorial/encoding)。
 
 **参数：**
+
 - `start` - 起始版本（可选）
 - `end` - 结束版本（可选）
 
 **返回值：** 更新的 JSON 表示
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -436,6 +476,7 @@ const doc = new LoroDoc();
 const jsonUpdates = doc.exportJsonUpdates();
 console.log(JSON.stringify(jsonUpdates, null, 2));
 ```
+
 </Indent>
 
 <Method id="LoroDoc.importJsonUpdates">
@@ -447,9 +488,11 @@ importJsonUpdates(json: string | JsonSchema): void
 从 JSON 中导入更新，常用于调试、迁移或自定义存储层；参阅[导出模式](/docs/tutorial/encoding)。
 
 **参数：**
+
 - `json` - 包含更新的 JSON 字符串或对象
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -459,6 +502,7 @@ otherDoc.getText("text").insert(0, "Hello");
 const jsonStr = otherDoc.exportJsonUpdates();
 doc.importJsonUpdates(jsonStr);
 ```
+
 </Indent>
 
 ## 版本管理
@@ -476,9 +520,11 @@ checkout(frontiers: Frontiers): void
 将文档检出到指定版本，使其在该历史点上变为只读。这是“时光旅行”能力的核心，可结合[时光旅行](/docs/tutorial/time_travel)与[版本](/docs/tutorial/version)阅读更多背景。
 
 **参数：**
+
 - `frontiers` - 目标版本对应的 OpId 数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -487,12 +533,14 @@ const frontiers = doc.frontiers();
 // 做一些修改……
 doc.checkout(frontiers); // 回到之前的版本
 ```
+
 </Indent>
 
 <Indent>
 **⚠️ 注意：** 在 Loro 1.0 中，`version()` / `frontiers()` 会包含尚未提交的本地操作。
 
 **📝 提示：** 调用 `checkout()` 后，文档进入只读的“分离”模式。可通过 `attach()` 或 `checkoutToLatest()` 返回可编辑状态。详见[版本深入解析](/docs/advanced/version_deep_dive)与[附着与分离状态](/docs/concepts/attached_detached)。
+
 </Indent>
 
 <Method id="LoroDoc.checkoutToLatest">
@@ -504,12 +552,14 @@ checkoutToLatest(): void
 在检出后回到最新版本。相关概念包括[Frontiers](/docs/concepts/frontiers)与[版本向量](/docs/concepts/version_vector)。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.checkoutToLatest();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.attach">
@@ -521,12 +571,14 @@ attach(): void
 使文档重新附着，以继续追踪最新变化。关于状态如何与历史分离，请参阅[附着与分离状态](/docs/concepts/attached_detached)。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.attach();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.detach">
@@ -538,12 +590,14 @@ detach(): void
 将文档切换到分离模式，停止追踪最新变化并冻结在当前版本。详见[附着与分离状态](/docs/concepts/attached_detached)。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.detach();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.fork">
@@ -557,12 +611,14 @@ fork(): LoroDoc
 **返回值：** 新的 LoroDoc 实例
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const forkedDoc = doc.fork();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.forkAt">
@@ -574,11 +630,13 @@ forkAt(frontiers: Frontiers): LoroDoc
 在历史中的指定版本位置创建分叉。关于版本、DAG 历史与多个头的细节，可参考[版本深入解析](/docs/advanced/version_deep_dive)。
 
 **参数：**
+
 - `frontiers` - 分叉所依据的版本
 
 **返回值：** 新的 LoroDoc 实例
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -586,6 +644,7 @@ const doc = new LoroDoc();
 const frontiers = doc.frontiers();
 const forkedDoc = doc.forkAt(frontiers);
 ```
+
 </Indent>
 
 ## 事件与事务
@@ -603,30 +662,33 @@ subscribe(listener: (event: LoroEventBatch) => void): () => void
 订阅文档中的所有变更。事件模型及最佳实践详见[事件处理](/docs/tutorial/event)。
 
 **参数：**
+
 - `listener` - 接收变更事件的回调函数
 
 **返回值：** 取消订阅函数
 
 **事件结构：**
+
 ```typescript no_run
 interface LoroEventBatch {
-  by: "local" | "import" | "checkout"
-  origin?: string
-  currentTarget?: ContainerID
-  events: LoroEvent[]
-  from: Frontiers
-  to: Frontiers
+  by: "local" | "import" | "checkout";
+  origin?: string;
+  currentTarget?: ContainerID;
+  events: LoroEvent[];
+  from: Frontiers;
+  to: Frontiers;
 }
 ```
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const unsubscribe = doc.subscribe((event) => {
   console.log("变更类型:", event.by);
-  event.events.forEach(e => {
+  event.events.forEach((e) => {
     console.log("容器发生变化:", e.target);
     console.log("差异:", e.diff);
   });
@@ -636,6 +698,7 @@ const unsubscribe = doc.subscribe((event) => {
 ```
 
 **⚠️ 注意：** 事件会在一个微任务完成后异步派发。
+
 ```ts no_run
 doc.commit();
 await Promise.resolve();
@@ -643,6 +706,7 @@ await Promise.resolve();
 ```
 
 **📝 提示：** commit 之前的多个操作会合并为一个事件。详见[事件处理](/docs/tutorial/event)。
+
 </Indent>
 
 <Method id="LoroDoc.subscribeLocalUpdates">
@@ -654,11 +718,13 @@ subscribeLocalUpdates(f: (bytes: Uint8Array) => void): () => void
 仅订阅本地变更，适用于与远端 peer 同步。这通常会连接到你的传输层；参见[同步](/docs/tutorial/sync)。
 
 **参数：**
+
 - `f` - 接收二进制更新的回调
 
 **返回值：** 取消订阅函数
 
 **示例：**
+
 ```ts no_run threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -670,6 +736,7 @@ const unsubscribe = doc.subscribeLocalUpdates((updates) => {
   websocket.send(updates);
 });
 ```
+
 </Indent>
 
 <Method id="LoroDoc.subscribeFirstCommitFromPeer">
@@ -681,11 +748,13 @@ subscribeFirstCommitFromPeer(f: (e: { peer: PeerID }) => void): () => void
 订阅每个 peer 的首次 commit，便于追踪 peer 元数据。
 
 **参数：**
+
 - `f` - 接收 peer 信息的回调
 
 **返回值：** 取消订阅函数
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -694,13 +763,12 @@ doc.subscribeFirstCommitFromPeer(({ peer }) => {
   // 存储 peer 元数据
   doc.getMap("peers").set(peer, {
     joinedAt: Date.now(),
-    name: `User ${peer}`
+    name: `User ${peer}`,
   });
 });
 ```
+
 </Indent>
-
-
 
 ### 事务方法
 
@@ -713,6 +781,7 @@ commit(options?: { origin?: string, message?: string, timestamp?: number }): voi
 将待处理的修改作为一次事务提交。事务会把多次操作打包成一个 Change；参见[操作与 Change](/docs/concepts/operations_changes)。
 
 **⚠️ 关键区别：** Loro 的事务不是 ACID 数据库事务：
+
 - 不支持回滚
 - 不保证隔离性
 - 目的：将本地操作打包，便于事件批量派发与历史分组
@@ -721,26 +790,30 @@ commit(options?: { origin?: string, message?: string, timestamp?: number }): voi
 详见[事务模型](/docs/concepts/transaction_model)。
 
 **参数：**
+
 - `options` - 可选的提交配置
   - `message` - 提交信息（会类似 git commit message 一样持久化在文档中，并在同步后对所有 peer 可见）
   - `origin` - 来源标识（仅在本地使用，用于标记本地事件，远端 peer 不会看到）
   - `timestamp` - 以秒为单位的 Unix 时间戳（参见[存储时间戳](/docs/advanced/timestamp)）
 
 **重要区别：**
+
 - `message` 会持久化在文档历史中，并会同步到所有 peer，类似于 git 的提交信息
 - `origin` 仅用于本地过滤事件（例如从撤销中排除某些来源），不会同步到远端 peer
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.commit({
-  message: "更新文档标题",          // 会持久化并同步到所有 peer
-  origin: "user-action",             // 仅本地，用于事件过滤
-  timestamp: Math.floor(Date.now() / 1000)
+  message: "更新文档标题", // 会持久化并同步到所有 peer
+  origin: "user-action", // 仅本地，用于事件过滤
+  timestamp: Math.floor(Date.now() / 1000),
 });
 ```
+
 </Indent>
 
 ### 查询方法
@@ -756,6 +829,7 @@ toJSON(): Value
 **返回值：** 文档的 JSON 表示
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -763,6 +837,7 @@ const doc = new LoroDoc();
 const json = doc.toJSON();
 console.log(JSON.stringify(json, null, 2));
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getShallowValue">
@@ -776,6 +851,7 @@ getShallowValue(): Record<string, ContainerID>
 **返回值：** 浅层 JSON 值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -783,6 +859,7 @@ const doc = new LoroDoc();
 const shallow = doc.getShallowValue();
 // 子容器会显示为: "cid:..."
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getDeepValueWithID">
@@ -796,12 +873,14 @@ getDeepValueWithID(): any
 **返回值：** 带容器 ID 的文档值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const deepValue = doc.getDeepValueWithID();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.version">
@@ -815,6 +894,7 @@ version(): VersionVector
 **返回值：** 从 PeerID 到计数器的映射
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -822,6 +902,7 @@ const doc = new LoroDoc();
 const vv = doc.version();
 console.log(vv.toJSON());
 ```
+
 </Indent>
 
 <Method id="LoroDoc.frontiers">
@@ -839,6 +920,7 @@ frontiers(): Frontiers
 **返回值：** OpId 数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -846,6 +928,7 @@ const doc = new LoroDoc();
 const frontiers = doc.frontiers();
 // 可用于 checkout 或浅快照
 ```
+
 </Indent>
 
 <Method id="LoroDoc.diff">
@@ -857,13 +940,15 @@ diff(from: Frontiers, to: Frontiers, for_json?: boolean): [ContainerID, Diff | J
 计算两个版本之间的差异。理解 Loro 如何计算 diff 有赖于历史 DAG 模型；参见[版本深入解析](/docs/advanced/version_deep_dive)。
 
 **参数：**
+
 - `from` - 起始 frontiers
-- `to` - 结束 frontiers  
+- `to` - 结束 frontiers
 - `for_json` - 若为 true，则返回 JsonDiff 格式（默认值：true）
 
 **返回值：** 由容器 ID 及其差异组成的数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -877,6 +962,7 @@ diffs.forEach(([containerId, diff]) => {
   console.log(`容器 ${containerId} 发生变化:`, diff);
 });
 ```
+
 </Indent>
 
 ### 提交前钩子
@@ -904,6 +990,7 @@ doc.getText("text").insert(0, "Hello");
 doc.commit();
 unsubscribe();
 ```
+
 </Indent>
 
 ### 光标工具
@@ -928,6 +1015,7 @@ const c0 = text.getCursor(1);
 const pos = doc.getCursorPos(c0!);
 console.log(pos.offset); // 1
 ```
+
 </Indent>
 
 ### 待提交操作
@@ -950,9 +1038,11 @@ const pending = doc.getUncommittedOpsAsJson();
 doc.commit();
 const none = doc.getUncommittedOpsAsJson(); // commit 之后为 undefined
 ```
+
 </Indent>
 
 ### Change 图与历史
+
 这些 API 会遍历变更的历史 DAG（祖先/后代、区间）。如果对这些概念不熟悉，请先阅读 Loro 的[版本深入解析](/docs/advanced/version_deep_dive)与[事件图遍历器](/docs/concepts/event_graph_walker)。
 
 <Method id="LoroDoc.travelChangeAncestors">
@@ -975,16 +1065,14 @@ doc.travelChangeAncestors(head, (change) => {
   return true; // 继续遍历
 });
 ```
+
 </Indent>
 
 <Method id="LoroDoc.findIdSpansBetween">
-```typescript no_run
-findIdSpansBetween(from: Frontiers, to: Frontiers): VersionVectorDiff
-```
+  ```typescript no_run findIdSpansBetween(from: Frontiers, to: Frontiers):
+  VersionVectorDiff ```
 </Method>
-<Indent>
-查找位于两个版本之间的操作 ID 区间。
-</Indent>
+<Indent>查找位于两个版本之间的操作 ID 区间。</Indent>
 
 <Method id="LoroDoc.exportJsonInIdSpan">
 ```typescript no_run
@@ -1003,18 +1091,20 @@ a.commit();
 const snapshot = a.export({ mode: "snapshot" });
 let printed: any;
 b.subscribe((e) => {
-  const spans = b.findIdSpansBetween(e.from, e.to);
-  const changes = b.exportJsonInIdSpan(spans.forward[0]);
-  printed = changes;
+const spans = b.findIdSpansBetween(e.from, e.to);
+const changes = b.exportJsonInIdSpan(spans.forward[0]);
+printed = changes;
 });
 b.import(snapshot);
-```
+
+````
 </Indent>
 
 <Method id="LoroDoc.getChangedContainersIn">
 ```typescript no_run
 getChangedContainersIn(id: OpId, len: number): ContainerID[]
-```
+````
+
 </Method>
 <Indent>
 获取指定 ID 区间内被修改的容器 ID。
@@ -1028,6 +1118,7 @@ doc.commit();
 const head = doc.frontiers()[0];
 const containers = doc.getChangedContainersIn(head, 1);
 ```
+
 </Indent>
 
 ### 回退与应用差异
@@ -1050,6 +1141,7 @@ t.update("Hello");
 doc.commit();
 doc.revertTo([{ peer: "1", counter: 1 }]);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.applyDiff">
@@ -1070,6 +1162,7 @@ doc1.getText("text").insert(0, "Hello");
 const diff = doc1.diff([], doc1.frontiers());
 doc2.applyDiff(diff);
 ```
+
 </Indent>
 
 ### 分离编辑
@@ -1083,15 +1176,18 @@ setDetachedEditing(enable: boolean): void
 启用或禁用分离编辑模式。分离编辑允许你在与最新头分离的状态下暂存修改；参见[附着与分离状态](/docs/concepts/attached_detached)。
 
 **参数：**
+
 - `enable` - 是否启用分离编辑
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.setDetachedEditing(true);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.isDetachedEditingEnabled">
@@ -1105,12 +1201,14 @@ isDetachedEditingEnabled(): boolean
 **返回值：** 若已启用分离编辑则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const enabled = doc.isDetachedEditingEnabled();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.isDetached">
@@ -1124,12 +1222,14 @@ isDetached(): boolean
 **返回值：** 若文档为分离状态则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 console.log(doc.isDetached());
 ```
+
 </Indent>
 
 ### Commit 选项辅助
@@ -1143,15 +1243,18 @@ setNextCommitMessage(msg: string): void
 设置下一次 commit 的 message。
 
 **参数：**
+
 - `msg` - 提交信息
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.setNextCommitMessage("用户操作");
 ```
+
 </Indent>
 
 <Method id="LoroDoc.setNextCommitOrigin">
@@ -1163,15 +1266,18 @@ setNextCommitOrigin(origin: string): void
 设置下一次 commit 的 origin。
 
 **参数：**
+
 - `origin` - 来源标识
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.setNextCommitOrigin("ui");
 ```
+
 </Indent>
 
 <Method id="LoroDoc.setNextCommitTimestamp">
@@ -1183,15 +1289,18 @@ setNextCommitTimestamp(timestamp: number): void
 设置下一次 commit 的时间戳。
 
 **参数：**
+
 - `timestamp` - 以秒为单位的 Unix 时间戳
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.setNextCommitTimestamp(Math.floor(Date.now() / 1000));
 ```
+
 </Indent>
 
 <Method id="LoroDoc.setNextCommitOptions">
@@ -1203,9 +1312,11 @@ setNextCommitOptions(options: { origin?: string, timestamp?: number, message?: s
 批量设置下一次 commit 的选项。
 
 **参数：**
+
 - `options` - 提交选项对象
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1214,6 +1325,7 @@ doc.setNextCommitOptions({ origin: "ui", message: "batch" });
 doc.getText("text").insert(0, "Hi");
 doc.commit();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.clearNextCommitOptions">
@@ -1225,12 +1337,14 @@ clearNextCommitOptions(): void
 清除所有待用的 commit 选项。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.clearNextCommitOptions();
 ```
+
 </Indent>
 
 ### 版本与 Frontier 工具
@@ -1244,11 +1358,13 @@ frontiersToVV(frontiers: Frontiers): VersionVector
 将 frontiers 转换为版本向量。
 
 **参数：**
+
 - `frontiers` - 待转换的 frontiers
 
 **返回值：** 版本向量表示
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1256,6 +1372,7 @@ const doc = new LoroDoc();
 const frontiers = doc.frontiers();
 const vv = doc.frontiersToVV(frontiers);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.vvToFrontiers">
@@ -1267,11 +1384,13 @@ vvToFrontiers(vv: VersionVector): Frontiers
 将版本向量转换为 frontiers。
 
 **参数：**
+
 - `vv` - 待转换的版本向量
 
 **返回值：** frontiers 表示
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1279,6 +1398,7 @@ const doc = new LoroDoc();
 const vv = doc.version();
 const frontiers = doc.vvToFrontiers(vv);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.oplogVersion">
@@ -1292,12 +1412,14 @@ oplogVersion(): VersionVector
 **返回值：** OpLog 版本向量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const vv = doc.oplogVersion();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.oplogFrontiers">
@@ -1311,12 +1433,14 @@ oplogFrontiers(): Frontiers
 **返回值：** OpLog frontiers
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const frontiers = doc.oplogFrontiers();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.cmpWithFrontiers">
@@ -1328,11 +1452,13 @@ cmpWithFrontiers(frontiers: Frontiers): -1 | 0 | 1
 比较当前文档状态与给定 frontiers 的关系。
 
 **参数：**
+
 - `frontiers` - 用于比较的 frontiers
 
 **返回值：** 若落后为 -1，持平为 0，领先为 1
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1340,6 +1466,7 @@ const doc = new LoroDoc();
 const frontiers = doc.frontiers();
 const cmp = doc.cmpWithFrontiers(frontiers);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.cmpFrontiers">
@@ -1351,12 +1478,14 @@ cmpFrontiers(a: Frontiers, b: Frontiers): -1 | 0 | 1 | undefined
 比较两个 frontiers。
 
 **参数：**
+
 - `a` - 第一个 frontiers
 - `b` - 第二个 frontiers
 
 **返回值：** 若 a < b 为 -1，等于为 0，a > b 为 1，无法比较则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1365,9 +1494,11 @@ const f1 = doc.frontiers();
 const f2 = doc.frontiers();
 const cmp = doc.cmpFrontiers(f1, f2);
 ```
+
 </Indent>
 
 ### JSONPath 与路径查询
+
 使用简单路径字符串与 JSONPath 获取嵌套值和容器。路径由根容器名称与键组合而成（例如 `map/key` 或 `list/0`）。关于容器 ID，参见[容器 ID](/docs/advanced/cid)。
 
 <Method id="LoroDoc.getByPath">
@@ -1379,11 +1510,13 @@ getByPath(path: string): Value | Container | undefined
 根据路径获取值或容器。
 
 **参数：**
+
 - `path` - 路径字符串（如 "map/key"）
 
 **返回值：** 该路径下的值或容器，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1393,6 +1526,7 @@ map.set("key", 1);
 // 用法示例：
 const value = doc.getByPath("map/key");
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getPathToContainer">
@@ -1404,11 +1538,13 @@ getPathToContainer(id: ContainerID): (string | number)[] | undefined
 根据容器 ID 获取其路径。
 
 **参数：**
+
 - `id` - 容器 ID
 
 **返回值：** 表示路径的数组，若无路径则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1416,6 +1552,7 @@ const map = doc.getMap("map");
 
 const path = doc.getPathToContainer(map.id);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.JSONPath">
@@ -1427,11 +1564,13 @@ JSONPath(jsonpath: string): any[]
 使用 JSONPath 语法查询文档。
 
 **参数：**
+
 - `jsonpath` - JSONPath 查询字符串
 
 **返回值：** 匹配结果数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1441,9 +1580,11 @@ map.set("key", 1);
 // 用法示例：
 const results = doc.JSONPath("$.map");
 ```
+
 </Indent>
 
 ### 浅文档工具
+
 这些辅助函数与浅快照及数据裁剪相关。如需回顾 “浅” 的含义，请参阅[浅快照](/docs/concepts/shallow_snapshots)。
 
 <Method id="LoroDoc.shallowSinceVV">
@@ -1457,12 +1598,14 @@ shallowSinceVV(): VersionVector
 **返回值：** 版本向量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const vv = doc.shallowSinceVV();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.shallowSinceFrontiers">
@@ -1476,12 +1619,14 @@ shallowSinceFrontiers(): Frontiers
 **返回值：** frontiers
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const frontiers = doc.shallowSinceFrontiers();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.isShallow">
@@ -1500,6 +1645,7 @@ import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const shallow = doc.isShallow();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.setHideEmptyRootContainers">
@@ -1511,9 +1657,11 @@ setHideEmptyRootContainers(hide: boolean): void
 控制 JSON 输出中是否隐藏空的根容器。
 
 **参数：**
+
 - `hide` - 是否隐藏空的根容器
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1521,6 +1669,7 @@ const doc = new LoroDoc();
 doc.setHideEmptyRootContainers(true);
 // 现在 toJSON() 会隐藏空的根容器
 ```
+
 </Indent>
 
 <Method id="LoroDoc.deleteRootContainer">
@@ -1532,9 +1681,11 @@ deleteRootContainer(cid: ContainerID): void
 删除一个根容器。
 
 **参数：**
+
 - `cid` - 要删除的容器 ID
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1543,6 +1694,7 @@ const map = doc.getMap("map");
 // 用法示例：
 doc.deleteRootContainer(map.id);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.hasContainer">
@@ -1554,11 +1706,13 @@ hasContainer(id: ContainerID): boolean
 检查文档中是否存在指定容器。
 
 **参数：**
+
 - `id` - 待检查的容器 ID
 
 **返回值：** 若容器存在则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1566,6 +1720,7 @@ const map = doc.getMap("map");
 
 const exists = doc.hasContainer(map.id);
 ```
+
 </Indent>
 
 ### 使用 Replacer 的 JSON 序列化
@@ -1579,11 +1734,13 @@ toJsonWithReplacer(replacer: (key: string | number, value: Value | Container) =>
 自定义容器与值的 JSON 序列化。
 
 **参数：**
+
 - `replacer` - 序列化过程中用于转换值的函数
 
 **返回值：** 定制化的 JSON 值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1598,6 +1755,7 @@ const json = doc.toJsonWithReplacer((key, value) => {
   return value;
 });
 ```
+
 </Indent>
 
 ### 统计与自省
@@ -1611,12 +1769,14 @@ debugHistory(): void
 打印文档历史的调试信息。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.debugHistory();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.changeCount">
@@ -1630,12 +1790,14 @@ changeCount(): number
 **返回值：** 变更数量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const changes = doc.changeCount();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.opCount">
@@ -1649,12 +1811,14 @@ opCount(): number
 **返回值：** 操作数量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const ops = doc.opCount();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getAllChanges">
@@ -1668,12 +1832,14 @@ getAllChanges(): Map<PeerID, Change[]>
 **返回值：** 从 peer ID 映射到变更数组的 Map
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 const changes = doc.getAllChanges();
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getChangeAt">
@@ -1685,20 +1851,23 @@ getChangeAt(id: OpId): Change
 根据操作 ID 获取特定的 Change。
 
 **参数：**
+
 - `id` - 操作 ID
 
 **返回值：** Change 对象
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
 doc.getText("text").insert(0, "hello");
-doc.commit()
+doc.commit();
 const changes = doc.getAllChanges();
 const change = changes.get(doc.peerIdStr)?.[0];
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getChangeAtLamport">
@@ -1710,12 +1879,14 @@ getChangeAtLamport(peer_id: string, lamport: number): Change | undefined
 根据 peer ID 与 Lamport 时间戳获取 Change。
 
 **参数：**
+
 - `peer_id` - Peer ID
 - `lamport` - Lamport 时间戳
 
 **返回值：** Change 对象，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1723,6 +1894,7 @@ const doc = new LoroDoc();
 doc.getText("text").insert(0, "hello");
 const change = doc.getChangeAtLamport(doc.peerIdStr, 1);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getOpsInChange">
@@ -1734,11 +1906,13 @@ getOpsInChange(id: OpId): any[]
 获取某个 Change 中的所有操作。
 
 **参数：**
+
 - `id` - 操作 ID
 
 **返回值：** 操作数组
 
 **示例：**
+
 ```typescript no_run
 import { LoroDoc } from "loro-crdt";
 
@@ -1747,6 +1921,7 @@ doc.getText("text").insert(0, "hello");
 const changes = doc.getAllChanges();
 const ops = doc.getOpsInChange(changes[0].id);
 ```
+
 </Indent>
 
 <Method id="LoroDoc.getPendingTxnLength">
@@ -1760,6 +1935,7 @@ getPendingTxnLength(): number
 **返回值：** 待提交操作数量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -1768,6 +1944,7 @@ doc.getText("text").insert(0, "x");
 console.log(doc.getPendingTxnLength());
 doc.commit();
 ```
+
 </Indent>
 
 ### 导入/导出工具
@@ -1781,12 +1958,14 @@ decodeImportBlobMeta(blob: Uint8Array, check_checksum: boolean): ImportBlobMetad
 从导入的二进制块中解析元数据。
 
 **参数：**
+
 - `blob` - 待解析的二进制数据
 - `check_checksum` - 是否校验校验和
 
 **返回值：** 导入块的元数据
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, decodeImportBlobMeta } from "loro-crdt";
 
@@ -1794,6 +1973,7 @@ const doc = new LoroDoc();
 const updates = doc.export({ mode: "update" });
 const meta = decodeImportBlobMeta(updates, true);
 ```
+
 </Indent>
 
 <Method id="redactJsonUpdates">
@@ -1807,12 +1987,14 @@ redactJsonUpdates(json: string | JsonSchema, version_range: any): JsonSchema
 可用来安全地从历史中移除意外泄露的敏感内容，同时保留结构。参阅[技巧：数据涂抹](/docs/tutorial/tips)。
 
 **参数：**
+
 - `json` - 待涂抹的 JSON 更新
 - `version_range` - 需要涂抹的版本范围
 
 **返回值：** 已涂抹的 JSON Schema
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, redactJsonUpdates } from "loro-crdt";
 
@@ -1820,6 +2002,7 @@ const doc = new LoroDoc();
 const json = doc.exportJsonUpdates();
 const redacted = redactJsonUpdates(json, { [doc.peerIdStr]: [0, 999999] });
 ```
+
 </Indent>
 
 ---
@@ -1835,22 +2018,25 @@ const redacted = redactJsonUpdates(json, { [doc.peerIdStr]: [0, 999999] });
 **⚠️ 重点：UTF-16 字符串编码**
 
 LoroText 使用 **UTF-16** 编码，与 JavaScript 原生字符串一致：
+
 - 所有标准方法（`insert()`、`delete()`、`mark()`、`slice()`、`charAt()`）都使用 UTF-16 码元索引
 - `length` 返回 UTF-16 码元数量（与 JavaScript `string.length` 相同）
 - 在与 UTF-8 系统集成时，使用 `insertUtf8()` 与 `deleteUtf8()` 进行基于 UTF-8 字节的操作
 
 **⚠️ 常见陷阱：**
+
 1. **索引不匹配**：UTF-16 索引与视觉字符数量并不一致
 2. **性能注意**：查询已删除位置的光标需要遍历历史，此时会返回一个已刷新、且不再指向被删文本的 Cursor 对象
 
 **含 emoji 的示例：**
+
 ```typescript no_run
 const text = doc.getText("text");
 text.insert(0, "Hello 😀 World");
-console.log(text.length);        // 13（emoji 记为 2）
+console.log(text.length); // 13（emoji 记为 2）
 console.log(text.toString()[6]); // ⚠️ 错误：会拆分 emoji
-text.delete(6, 2);               // ✅ 正确：删除整个 emoji
-text.delete(6, 1);               // ❌ 错误：破坏 emoji
+text.delete(6, 2); // ✅ 正确：删除整个 emoji
+text.delete(6, 1); // ❌ 错误：破坏 emoji
 
 // 安全迭代
 text.iter((char) => {
@@ -1860,25 +2046,25 @@ text.iter((char) => {
 ```
 
 **📝 在 Map 中使用 Text 还是字符串：**
+
 - 当需要保留所有并发编辑时，请使用 `LoroText`
 - 当值为原子型（URL、ID、哈希值）并倾向于最后写入生效（Last-Write-Wins）时，请在 `LoroMap` 中使用普通字符串
 - 示例：URL 应该以字符串形式存储在 Map 中，而不是使用 LoroText，否则自动合并后可能得到无效 URL
 
-
 <Method id="LoroText.insert">
-```typescript no_run
-insert(index: number, text: string): void
-```
+  ```typescript no_run insert(index: number, text: string): void ```
 </Method>
 
 <Indent>
 在指定位置插入文本，索引基于 UTF-16 码元（与 JavaScript 字符串索引一致）。
 
 **参数：**
+
 - `index` - 要插入的位置（0 起，UTF-16 码元索引）
 - `text` - 待插入的文本
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1888,22 +2074,23 @@ const text = doc.getText("text");
 text.insert(0, "Hello ");
 text.insert(6, "World");
 ```
+
 </Indent>
 
 <Method id="LoroText.delete">
-```typescript no_run
-delete(index: number, len: number): void
-```
+  ```typescript no_run delete(index: number, len: number): void ```
 </Method>
 
 <Indent>
 按 UTF-16 码元删除指定位置的文本。
 
 **参数：**
+
 - `index` - 起始 UTF-16 码元索引（与 JavaScript 字符串索引一致）
 - `len` - 要删除的 UTF-16 码元数量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1912,6 +2099,7 @@ text.insert(0, "Hello 😀 World");
 text.delete(6, 2); // 删除 emoji（占 2 个 UTF-16 单位）
 text.delete(5, 1); // 删除 World 前的空格
 ```
+
 </Indent>
 
 <Method id="LoroText.mark">
@@ -1924,11 +2112,13 @@ mark(range: { start: number, end: number }, key: string, value: Value): void
 为指定文本区间应用样式。通过 `configTextStyle()` 可以配置标记在区间边界的扩展/停止策略；标记行为详见[文本](/docs/tutorial/text)。
 
 **参数：**
+
 - `range` - 需要设置样式的范围
 - `key` - 样式属性名
 - `value` - 样式属性值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1937,6 +2127,7 @@ text.insert(0, "Hello World");
 doc.configTextStyle({ bold: { expand: "after" } });
 text.mark({ start: 0, end: 5 }, "bold", true);
 ```
+
 </Indent>
 
 <Method id="LoroText.unmark">
@@ -1948,10 +2139,12 @@ unmark(range: { start: number, end: number }, key: string): void
 移除指定文本区间的样式。关于标记冲突的合并规则，参见[文本](/docs/tutorial/text)。
 
 **参数：**
+
 - `range` - 要移除样式的范围
 - `key` - 需要移除的样式键
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1960,6 +2153,7 @@ text.insert(0, "Hello World");
 text.mark({ start: 0, end: 5 }, "bold", true);
 text.unmark({ start: 0, end: 5 }, "bold");
 ```
+
 </Indent>
 
 <Method id="LoroText.toDelta">
@@ -1973,6 +2167,7 @@ toDelta(): Delta<string>[]
 **返回值：** Delta 操作数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -1982,6 +2177,7 @@ text.mark({ start: 0, end: 5 }, "bold", true);
 const delta = text.toDelta();
 // [{ insert: "Hello", attributes: { bold: true } }, { insert: " World" }]
 ```
+
 </Indent>
 
 <Method id="LoroText.applyDelta">
@@ -1993,18 +2189,21 @@ applyDelta(delta: Delta<string>[]): void
 对文本应用 Delta 操作。
 
 **参数：**
+
 - `delta` - Delta 操作数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const text = doc.getText("text");
 text.applyDelta([
   { insert: "Hello", attributes: { bold: true } },
-  { insert: " World" }
+  { insert: " World" },
 ]);
 ```
+
 </Indent>
 
 <Method id="LoroText.update">
@@ -2016,12 +2215,14 @@ update(text: string, options?: { timeoutMs?: number; useRefinedDiff?: boolean })
 使用 Myers 差分算法将当前文本更新为目标文本。
 
 **参数：**
+
 - `text` - 新的文本内容
 - `options` - 更新选项
   - `timeoutMs` - 差分计算的可选超时时长
   - `useRefinedDiff` - 对长文本使用精细差分以获得更好质量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2030,6 +2231,7 @@ const text = doc.getText("text");
 text.insert(0, "Hello");
 text.update("Hello World", { timeoutMs: 100 });
 ```
+
 </Indent>
 
 <Method id="LoroText.updateByLine">
@@ -2048,6 +2250,7 @@ const text = doc.getText("text");
 text.insert(0, "Line A\nLine C");
 text.updateByLine("Line A\nLine B\nLine C");
 ```
+
 </Indent>
 
 <Method id="LoroText.getCursor">
@@ -2059,12 +2262,14 @@ getCursor(pos: number, side?: Side): Cursor | undefined
 获取可跨编辑保持有效的稳定光标位置。
 
 **参数：**
+
 - `pos` - 文本中的位置
 - `side` - 光标贴靠方向（-1、0 或 1）
 
 **返回值：** Cursor 对象或 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2074,6 +2279,7 @@ text.insert(0, "Hello World");
 const cursor = text.getCursor(5);
 // 即使之后发生编辑，光标仍保持有效
 ```
+
 </Indent>
 
 <Method id="LoroText.toString">
@@ -2087,6 +2293,7 @@ toString(): string
 **返回值：** 纯文本内容
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2094,6 +2301,7 @@ const text = doc.getText("text");
 text.insert(0, "Hello World");
 const plainText = text.toString();
 ```
+
 </Indent>
 
 <Method id="LoroText.charAt">
@@ -2105,11 +2313,13 @@ charAt(pos: number): string
 获取指定 UTF-16 码元位置的字符。
 
 **参数：**
+
 - `pos` - UTF-16 码元位置
 
 **返回值：** 该位置上的字符
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2117,6 +2327,7 @@ const text = doc.getText("text");
 text.insert(0, "Hello");
 const char = text.charAt(1); // "e"
 ```
+
 </Indent>
 
 <Method id="LoroText.slice">
@@ -2128,22 +2339,25 @@ slice(start: number, end: number): string
 按 UTF-16 码元索引提取文本片段。
 
 **参数：**
+
 - `start` - 起始 UTF-16 码元索引
 - `end` - 结束 UTF-16 码元索引（不包含）
 
 **返回值：** 切片后的文本
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const text = doc.getText("text");
 text.insert(0, "Hello 😀 World");
 
-const slice1 = text.slice(0, 5);  // "Hello"
-const slice2 = text.slice(6, 8);  // "😀"（emoji 占索引 6-8）
+const slice1 = text.slice(0, 5); // "Hello"
+const slice2 = text.slice(6, 8); // "😀"（emoji 占索引 6-8）
 const slice3 = text.slice(9, 14); // "World"
 ```
+
 </Indent>
 
 <Method id="LoroText.splice">
@@ -2155,6 +2369,7 @@ splice(pos: number, len: number, s: string): string
 用新内容替换指定位置的文本。
 
 **参数：**
+
 - `pos` - 起始位置
 - `len` - 要删除的长度
 - `s` - 要插入的字符串
@@ -2162,6 +2377,7 @@ splice(pos: number, len: number, s: string): string
 **返回值：** 被删除的文本
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2171,6 +2387,7 @@ text.insert(0, "Hello World");
 // 用法示例：
 const deleted = text.splice(6, 5, "Loro"); // 返回 "World"
 ```
+
 </Indent>
 
 <Method id="LoroText.push">
@@ -2182,9 +2399,11 @@ push(s: string): void
 在文档末尾追加文本。
 
 **参数：**
+
 - `s` - 要追加的字符串
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2193,6 +2412,7 @@ const text = doc.getText("text");
 text.push("Hello");
 text.push(" World");
 ```
+
 </Indent>
 
 <Method id="LoroText.iter">
@@ -2204,9 +2424,11 @@ iter(callback: (char: string) => boolean): void
 遍历文本中的每一个字符。
 
 **参数：**
+
 - `callback` - 针对每个字符调用的函数，返回 false 可终止遍历
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2219,6 +2441,7 @@ text.iter((char) => {
   return true; // 继续遍历
 });
 ```
+
 </Indent>
 
 <Method id="LoroText.insertUtf8">
@@ -2230,10 +2453,12 @@ insertUtf8(index: number, content: string): void
 在指定 UTF-8 字节索引处插入文本。
 
 **参数：**
+
 - `index` - UTF-8 字节索引
 - `content` - 要插入的文本
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2241,6 +2466,7 @@ const text = doc.getText("text");
 
 text.insertUtf8(0, "Hello");
 ```
+
 </Indent>
 
 <Method id="LoroText.deleteUtf8">
@@ -2252,10 +2478,12 @@ deleteUtf8(index: number, len: number): void
 在指定 UTF-8 字节索引处删除文本。
 
 **参数：**
+
 - `index` - UTF-8 字节索引
 - `len` - 要删除的 UTF-8 字节数
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2265,6 +2493,7 @@ text.insert(0, "Hello World");
 // 用法示例：
 text.deleteUtf8(6, 5); // 删除 "World"
 ```
+
 </Indent>
 
 <Method id="LoroText.getEditorOf">
@@ -2276,11 +2505,13 @@ getEditorOf(pos: number): PeerID | undefined
 获取指定字符位置最后一次编辑者的 Peer ID。
 
 **参数：**
+
 - `pos` - 字符位置
 
 **返回值：** 最后编辑者的 PeerID，若未知则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2290,6 +2521,7 @@ text.insert(0, "Hello");
 // 用法示例：
 const editor = text.getEditorOf(0);
 ```
+
 </Indent>
 
 <Method id="LoroText.kind">
@@ -2303,6 +2535,7 @@ kind(): "Text"
 **返回值：** `"Text"`
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2310,6 +2543,7 @@ const text = doc.getText("text");
 
 const type = text.kind(); // "Text"
 ```
+
 </Indent>
 
 <Method id="LoroText.parent">
@@ -2323,6 +2557,7 @@ parent(): Container | undefined
 **返回值：** 父容器，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2332,6 +2567,7 @@ const text = list.insertContainer(0, doc.getText("nested"));
 // 用法示例：
 const parent = text.parent(); // 返回 list
 ```
+
 </Indent>
 
 <Method id="LoroText.isAttached">
@@ -2345,6 +2581,7 @@ isAttached(): boolean
 **返回值：** 若已附着则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2352,6 +2589,7 @@ const text = new LoroText();
 
 const attached = text.isAttached(); // 未附着到文档前为 false
 ```
+
 </Indent>
 
 <Method id="LoroText.getAttached">
@@ -2365,6 +2603,7 @@ getAttached(): LoroText | undefined
 **返回值：** 已附着的容器，若尚未附着则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2372,6 +2611,7 @@ const text = new LoroText();
 
 const attached = text.getAttached();
 ```
+
 </Indent>
 
 <Method id="LoroText.isDeleted">
@@ -2385,6 +2625,7 @@ isDeleted(): boolean
 **返回值：** 若已删除则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2392,6 +2633,7 @@ const text = doc.getText("text");
 
 const deleted = text.isDeleted();
 ```
+
 </Indent>
 
 <Method id="LoroText.getShallowValue">
@@ -2405,6 +2647,7 @@ getShallowValue(): string
 **返回值：** 纯文本字符串
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2414,6 +2657,7 @@ text.insert(0, "Hello");
 // 用法示例：
 const value = text.getShallowValue(); // "Hello"
 ```
+
 </Indent>
 
 <Method id="LoroText.toJSON">
@@ -2427,6 +2671,7 @@ toJSON(): any
 **返回值：** JSON 值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2436,6 +2681,7 @@ text.insert(0, "Hello");
 // 用法示例：
 const json = text.toJSON(); // "Hello"
 ```
+
 </Indent>
 
 <Method id="LoroText.id">
@@ -2447,6 +2693,7 @@ readonly id: ContainerID
 获取该容器的唯一 ID。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2454,6 +2701,7 @@ const text = doc.getText("text");
 
 const containerId = text.id;
 ```
+
 </Indent>
 
 <Method id="LoroText.length">
@@ -2465,12 +2713,14 @@ readonly length: number
 获取文本的长度，单位为 UTF-16 码元（等同于 JavaScript 的 `string.length`）。
 
 **⚠️ 注意：** emoji 及超出基本多文种平面的字符会占用 2 个 UTF-16 单位，这会影响所有基于索引的操作：
+
 ```typescript no_run
 text.insert(0, "👨‍👩‍👧‍👦"); // 家庭 emoji
 console.log(text.length); // 11（不是 1！）- 包含 ZWJ 序列的组合 emoji
 ```
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2481,15 +2731,15 @@ console.log(text.length); // 5
 text.insert(5, " 😀");
 console.log(text.length); // 8（空格 + emoji（计为 2））
 ```
-</Indent>
 
-<-----TranslationEnd------->
+</Indent>
 
 ### LoroList
 
 面向协作数组的有序列表容器，提供基于索引的 API。并发场景下，Loro 仅重放必要的历史片段对索引进行转换（借鉴 Eg-walker）。详见[列表与可移动列表](/docs/tutorial/list)、[选择 CRDT 类型](/docs/concepts/choose_crdt_type)以及[Eg-walker](/docs/advanced/event_graph_walker)。
 
 **⚠️ 注意：坐标场景请用 Map 而非 List**
+
 ```typescript no_run
 // ❌ 错误示例：不要用 List 表示坐标
 const coord = doc.getList("coord");
@@ -2513,10 +2763,12 @@ insert(pos: number, value: Value | Container): void
 在指定位置插入一个值。
 
 **参数：**
+
 - `pos` - 插入位置
 - `value` - 要插入的值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2524,6 +2776,7 @@ const list = doc.getList("list");
 list.insert(0, "First");
 list.insert(1, { type: "object" });
 ```
+
 </Indent>
 
 <Method id="LoroList.insertContainer">
@@ -2535,12 +2788,14 @@ insertContainer<T extends Container>(pos: number, container: T): T
 在指定位置插入一个新的容器。
 
 **参数：**
-- `pos` - 插入位置  
+
+- `pos` - 插入位置
 - `container` - 容器实例
 
 **返回值：** 被插入的容器
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2548,6 +2803,7 @@ const list = doc.getList("list");
 const subText = list.insertContainer(0, new LoroText());
 subText.insert(0, "Nested text");
 ```
+
 </Indent>
 
 <Method id="LoroList.delete">
@@ -2559,10 +2815,12 @@ delete(pos: number, len: number): void
 从列表中删除元素。
 
 **参数：**
+
 - `pos` - 起始位置
 - `len` - 删除元素的数量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2574,6 +2832,7 @@ list.push("d");
 
 list.delete(1, 2); // Delete 2 elements starting at index 1
 ```
+
 </Indent>
 
 <Method id="LoroList.push">
@@ -2585,15 +2844,18 @@ push(value: Value | Container): void
 在列表末尾追加一个值。
 
 **参数：**
+
 - `value` - 要追加的值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const list = doc.getList("list");
 list.push("Last item");
 ```
+
 </Indent>
 
 <Method id="LoroList.getIdAt">
@@ -2609,23 +2871,27 @@ const list = doc.getList("list");
 
 list.insert(0, 1);
 const id0 = list.getIdAt(0);
-```
+
+````
 </Indent>
 
 <Method id="LoroList.pushContainer">
 ```typescript no_run
 pushContainer<T extends Container>(container: T): T
-```
+````
+
 </Method>
 <Indent>
 Appends a container to the end of the list.
 
 **参数：**
+
 - `container` - 要追加的容器
 
 **返回值：** 追加后的容器
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroMap } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2633,6 +2899,7 @@ const list = doc.getList("list");
 const map = list.pushContainer(new LoroMap());
 map.set("key", "value");
 ```
+
 </Indent>
 
 <Method id="LoroList.pop">
@@ -2646,12 +2913,14 @@ pop(): Value | Container | undefined
 **返回值：** 被移除的元素，若为空则为 undefined
 
 **示例：**
+
 ```ts no_run threeslash
 import { LoroList } from "loro-crdt";
 declare const list: LoroList;
 // ---cut---
 const lastItem = list.pop();
 ```
+
 </Indent>
 
 <Method id="LoroList.get">
@@ -2663,11 +2932,13 @@ get(index: number): Value | Container | undefined
 获取指定索引处的值。
 
 **参数：**
+
 - `index` - 元素索引
 
 **返回值：** 对应的值，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -2677,6 +2948,7 @@ list.push("first", "second");
 
 const item = list.get(0); // "first"
 ```
+
 </Indent>
 
 <Method id="LoroList.getCursor">
@@ -2688,12 +2960,14 @@ getCursor(pos: number, side?: Side): Cursor | undefined
 获取该位置的稳定光标。
 
 **参数：**
+
 - `pos` - 列表中的位置
 - `side` - 光标贴靠方向
 
 **返回值：** Cursor 对象，若无法获取则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
@@ -2703,6 +2977,7 @@ list.push("a", "b", "c");
 
 const cursor = list.getCursor(2);
 ```
+
 </Indent>
 
 <Method id="LoroList.toArray">
@@ -2716,6 +2991,7 @@ toArray(): (Value | Container)[]
 **返回值：** 值数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2723,6 +2999,7 @@ const list = doc.getList("list");
 list.push("a", "b", "c");
 const array = list.toArray();
 ```
+
 </Indent>
 
 <Method id="LoroList.clear">
@@ -2734,6 +3011,7 @@ clear(): void
 移除列表中的所有元素。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2741,6 +3019,7 @@ const list = doc.getList("list");
 list.push("a", "b", "c");
 list.clear();
 ```
+
 </Indent>
 
 <Method id="LoroList.length">
@@ -2754,6 +3033,7 @@ length: number
 **返回值：** 列表长度
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2763,6 +3043,7 @@ list.push("b");
 list.push("c");
 console.log(`List has ${list.length} items`);
 ```
+
 </Indent>
 
 <Method id="LoroList.kind">
@@ -2776,6 +3057,7 @@ kind(): "List"
 **返回值：** `"List"`
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2783,6 +3065,7 @@ const list = doc.getList("list");
 
 const type = list.kind(); // "List"
 ```
+
 </Indent>
 
 <Method id="LoroList.toJSON">
@@ -2796,6 +3079,7 @@ toJSON(): any
 **返回值：** JSON 数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2805,6 +3089,7 @@ list.push(1, 2, 3);
 // 用法示例：
 const json = list.toJSON(); // [1, 2, 3]
 ```
+
 </Indent>
 
 <Method id="LoroList.parent">
@@ -2818,6 +3103,7 @@ parent(): Container | undefined
 **返回值：** 父容器，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2827,6 +3113,7 @@ const list = map.setContainer("nested", doc.getList("list"));
 // 用法示例：
 const parent = list.parent(); // 返回 map
 ```
+
 </Indent>
 
 <Method id="LoroList.isAttached">
@@ -2840,6 +3127,7 @@ isAttached(): boolean
 **返回值：** 若已附着则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroList } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2847,6 +3135,7 @@ const list = new LoroList();
 
 const attached = list.isAttached(); // 未附着到文档前为 false
 ```
+
 </Indent>
 
 <Method id="LoroList.getAttached">
@@ -2860,6 +3149,7 @@ getAttached(): LoroList | undefined
 **返回值：** 已附着的容器，若尚未附着则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroList } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2867,6 +3157,7 @@ const list = new LoroList();
 
 const attached = list.getAttached();
 ```
+
 </Indent>
 
 <Method id="LoroList.isDeleted">
@@ -2880,6 +3171,7 @@ isDeleted(): boolean
 **返回值：** 若已删除则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2887,6 +3179,7 @@ const list = doc.getList("list");
 
 const deleted = list.isDeleted();
 ```
+
 </Indent>
 
 <Method id="LoroList.getShallowValue">
@@ -2900,6 +3193,7 @@ getShallowValue(): Value[]
 **返回值：** 值数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2909,6 +3203,7 @@ list.push(1, 2);
 // 用法示例：
 const values = list.getShallowValue(); // [1, 2]
 ```
+
 </Indent>
 
 <Method id="LoroList.id">
@@ -2920,6 +3215,7 @@ readonly id: ContainerID
 获取该容器的唯一 ID。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2927,6 +3223,7 @@ const list = doc.getList("list");
 
 const containerId = list.id;
 ```
+
 </Indent>
 
 ### LoroMap
@@ -2944,10 +3241,12 @@ set(key: string, value: Value | Container): void
 注意：将键设置为相同的值不会产生操作（no-op）。详见[Map 基础](/docs/tutorial/map)。
 
 **参数：**
+
 - `key` - 键
 - `value` - 值
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2956,6 +3255,7 @@ const map = doc.getMap("map");
 map.set("name", "Alice");
 map.set("age", 30);
 ```
+
 </Indent>
 
 <Method id="LoroMap.setContainer">
@@ -2969,12 +3269,14 @@ setContainer<T extends Container>(key: string, container: T): T
 **⚠️ 易错点：** 多个 peer 在同一个键上并发创建子容器会互相覆盖（不同容器 ID 无法自动合并）。参见[容器初始化](/docs/tutorial/tips)。
 
 **参数：**
+
 - `key` - 键
 - `container` - 容器实例
 
 **返回值：** 设置后的容器
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroList } from "loro-crdt";
 const doc = new LoroDoc();
@@ -2983,6 +3285,7 @@ const map = doc.getMap("map");
 const list = map.setContainer("items", new LoroList());
 list.push("item1");
 ```
+
 </Indent>
 
 <Method id="LoroMap.get">
@@ -2994,11 +3297,13 @@ get(key: string): Value | Container | undefined
 获取指定键对应的值。
 
 **参数：**
+
 - `key` - 键
 
 **返回值：** 对应的值，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3006,6 +3311,7 @@ const map = doc.getMap("map");
 
 const name = map.get("name");
 ```
+
 </Indent>
 
 <Method id="LoroMap.getOrCreateContainer">
@@ -3019,12 +3325,14 @@ getOrCreateContainer<T extends Container>(key: string, container: T): T
 **⚠️ 易错点：** 不同 peer 在同一键上并发创建容器会互相覆盖。参见[容器初始化](/docs/tutorial/tips)。
 
 **参数：**
+
 - `key` - 键
 - `container` - 当不存在时要创建的容器
 
 **返回值：** 对应的容器
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3032,6 +3340,7 @@ const map = doc.getMap("map");
 
 const text = map.getOrCreateContainer("description", new LoroText());
 ```
+
 </Indent>
 
 <Method id="LoroMap.delete">
@@ -3043,9 +3352,11 @@ delete(key: string): void
 删除一个键值对。
 
 **参数：**
+
 - `key` - 需要移除的键
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3053,6 +3364,7 @@ const map = doc.getMap("map");
 
 map.delete("obsoleteKey");
 ```
+
 </Indent>
 
 <Method id="LoroMap.clear">
@@ -3061,9 +3373,10 @@ clear(): void
 ```
 </Method>
 <Indent>
-Removes all key-value pairs.
+清空所有键值对。
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3071,6 +3384,7 @@ const map = doc.getMap("map");
 
 map.clear();
 ```
+
 </Indent>
 
 <Method id="LoroMap.keys">
@@ -3084,6 +3398,7 @@ keys(): string[]
 **返回值：** 键组成的数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3091,6 +3406,7 @@ const map = doc.getMap("map");
 
 const allKeys = map.keys();
 ```
+
 </Indent>
 
 <Method id="LoroMap.values">
@@ -3104,6 +3420,7 @@ values(): (Value | Container)[]
 **返回值：** 值组成的数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3111,6 +3428,7 @@ const map = doc.getMap("map");
 
 const allValues = map.values();
 ```
+
 </Indent>
 
 <Method id="LoroMap.entries">
@@ -3124,6 +3442,7 @@ entries(): [string, Value | Container][]
 **返回值：** 形如 `[key, value]` 的数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3133,6 +3452,7 @@ for (const [key, value] of map.entries()) {
   console.log(`${key}: ${value}`);
 }
 ```
+
 </Indent>
 
 <Method id="LoroMap.getLastEditor">
@@ -3144,11 +3464,13 @@ getLastEditor(key: string): PeerID | undefined
 获取指定键最后编辑该键的 Peer ID。
 
 **参数：**
+
 - `key` - 键
 
 **返回值：** PeerID，若未知则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3159,6 +3481,7 @@ doc.commit();
 const who = map.getLastEditor("k");
 // who = doc.peerIdStr
 ```
+
 </Indent>
 
 <Method id="LoroMap.size">
@@ -3172,6 +3495,7 @@ size: number
 **返回值：** Map 的大小
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3179,6 +3503,7 @@ const map = doc.getMap("map");
 
 console.log(`Map has ${map.size} entries`);
 ```
+
 </Indent>
 
 <Method id="LoroMap.kind">
@@ -3192,6 +3517,7 @@ kind(): "Map"
 **返回值：** `"Map"`
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3199,6 +3525,7 @@ const map = doc.getMap("map");
 
 const type = map.kind(); // "Map"
 ```
+
 </Indent>
 
 <Method id="LoroMap.toJSON">
@@ -3212,6 +3539,7 @@ toJSON(): any
 **返回值：** JSON 对象
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3221,6 +3549,7 @@ map.set("name", "Alice");
 // 用法示例：
 const json = map.toJSON(); // { name: "Alice" }
 ```
+
 </Indent>
 
 <Method id="LoroMap.parent">
@@ -3234,6 +3563,7 @@ parent(): Container | undefined
 **返回值：** 父容器，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3243,6 +3573,7 @@ const map = list.insertContainer(0, doc.getMap("nested"));
 // 用法示例：
 const parent = map.parent(); // 返回 list
 ```
+
 </Indent>
 
 <Method id="LoroMap.isAttached">
@@ -3256,6 +3587,7 @@ isAttached(): boolean
 **返回值：** 若已附着则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroMap } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3263,6 +3595,7 @@ const map = new LoroMap();
 
 const attached = map.isAttached(); // 未附着到文档前为 false
 ```
+
 </Indent>
 
 <Method id="LoroMap.getAttached">
@@ -3276,6 +3609,7 @@ getAttached(): LoroMap | undefined
 **返回值：** 已附着的容器，若尚未附着则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroMap } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3283,6 +3617,7 @@ const map = new LoroMap();
 
 const attached = map.getAttached();
 ```
+
 </Indent>
 
 <Method id="LoroMap.isDeleted">
@@ -3296,6 +3631,7 @@ isDeleted(): boolean
 **返回值：** 若已删除则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3303,6 +3639,7 @@ const map = doc.getMap("map");
 
 const deleted = map.isDeleted();
 ```
+
 </Indent>
 
 <Method id="LoroMap.getShallowValue">
@@ -3316,6 +3653,7 @@ getShallowValue(): Record<string, Value>
 **返回值：** 含值的对象
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3325,6 +3663,7 @@ map.set("key", "value");
 // 用法示例：
 const values = map.getShallowValue(); // { key: "value" }
 ```
+
 </Indent>
 
 <Method id="LoroMap.id">
@@ -3336,6 +3675,7 @@ readonly id: ContainerID
 获取该容器的唯一 ID。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3343,6 +3683,7 @@ const map = doc.getMap("map");
 
 const containerId = map.id;
 ```
+
 </Indent>
 
 ### LoroTree
@@ -3350,6 +3691,7 @@ const containerId = map.id;
 用于表示嵌套结构的层级树容器，支持在并发编辑下安全移动子树。详见[树](/docs/tutorial/tree)。
 
 **⚠️ 树操作的重要提示：**
+
 - **并发移动可能造成环**：Loro 会自动检测并阻止
 - **分数索引**：可能出现插入交错，但能保持相对顺序
 - **需要保持兄弟顺序时，请勿禁用分数索引**，详见[树](/docs/tutorial/tree)。
@@ -3363,12 +3705,14 @@ createNode(parent?: TreeID, index?: number): LoroTreeNode
 创建一个新的树节点。
 
 **参数：**
+
 - `parent` - 父节点 ID（可选，省略则创建根节点）
 - `index` - 在同级中的位置（可选）
 
 **返回值：** 新节点的句柄
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3377,6 +3721,7 @@ const tree = doc.getTree("tree");
 const root = tree.createNode();
 const child = root.createNode(0);
 ```
+
 </Indent>
 
 <Method id="LoroTree.move">
@@ -3388,11 +3733,13 @@ move(target: TreeID, parent?: TreeID, index?: number): void
 将节点移动到新的位置。
 
 **参数：**
+
 - `target` - 需要移动的节点 ID
 - `parent` - 新的父节点（对根节点可为 undefined）
 - `index` - 在同级中的插入位置
 
 **示例：**
+
 ```typescript no_run threeslash
 import { LoroDoc, TreeID } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3403,6 +3750,7 @@ declare const newParentId: TreeID;
 // 用法示例：
 tree.move(nodeId, newParentId, 0);
 ```
+
 </Indent>
 
 <Method id="LoroTree.delete">
@@ -3414,9 +3762,11 @@ delete(target: TreeID): void
 删除一个节点及其所有子节点。
 
 **参数：**
+
 - `target` - 要删除的节点 ID
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, TreeID } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3427,6 +3777,7 @@ const nodeId = node.id;
 // 用法示例：
 tree.delete(nodeId);
 ```
+
 </Indent>
 
 <Method id="LoroTree.getNodeByID">
@@ -3438,11 +3789,13 @@ getNodeByID(id: TreeID): LoroTreeNode | undefined
 根据节点 ID 获取节点句柄。
 
 **参数：**
+
 - `id` - 节点 ID
 
 **返回值：** 节点句柄，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, TreeID } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3456,6 +3809,7 @@ if (node) {
   node.data.set("label", "New Label");
 }
 ```
+
 </Indent>
 
 <Method id="LoroTree.nodes">
@@ -3469,6 +3823,7 @@ nodes(): LoroTreeNode[]
 **返回值：** 包含全部节点的数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3476,6 +3831,7 @@ const tree = doc.getTree("tree");
 
 const allNodes = tree.nodes();
 ```
+
 </Indent>
 
 <Method id="LoroTree.roots">
@@ -3489,6 +3845,7 @@ roots(): LoroTreeNode[]
 **返回值：** 根节点数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3496,6 +3853,7 @@ const tree = doc.getTree("tree");
 
 const rootNodes = tree.roots();
 ```
+
 </Indent>
 
 <Method id="LoroTree.has">
@@ -3507,11 +3865,13 @@ has(target: TreeID): boolean
 检查某个节点是否存在。
 
 **参数：**
+
 - `target` - 要检查的节点 ID
 
 **返回值：** 布尔值，表示是否存在
 
 **示例：**
+
 ```typescript no_run threeslash
 import { LoroDoc, TreeID } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3523,6 +3883,7 @@ if (tree.has(nodeId)) {
   console.log("Node exists");
 }
 ```
+
 </Indent>
 
 <Method id="LoroTree.isNodeDeleted">
@@ -3534,11 +3895,13 @@ isNodeDeleted(target: TreeID): boolean
 检查节点是否已被删除。
 
 **参数：**
+
 - `target` - 要检查的节点 ID
 
 **返回值：** 布尔值，表示删除状态
 
 **示例：**
+
 ```typescript no_run threeslash
 import { LoroDoc, TreeID } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3550,6 +3913,7 @@ if (tree.isNodeDeleted(nodeId)) {
   console.log("Node was deleted");
 }
 ```
+
 </Indent>
 <Method id="LoroTree.enableFractionalIndex">
 ```typescript no_run
@@ -3560,9 +3924,11 @@ enableFractionalIndex(jitter: number): void
 启用分数索引，以提升并发移动性能。
 
 **参数：**
+
 - `jitter` - 分数索引使用的抖动量
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3570,6 +3936,7 @@ const tree = doc.getTree("tree");
 
 tree.enableFractionalIndex(0.001);
 ```
+
 </Indent>
 
 <Method id="LoroTree.disableFractionalIndex">
@@ -3581,6 +3948,7 @@ disableFractionalIndex(): void
 禁用分数索引。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3588,6 +3956,7 @@ const tree = doc.getTree("tree");
 
 tree.disableFractionalIndex();
 ```
+
 </Indent>
 
 <Method id="LoroTree.isFractionalIndexEnabled">
@@ -3601,6 +3970,7 @@ isFractionalIndexEnabled(): boolean
 **返回值：** 若已启用则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3608,6 +3978,7 @@ const tree = doc.getTree("tree");
 
 const enabled = tree.isFractionalIndexEnabled();
 ```
+
 </Indent>
 
 <Method id="LoroTree.kind">
@@ -3621,6 +3992,7 @@ kind(): "Tree"
 **返回值：** `"Tree"`
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3628,6 +4000,7 @@ const tree = doc.getTree("tree");
 
 const type = tree.kind(); // "Tree"
 ```
+
 </Indent>
 
 <Method id="LoroTree.toJSON">
@@ -3641,6 +4014,7 @@ toJSON(): any
 **返回值：** JSON 树结构
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3648,6 +4022,7 @@ const tree = doc.getTree("tree");
 
 const json = tree.toJSON();
 ```
+
 </Indent>
 
 <Method id="LoroTree.parent">
@@ -3661,6 +4036,7 @@ parent(): Container | undefined
 **返回值：** 父容器，若不存在则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3670,6 +4046,7 @@ const tree = map.setContainer("tree", doc.getTree("nested"));
 // 用法示例：
 const parent = tree.parent();
 ```
+
 </Indent>
 
 <Method id="LoroTree.isAttached">
@@ -3683,6 +4060,7 @@ isAttached(): boolean
 **返回值：** 若已附着则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroTree } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3690,6 +4068,7 @@ const tree = new LoroTree();
 
 const attached = tree.isAttached();
 ```
+
 </Indent>
 
 <Method id="LoroTree.getAttached">
@@ -3703,6 +4082,7 @@ getAttached(): LoroTree | undefined
 **返回值：** 已附着的容器，若尚未附着则为 undefined
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroTree } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3710,6 +4090,7 @@ const tree = new LoroTree();
 
 const attached = tree.getAttached();
 ```
+
 </Indent>
 
 <Method id="LoroTree.isDeleted">
@@ -3723,6 +4104,7 @@ isDeleted(): boolean
 **返回值：** 若已删除则为 true
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3730,6 +4112,7 @@ const tree = doc.getTree("tree");
 
 const deleted = tree.isDeleted();
 ```
+
 </Indent>
 
 <Method id="LoroTree.getShallowValue">
@@ -3743,6 +4126,7 @@ getShallowValue(): TreeNodeShallowValue[]
 **返回值：** 树节点值数组
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3750,6 +4134,7 @@ const tree = doc.getTree("tree");
 
 const values = tree.getShallowValue();
 ```
+
 </Indent>
 
 <Method id="LoroTree.id">
@@ -3761,6 +4146,7 @@ readonly id: ContainerID
 获取该容器的唯一 ID。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3768,6 +4154,7 @@ const tree = doc.getTree("tree");
 
 const containerId = tree.id;
 ```
+
 </Indent>
 
 ### LoroTreeNode
@@ -3783,6 +4170,7 @@ data: LoroMap
 用于存储节点元数据的 Map 容器。
 
 **示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3791,6 +4179,7 @@ const node = tree.createNode();
 node.data.set("title", "Node Title");
 node.data.set("expanded", true);
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.createNode">
@@ -3799,14 +4188,16 @@ createNode(index?: number): LoroTreeNode
 ```
 </Method>
 <Indent>
-Creates a child node.
+创建一个子节点。
 
-**Parameters:**
-- `index` - Position among siblings
+**参数：**
 
-**Returns:** New node's handler
+- `index` - 在同级中的位置
 
-**Example:**
+**返回值：** 新节点的句柄
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3814,6 +4205,7 @@ const tree = doc.getTree("tree");
 const node = tree.createNode();
 const childId = node.createNode(0);
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.move">
@@ -3822,13 +4214,15 @@ move(parent?: LoroTreeNode, index?: number): void
 ```
 </Method>
 <Indent>
-Moves this node to a new parent.
+将当前节点移动到新的父节点下。
 
-**Parameters:**
-- `parent` - New parent node
-- `index` - Position among siblings
+**参数：**
 
-**Example:**
+- `parent` - 新的父节点
+- `index` - 在同级中的位置
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroTreeNode } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3836,9 +4230,10 @@ const tree = doc.getTree("tree");
 const node = tree.createNode();
 const parent = tree.createNode();
 
-// Usage example:
+// 用法示例：
 node.move(parent, 0);
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.moveAfter">
@@ -3847,12 +4242,14 @@ moveAfter(target: LoroTreeNode): void
 ```
 </Method>
 <Indent>
-Moves this node after a sibling.
+将当前节点移动到某个兄弟节点之后。
 
-**Parameters:**
-- `target` - Sibling node
+**参数：**
 
-**Example:**
+- `target` - 兄弟节点
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroTreeNode } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3860,10 +4257,11 @@ const tree = doc.getTree("tree");
 const node = tree.createNode();
 const sibling = tree.createNode();
 
-// Usage example:
+// 用法示例：
 node.moveAfter(sibling);
 ```
-</Indent> 
+
+</Indent>
 
 <Method id="LoroTreeNode.moveBefore">
 ```typescript no_run
@@ -3871,12 +4269,14 @@ moveBefore(target: LoroTreeNode): void
 ```
 </Method>
 <Indent>
-Moves this node before a sibling.
+将当前节点移动到某个兄弟节点之前。
 
-**Parameters:**
-- `target` - Sibling node
+**参数：**
 
-**Example:**
+- `target` - 兄弟节点
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroTreeNode } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3884,9 +4284,10 @@ const tree = doc.getTree("tree");
 const node = tree.createNode();
 const sibling = tree.createNode();
 
-// Usage example:
+// 用法示例：
 node.moveBefore(sibling);
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.parent">
@@ -3895,20 +4296,22 @@ parent(): LoroTreeNode | undefined
 ```
 </Method>
 <Indent>
-Gets the parent node.
+获取父节点。
 
-**Returns:** Parent node or undefined
+**返回值：** 父节点，若无则为 undefined
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const tree = doc.getTree("tree");
 const node = tree.createNode();
 
-// Usage example:
+// 用法示例：
 const parentNode = node.parent();
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.children">
@@ -3917,20 +4320,22 @@ children(): LoroTreeNode[]
 ```
 </Method>
 <Indent>
-Gets all child nodes.
+获取所有子节点。
 
-**Returns:** Array of children
+**返回值：** 子节点数组
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const tree = doc.getTree("tree");
 const node = tree.createNode();
 
-// Usage example:
+// 用法示例：
 const childNodes = node.children();
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.index">
@@ -3939,20 +4344,22 @@ index(): number | undefined
 ```
 </Method>
 <Indent>
-Gets the position among siblings.
+获取在同级中的位置。
 
-**Returns:** Index or undefined if root
+**返回值：** 索引值，若为根节点则为 undefined
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const tree = doc.getTree("tree");
 const node = tree.createNode();
 
-// Usage example:
+// 用法示例：
 const position = node.index();
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.fractionalIndex">
@@ -3961,13 +4368,12 @@ fractionalIndex(): string | undefined
 ```
 </Method>
 <Indent>
-Returns the node's fractional index used to sort siblings deterministically.
-It is a hex string representation of the Fractional Index and is stable for ordering.
-Returns `undefined` for the root node. Note: the tree must be attached to the document.
+返回用于确定性排序兄弟节点的分数索引。该值是分数索引的十六进制字符串表示，能够稳定地维持顺序。根节点会返回 `undefined`。注意：树必须已附着到文档。
 
-**Returns:** Hex string or `undefined` for root
+**返回值：** 十六进制字符串，根节点则为 `undefined`
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -3980,6 +4386,7 @@ const aFi = a.fractionalIndex();
 const bFi = b.fractionalIndex();
 // aFi < bFi, because b is inserted after a
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.creationId">
@@ -3988,11 +4395,12 @@ creationId(): { peer: PeerID, counter: number }
 ```
 </Method>
 <Indent>
-Returns the OpID that created this node.
+返回创建该节点的 OpID。
 
-**Returns:** `{ peer: PeerID, counter: number }` creation identifier
+**返回值：** `{ peer: PeerID, counter: number }` 类型的创建标识
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4001,6 +4409,7 @@ const node = tree.createNode();
 
 const { peer, counter } = node.creationId();
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.creator">
@@ -4009,11 +4418,12 @@ creator(): PeerID
 ```
 </Method>
 <Indent>
-Returns the peer ID that created this node (equivalent to `creationId().peer`).
+返回创建该节点的 Peer ID（等同于 `creationId().peer`）。
 
-**Returns:** `PeerID`
+**返回值：** `PeerID`
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4023,6 +4433,7 @@ const node = tree.createNode();
 const author = node.creator();
 // author == doc.peerIdStr
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.getLastMoveId">
@@ -4031,11 +4442,12 @@ getLastMoveId(): { peer: PeerID, counter: number } | undefined
 ```
 </Method>
 <Indent>
-Returns the OpID of the most recent move operation for this node, or `undefined` if the node has never been moved.
+返回此节点最近一次移动操作的 OpID；若从未移动则为 `undefined`。
 
-**Returns:** Creation/move OpID or `undefined`
+**返回值：** 移动操作的 OpID，或 `undefined`
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4044,6 +4456,7 @@ const node = tree.createNode();
 
 const lastMove = node.getLastMoveId();
 ```
+
 </Indent>
 
 <Method id="LoroTreeNode.isDeleted">
@@ -4051,28 +4464,30 @@ const lastMove = node.getLastMoveId();
 isDeleted(): boolean
 ```
 </Method>
-<Indent>  
-Checks if this node has been deleted.
+<Indent>
+检查当前节点是否已被删除。
 
-**Returns:** Boolean deletion status
+**返回值：** 布尔值，表示删除状态
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const tree = doc.getTree("tree");
 const node = tree.createNode();
 
-// Usage example:
+// 用法示例：
 if (node.isDeleted()) {
   console.log("Node is deleted");
 }
 ```
+
 </Indent>
 
 ### LoroCounter
 
-A counter CRDT for collaborative numeric values.
+用于协作数值的计数器 CRDT。
 
 <Method id="LoroCounter.increment">
 ```typescript no_run
@@ -4080,19 +4495,22 @@ increment(value: number): void
 ```
 </Method>
 <Indent>
-Increments the counter.
+递增计数器。
 
-**Parameters:**
-- `value` - Amount to increment (default: 1)
+**参数：**
 
-**Example:**
+- `value` - 增量（默认 1）
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const counter = doc.getCounter("counter");
 
-counter.increment(5);   // +5
+counter.increment(5); // +5
 ```
+
 </Indent>
 
 <Method id="LoroCounter.decrement">
@@ -4101,19 +4519,22 @@ decrement(value: number): void
 ```
 </Method>
 <Indent>
-Decrements the counter.
+递减计数器。
 
-**Parameters:**
-- `value` - Amount to decrement (default: 1)
+**参数：**
 
-**Example:**
+- `value` - 减量（默认 1）
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const counter = doc.getCounter("counter");
 
-counter.decrement(3);   // -3
+counter.decrement(3); // -3
 ```
+
 </Indent>
 
 <Method id="LoroCounter.value">
@@ -4122,11 +4543,12 @@ value: number
 ```
 </Method>
 <Indent>
-Gets the current counter value.
+获取当前计数值。
 
-**Returns:** Current numeric value
+**返回值：** 当前数值
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4134,17 +4556,18 @@ const counter = doc.getCounter("counter");
 
 console.log(`Counter value: ${counter.value}`);
 ```
+
 </Indent>
 
 ### LoroMovableList
 
-A list optimized for move operations. Designed for frequent reordering (drag-and-drop) with good behavior under 
-concurrent moves (concurrent moves resolve to one final position). See [List and Movable List](/docs/tutorial/list).
+针对移动操作优化的列表，适合频繁重排（拖放）且能在并发移动下保持良好行为（最终收敛到单一位置）。详见[列表与可移动列表](/docs/tutorial/list)。
 
-**📝 MovableList vs List:**
-- **Use MovableList** for: Drag-and-drop UIs, sortable lists, kanban boards
-- **Use List** for: scenarios where the list items don't need to be moved
-- **Key difference**: MovableList handles concurrent moves better (no duplicates) and supports set operations, List is more efficient in general.
+**📝 MovableList 与 List 的对比：**
+
+- **推荐使用 MovableList 场景**：拖拽 UI、可排序列表、看板
+- **继续使用 List 场景**：列表项无需移动
+- **关键差异**：MovableList 更好地处理并发移动（无重复项）并支持 set 操作，List 在通用场景下更高效。
 
 <Method id="LoroMovableList.move">
 ```typescript no_run
@@ -4152,13 +4575,15 @@ move(from: number, to: number): void
 ```
 </Method>
 <Indent>
-Moves an element from one position to another.
+将元素从一个位置移动到另一个位置。
 
-**Parameters:**
-- `from` - Source index
-- `to` - Target index
+**参数：**
 
-**Example:**
+- `from` - 源索引
+- `to` - 目标索引
+
+**示例：**
+
 ```typescript
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4169,8 +4594,9 @@ movableList.push("c");
 movableList.push("d");
 movableList.push("e");
 
-movableList.move(0, 3); // Move first element to fourth position
+movableList.move(0, 3); // 将第一个元素移动到第 4 个位置
 ```
+
 </Indent>
 
 <Method id="LoroMovableList.set">
@@ -4178,14 +4604,16 @@ movableList.move(0, 3); // Move first element to fourth position
 set(pos: number, value: Value | Container): void
 ```
 </Method>
-<Indent>  
-Replaces the value at a position.
+<Indent>
+替换指定位置上的值。
 
-**Parameters:**
-- `pos` - Position to update
-- `value` - New value
+**参数：**
 
-**Example:**
+- `pos` - 需要更新的位置
+- `value` - 新值
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4194,6 +4622,7 @@ movableList.push("a", "b", "c");
 
 movableList.set(0, "Updated value");
 ```
+
 </Indent>
 
 <Method id="LoroMovableList.setContainer">
@@ -4201,16 +4630,18 @@ movableList.set(0, "Updated value");
 setContainer<T extends Container>(pos: number, container: T): T
 ```
 </Method>
-<Indent>  
-Replaces the value with a container.
+<Indent>
+将指定位置的值替换为容器。
 
-**Parameters:**
-- `pos` - Position to update
-- `container` - New container
+**参数：**
 
-**Returns:** The set container
+- `pos` - 需要更新的位置
+- `container` - 新容器
 
-**Example:**
+**返回值：** 设置后的容器
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, LoroText } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4219,42 +4650,43 @@ movableList.push("placeholder");
 
 const text = movableList.setContainer(0, new LoroText());
 ```
-</Indent> 
 
-## Synchronization
+</Indent>
 
-Import/export updates over any transport and choose the right encoding for speed and size. See [Sync Tutorial](/docs/tutorial/sync) and [Encoding & Export Modes](/docs/tutorial/encoding).
+## 同步
 
-- **Import order**: Loro handles out-of-order updates automatically
-- **Auto-commit**: Import and export operations trigger automatic commits
+通过任意传输方式导入/导出更新，并选择合适的编码以兼顾速度和体积。详见 [Sync Tutorial](/docs/tutorial/sync) 与 [Encoding & Export Modes](/docs/tutorial/encoding)。
 
-### Import/Export Patterns
+- **导入顺序**：Loro 会自动处理乱序更新。
+- **自动提交**：导入和导出操作会触发自动提交。
 
-#### Basic Synchronization
+### 导入/导出模式
+
+#### 基础同步
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
-// Peer A: Export updates
+// 节点 A：导出更新
 const doc1 = new LoroDoc();
 doc1.getText("text").insert(0, "Hello");
 const updates = doc1.export({ mode: "update" });
 
-// Peer B: Import updates
+// 节点 B：导入更新
 const doc2 = new LoroDoc();
 doc2.import(updates);
-// now doc2.getText("text").toString() === "Hello"
+// 此时 doc2.getText("text").toString() === "Hello"
 ```
 
-#### Continuous Sync
+#### 持续同步
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc1 = new LoroDoc();
 const doc2 = new LoroDoc();
 
-// Usage example:
-// Set up bidirectional sync
+// 使用示例：
+// 建立双向同步
 doc1.subscribeLocalUpdates((updates) => {
   doc2.import(updates);
 });
@@ -4264,113 +4696,113 @@ doc2.subscribeLocalUpdates((updates) => {
 });
 ```
 
-Performance tips:
-- Prefer `mode: "update"` with a `VersionVector` to sync incrementally.
-- Use `mode: "shallow-snapshot"` when you only need current state; it strips history for faster import/load.
-- Loro’s LSM-based encoding and Eg-walker-inspired merge keep import/export fast, even for large histories. 
-  See [Encoding](/docs/tutorial/encoding) and v1.0 performance notes: https://loro.dev/blog/v1.0
+性能提示：
 
-#### Network Sync with WebSocket
+- 优先搭配 `mode: "update"` 与 `VersionVector`，实现增量同步。
+- 当只需要当前状态时使用 `mode: "shallow-snapshot"`，它会剥离历史记录以加快导入/加载。
+- Loro 基于 LSM 的编码与受 Eg-walker 启发的合并算法，即使历史很长也能保持快速导入/导出。详见 [Encoding](/docs/tutorial/encoding) 与 v1.0 性能说明：https://loro.dev/blog/v1.0
+
+#### 使用 WebSocket 的网络同步
 
 ```ts no_run threeslash
 import { LoroDoc } from "loro-crdt";
 
-// Assume we have:
-declare const ws: { 
+// 假设我们已有：
+declare const ws: {
   send: (data: Uint8Array) => void;
   on: (event: string, handler: (data: any) => void) => void;
 };
 
-// Client side
+// 客户端
 const doc = new LoroDoc();
 
-// Send local updates to server
+// 将本地更新发送到服务器
 doc.subscribeLocalUpdates((updates) => {
   ws.send(updates);
 });
 
-// Receive updates from server
-ws.on('message', (data) => {
+// 接收来自服务器的更新
+ws.on("message", (data) => {
   doc.import(new Uint8Array(data));
 });
 ```
 
-### Shallow Snapshots
+### 浅快照
 
-Shallow snapshots allow for efficient storage by garbage collecting deleted operations.
+浅快照通过清理已删除的操作来提升存储效率。
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
-// Create shallow snapshot
+// 创建浅快照
 const frontiers = doc.frontiers();
 const shallowSnapshot = doc.export({
   mode: "shallow-snapshot",
-  frontiers: frontiers
+  frontiers: frontiers,
 });
 
-// Import shallow snapshot
+// 导入浅快照
 const newDoc = new LoroDoc();
 newDoc.import(shallowSnapshot);
 ```
 
 ---
 
-## Version Control
+## 版本控制
 
-### Time Travel
+### 时光回溯
 
-Navigate through document history:
+在文档历史中穿梭：
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
-// Save current version
+// 保存当前版本
 const v1 = doc.frontiers();
 
-// Make changes
+// 进行修改
 doc.getText("text").insert(0, "New text");
 
-// Save new version
+// 保存新版本
 const v2 = doc.frontiers();
 
-// Travel back
+// 回到旧版本
 doc.checkout(v1);
 console.log(doc.getText("text").toString()); // Original text
 
-// Travel forward
+// 前往新版本
 doc.checkout(v2);
 console.log(doc.getText("text").toString()); // New text
 
-// Return to latest
+// 回到最新状态
 doc.checkoutToLatest();
 ```
 
-### Forking
+### 分叉
 
-Create document branches:
+创建文档分支：
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
-// Fork at current state
+// 在当前状态下分叉
 const fork1 = doc.fork();
 fork1.getText("text").insert(0, "Fork 1 changes");
 
-// Fork at specific version
+// 在指定版本分叉
 const historicalVersion = doc.frontiers();
 const fork2 = doc.forkAt(historicalVersion);
 fork2.getText("text").insert(0, "Fork 2 changes");
 
-// Original document remains unchanged
+// 原始文档保持不变
 ```
 
-### Version Vectors
+### 版本向量
 
-Track document versions:
+追踪文档版本：
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
@@ -4381,30 +4813,30 @@ console.log(`Document has ${vv.length()} peers`);
 
 ---
 
-## Events & Subscriptions
+## 事件与订阅
 
-### Event Structure
+### 事件结构
 
 ```typescript no_run
 interface LoroEventBatch {
-  by: "local" | "import" | "checkout"
-  origin?: string
-  currentTarget?: ContainerID
-  events: LoroEvent[]
-  from: Frontiers
-  to: Frontiers
+  by: "local" | "import" | "checkout";
+  origin?: string;
+  currentTarget?: ContainerID;
+  events: LoroEvent[];
+  from: Frontiers;
+  to: Frontiers;
 }
 
 interface LoroEvent {
-  target: ContainerID
-  diff: Diff
-  path: Path
+  target: ContainerID;
+  diff: Diff;
+  path: Path;
 }
 ```
 
-### Diff Types
+### Diff 类型
 
-Different containers produce different diff types:
+不同容器会产出不同的 diff 类型：
 
 #### TextDiff
 
@@ -4415,23 +4847,25 @@ type TextDiff = {
   diff: Delta<string>[]
 }
 ```
-Represents changes to text content using Delta format.
+使用 Delta 格式表示文本内容的变更。
 
-**Properties:**
-- `type` - Always "text" for text diffs
-- `diff` - Array of Delta operations (insert, delete, retain)
+**属性：**
 
-**Example:**
+- `type` - 文本 diff 时恒为 "text"
+- `diff` - Delta 操作数组（插入、删除、保留）
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const text = doc.getText("text");
 
-// Example
+// 示例
 text.subscribe((e) => {
   for (const event of e.events) {
     if (event.diff.type === "text") {
-      event.diff.diff.forEach(delta => {
+      event.diff.diff.forEach((delta) => {
         if (delta.insert) {
           console.log(`Inserted: "${delta.insert}"`);
         }
@@ -4443,6 +4877,7 @@ text.subscribe((e) => {
   }
 });
 ```
+
 </Indent>
 
 #### ListDiff
@@ -4454,23 +4889,25 @@ type ListDiff = {
   diff: Delta<(Value | Container)[]>[]
 }
 ```
-Represents changes to list content using Delta format.
+使用 Delta 格式表示列表内容的变更。
 
-**Properties:**
-- `type` - Always "list" for list diffs
-- `diff` - Array of Delta operations on list items
+**属性：**
 
-**Example:**
+- `type` - 列表 diff 时恒为 "list"
+- `diff` - 针对列表项的 Delta 操作数组
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const list = doc.getList("list");
 
-// Example
+// 示例
 list.subscribe((e) => {
   for (const event of e.events) {
     if (event.diff.type === "list") {
-      event.diff.diff.forEach(delta => {
+      event.diff.diff.forEach((delta) => {
         if (delta.insert) {
           console.log(`Inserted items:`, delta.insert);
         }
@@ -4479,6 +4916,7 @@ list.subscribe((e) => {
   }
 });
 ```
+
 </Indent>
 
 #### MapDiff
@@ -4490,19 +4928,21 @@ type MapDiff = {
   updated: Record<string, Value | Container | undefined>
 }
 ```
-Represents changes to map content.
+表示映射内容的变更。
 
-**Properties:**
-- `type` - Always "map" for map diffs
-- `updated` - Record of key-value changes (undefined means deleted)
+**属性：**
 
-**Example:**
+- `type` - 映射 diff 时恒为 "map"
+- `updated` - 保存键值变更（值为 undefined 表示已被删除）
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const map = doc.getMap("map");
 
-// Example
+// 示例
 map.subscribe((e) => {
   for (const event of e.events) {
     if (event.diff.type === "map") {
@@ -4517,6 +4957,7 @@ map.subscribe((e) => {
   }
 });
 ```
+
 </Indent>
 
 #### TreeDiff
@@ -4529,47 +4970,48 @@ type TreeDiff = {
 }
 
 type TreeDiffItem =
-  | {
-      target: TreeID
-      action: "create"
-      parent: TreeID | undefined
-      index: number
-      fractionalIndex: string
-    }
-  | {
-      target: TreeID
-      action: "delete"
-      oldParent: TreeID | undefined
-      oldIndex: number
-    }
-  | {
-      target: TreeID
-      action: "move"
-      parent: TreeID | undefined
-      index: number
-      fractionalIndex: string
-      oldParent: TreeID | undefined
-      oldIndex: number
-    }
-```
-Represents changes to tree structure.
+| {
+target: TreeID
+action: "create"
+parent: TreeID | undefined
+index: number
+fractionalIndex: string
+}
+| {
+target: TreeID
+action: "delete"
+oldParent: TreeID | undefined
+oldIndex: number
+}
+| {
+target: TreeID
+action: "move"
+parent: TreeID | undefined
+index: number
+fractionalIndex: string
+oldParent: TreeID | undefined
+oldIndex: number
+}
 
-**Properties:**
-- `type` - Always "tree" for tree diffs
-- `diff` - Array of TreeDiffItem operations (create, delete, move)
+````
+表示树结构的变更。
 
-**TreeDiffItem Actions:**
-- `create` - Node creation with parent and position
-- `delete` - Node deletion with old parent and position
-- `move` - Node movement with old and new positions
+**属性：**
+- `type` - 树 diff 时恒为 "tree"
+- `diff` - TreeDiffItem 操作数组（创建、删除、移动）
 
-**Example:**
+**TreeDiffItem 操作：**
+- `create` - 包含父节点与位置的节点创建
+- `delete` - 带有旧父节点和位置的节点删除
+- `move` - 携带旧/新位置的节点移动
+
+**示例：**
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 const doc = new LoroDoc();
 const tree = doc.getTree("tree");
 
-// Example
+// 示例
 tree.subscribe((e) => {
   for (const event of e.events) {
     if (event.diff.type === "tree") {
@@ -4589,27 +5031,28 @@ tree.subscribe((e) => {
     }
   }
 });
-```
+````
+
 </Indent>
 
-### Deep Subscription
+### 深度订阅
 
-Subscribe to nested changes:
+订阅嵌套变更：
 
 ```ts threeslash
 import { LoroDoc } from "loro-crdt";
 
 const doc = new LoroDoc();
-// Subscribe to specific container
+// 订阅特定容器
 const text = doc.getText("text");
 text.subscribe((event) => {
   console.log("Text changed:", event);
 });
 
-// Subscribe with deep observation
+// 订阅并启用深度观察
 doc.subscribe((event) => {
-  // Path shows the location of the change
-  event.events.forEach(e => {
+  // path 表示变更发生的位置
+  event.events.forEach((e) => {
     console.log("Change path:", e.path);
     console.log("Container:", e.target);
     console.log("Diff:", e.diff);
@@ -4619,18 +5062,19 @@ doc.subscribe((event) => {
 
 ---
 
-## Undo/Redo
+## 撤销/重做
 
-Local undo operates on your own changes without breaking collaboration. See [Undo/Redo](/docs/advanced/undo) for design details and caveats.
+本地撤销仅作用于你自己的更改，不会破坏协同编辑。详见 [Undo/Redo](/docs/advanced/undo) 了解设计细节与注意事项。
 
 ### UndoManager
 
-Provides local undo/redo functionality.
+提供本地撤销/重做能力。
 
-**⚠️ Important Notes:**
-- **Local-only**: UndoManager only undoes the local user's operations, not remote operations
-- **Origin filtering**: Use `excludeOriginPrefixes` to exclude certain operations (e.g., sync operations) from undo
-- **Cursor restoration**: Use `onPush`/`onPop` callbacks to save and restore cursor positions
+**⚠️ 注意事项：**
+
+- **仅限本地**：UndoManager 只会撤销本地用户的操作，不会影响远端操作。
+- **来源过滤**：使用 `excludeOriginPrefixes` 可将特定操作（如同步产生的操作）排除在撤销之外。
+- **光标恢复**：借助 `onPush`/`onPop` 回调保存并恢复光标位置。
 
 <Method id="UndoManager.constructor">
 ```typescript no_run
@@ -4638,18 +5082,20 @@ constructor(doc: LoroDoc, config: UndoConfig)
 ```
 </Method>
 <Indent>
-Creates a new UndoManager instance.
+创建新的 UndoManager 实例。
 
-**Parameters:**
-- `doc` - The LoroDoc to manage undo/redo for
-- `config` - Configuration options
-  - `mergeInterval?` - Time in ms to merge consecutive operations (default: 1000)
-  - `maxUndoSteps?` - Maximum number of undo steps to keep (default: 100)
-  - `excludeOriginPrefixes?` - Array of origin prefixes to exclude from undo
-  - `onPush?` - Callback when adding to undo stack
-  - `onPop?` - Callback when undoing/redoing
+**参数：**
 
-**Example:**
+- `doc` - 需要管理撤销/重做的 LoroDoc
+- `config` - 配置项
+  - `mergeInterval?` - 合并连续操作的时间窗口（毫秒，默认 1000）
+  - `maxUndoSteps?` - 撤销栈的最大步数（默认 100）
+  - `excludeOriginPrefixes?` - 要从撤销中排除的 origin 前缀数组
+  - `onPush?` - 入栈时触发的回调
+  - `onPop?` - 撤销/重做时触发的回调
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 
@@ -4657,9 +5103,10 @@ const doc = new LoroDoc();
 const undo = new UndoManager(doc, {
   mergeInterval: 1000,
   maxUndoSteps: 100,
-  excludeOriginPrefixes: ["sync-"]
+  excludeOriginPrefixes: ["sync-"],
 });
 ```
+
 </Indent>
 
 <Method id="UndoManager.undo">
@@ -4668,11 +5115,12 @@ undo(): boolean
 ```
 </Method>
 <Indent>
-Undo the last operation.
+撤销最近一次操作。
 
-**Returns:** True if undo was successful
+**返回值：** 撤销成功时返回 true
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4681,10 +5129,11 @@ const text = doc.getText("text");
 text.insert(0, "Hello");
 doc.commit();
 
-// Usage example:
+// 使用示例：
 const success = undo.undo();
 console.log(success); // true
 ```
+
 </Indent>
 
 <Method id="UndoManager.redo">
@@ -4693,11 +5142,12 @@ redo(): boolean
 ```
 </Method>
 <Indent>
-Redo the last undone operation.
+重做最近一次被撤销的操作。
 
-**Returns:** True if redo was successful
+**返回值：** 重做成功时返回 true
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
@@ -4707,10 +5157,11 @@ text.insert(0, "Hello");
 doc.commit();
 undo.undo();
 
-// Usage example:
+// 使用示例：
 const success = undo.redo();
 console.log(success); // true
 ```
+
 </Indent>
 
 <Method id="UndoManager.canUndo">
@@ -4719,21 +5170,23 @@ canUndo(): boolean
 ```
 </Method>
 <Indent>
-Check if undo is available.
+检查是否可以执行撤销。
 
-**Returns:** True if can undo
+**返回值：** 可撤销时返回 true
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 if (undo.canUndo()) {
   undo.undo();
 }
 ```
+
 </Indent>
 
 <Method id="UndoManager.canRedo">
@@ -4742,21 +5195,23 @@ canRedo(): boolean
 ```
 </Method>
 <Indent>
-Check if redo is available.
+检查是否可以执行重做。
 
-**Returns:** True if can redo
+**返回值：** 可重做时返回 true
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 if (undo.canRedo()) {
   undo.redo();
 }
 ```
+
 </Indent>
 
 <Method id="UndoManager.peer">
@@ -4765,20 +5220,22 @@ peer(): PeerID
 ```
 </Method>
 <Indent>
-Get the peer ID of the undo manager.
+获取 UndoManager 所属的节点 ID。
 
-**Returns:** The peer ID
+**返回值：** 节点 ID
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 const peerId = undo.peer();
 console.log(peerId); // e.g., "123456"
 ```
+
 </Indent>
 
 <Method id="UndoManager.setMaxUndoSteps">
@@ -4787,20 +5244,23 @@ setMaxUndoSteps(steps: number): void
 ```
 </Method>
 <Indent>
-Set the maximum number of undo steps.
+设置可保留的最大撤销步数。
 
-**Parameters:**
-- `steps` - Maximum number of undo steps
+**参数：**
 
-**Example:**
+- `steps` - 最大撤销步数
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 undo.setMaxUndoSteps(50);
 ```
+
 </Indent>
 
 <Method id="UndoManager.setMergeInterval">
@@ -4809,20 +5269,23 @@ setMergeInterval(interval: number): void
 ```
 </Method>
 <Indent>
-Set the merge interval for grouping operations.
+设置分组合并操作的时间窗口。
 
-**Parameters:**
-- `interval` - Merge interval in milliseconds
+**参数：**
 
-**Example:**
+- `interval` - 以毫秒为单位的合并间隔
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 undo.setMergeInterval(2000); // 2 seconds
 ```
+
 </Indent>
 
 <Method id="UndoManager.groupStart">
@@ -4831,14 +5294,16 @@ groupStart(): void
 ```
 </Method>
 <Indent>
-Begin a manual grouping of subsequent commits into a single undo step.
+开始手动分组，将后续提交聚合成单个撤销步骤。
 
-**Behavior:**
-- Wrap consecutive `doc.commit()` calls so they undo together
-- Calling `groupStart` again before `groupEnd` throws and leaves the current group unchanged
-- Conflicting remote imports may automatically end the group and split the undo item
+**行为：**
 
-**Example:**
+- 将连续的 `doc.commit()` 包裹为一次撤销。
+- 在 `groupEnd` 之前再次调用 `groupStart` 会抛错，并保持当前分组不变。
+- 若遇到冲突的远端导入，可能会自动结束分组并拆分撤销项。
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 
@@ -4860,6 +5325,7 @@ undo.undo();
 
 console.log(text.toString()); // ""
 ```
+
 </Indent>
 
 <Method id="UndoManager.groupEnd">
@@ -4868,14 +5334,16 @@ groupEnd(): void
 ```
 </Method>
 <Indent>
-Close the active manual group and enqueue the grouped operations as a single undo item.
+结束当前手动分组，并将组合操作入队为一个撤销项。
 
-**Behavior:**
-- Must be paired with a prior `groupStart`
-- Safe to call after the group was auto-closed by a conflicting remote import (becomes a no-op)
-- Non-conflicting remote updates from other peers remain outside the undo item but do not break the group
+**行为：**
 
-**Example:**
+- 必须与之前的 `groupStart` 配对使用。
+- 若分组因冲突的远端导入被自动关闭，再次调用会成为空操作且不会报错。
+- 其他节点的不冲突远端更新不会纳入撤销项，也不会破坏该分组。
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 
@@ -4893,11 +5361,11 @@ doc.commit();
 const snapshot = doc.export({ mode: "snapshot" });
 const doc2 = new LoroDoc();
 doc2.import(snapshot);
-doc2.getText("text2").update("hello world world", undefined); // touches a different container
+doc2.getText("text2").update("hello world world", undefined); // 作用于不同的容器
 doc2.commit();
 const update = doc2.export({ mode: "update" });
 
-doc.import(update); // remote, non-conflicting change
+doc.import(update); // 引入远端且无冲突的变更
 
 text.update("hello world world world", undefined);
 doc.commit();
@@ -4908,6 +5376,7 @@ undo.undo();
 
 console.log(text.toString()); // ""
 ```
+
 </Indent>
 
 <Method id="UndoManager.addExcludeOriginPrefix">
@@ -4916,21 +5385,24 @@ addExcludeOriginPrefix(prefix: string): void
 ```
 </Method>
 <Indent>
-Add a prefix to exclude from undo stack.
+将指定前缀加入撤销忽略列表。
 
-**Parameters:**
-- `prefix` - Origin prefix to exclude
+**参数：**
 
-**Example:**
+- `prefix` - 需要排除的 origin 前缀
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 undo.addExcludeOriginPrefix("sync-");
 undo.addExcludeOriginPrefix("import-");
 ```
+
 </Indent>
 
 <Method id="UndoManager.clear">
@@ -4939,22 +5411,24 @@ clear(): void
 ```
 </Method>
 <Indent>
-Clear the undo and redo stacks.
+清空撤销栈与重做栈。
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
 const doc = new LoroDoc();
 const undo = new UndoManager(doc, {});
 
-// Usage example:
+// 使用示例：
 undo.clear();
 ```
+
 </Indent>
 
-### Custom Undo Handlers
+### 自定义撤销处理
 
-Handle cursor restoration and side effects:
+处理光标恢复及其他副作用：
 
 ```typescript no_run threeslash
 import { LoroDoc, UndoManager } from "loro-crdt";
@@ -4965,51 +5439,57 @@ declare function restoreCursorPositions(cursors: any): void;
 // Usage example:
 const undo = new UndoManager(doc, {
   onPush: (isUndo, counterRange, event) => {
-    // Save cursor positions when adding to undo stack
+    // 入栈时保存光标位置
     const cursors = saveCursorPositions();
     return {
       value: doc.toJSON(),
-      cursors: cursors
+      cursors: cursors,
     };
   },
-  
+
   onPop: (isUndo, { value, cursors }, counterRange) => {
-    // Restore cursor positions when undoing
+    // 撤销时恢复光标位置
     restoreCursorPositions(cursors);
-  }
+  },
 });
 ```
 
 ---
 
-## Types & Interfaces
+## 类型与接口
 
-Reference for core types used across the API. For conceptual background, see [Containers](/docs/concepts/container), [Version Vector](/docs/concepts/version_vector), [Frontiers](/docs/concepts/frontiers), and the [Versioning Deep Dive](/docs/advanced/version_deep_dive).
+列出 API 中使用的核心类型。相关概念请参阅 [Containers](/docs/concepts/container)、[Version Vector](/docs/concepts/version_vector)、[Frontiers](/docs/concepts/frontiers) 以及 [Versioning Deep Dive](/docs/advanced/version_deep_dive)。
 
-### Core Types
+### 核心类型
 
 ```typescript no_run
-// Peer identifier
-type PeerID = `${number}`
+// 节点标识符
+type PeerID = `${number}`;
 
-// Container identifier
-type ContainerID = 
+// 容器标识符
+type ContainerID =
   | `cid:root-${string}:${ContainerType}`
-  | `cid:${number}@${PeerID}:${ContainerType}`
+  | `cid:${number}@${PeerID}:${ContainerType}`;
 
-// Tree node identifier
-type TreeID = `${number}@${PeerID}`
+// 树节点标识符
+type TreeID = `${number}@${PeerID}`;
 
-// Operation identifier
-type OpId = { 
-  peer: PeerID
-  counter: number 
-}
+// 操作标识符
+type OpId = {
+  peer: PeerID;
+  counter: number;
+};
 
-// Container types
-type ContainerType = "Text" | "Map" | "List" | "Tree" | "MovableList" | "Counter"
+// 容器类型
+type ContainerType =
+  | "Text"
+  | "Map"
+  | "List"
+  | "Tree"
+  | "MovableList"
+  | "Counter";
 
-// Value types
+// 值类型
 type Value =
   | ContainerID
   | string
@@ -5019,110 +5499,115 @@ type Value =
   | { [key: string]: Value }
   | Uint8Array
   | Value[]
-  | undefined
+  | undefined;
 ```
 
-### Version Types
-Loro uses two complementary version representations: Version Vectors (per-peer counters) and Frontiers (a compact set of heads). See [Version Vector](/docs/concepts/version_vector) and [Frontiers](/docs/concepts/frontiers). For the full DAG model, see [Version Deep Dive](/docs/advanced/version_deep_dive).
+### 版本类型
+
+Loro 提供两种互补的版本表示：版本向量（按节点计数）以及 frontiers（紧凑的头集合）。参见 [Version Vector](/docs/concepts/version_vector) 与 [Frontiers](/docs/concepts/frontiers)，了解完整 DAG 模型请访问 [Version Deep Dive](/docs/advanced/version_deep_dive)。
 
 ```typescript no_run
-// Version vector class
+// 版本向量类
 class VersionVector {
-  constructor(value: Map<PeerID, number> | Uint8Array | VersionVector | undefined | null)
-  static parseJSON(version: Map<PeerID, number>): VersionVector
-  toJSON(): Map<PeerID, number>
-  encode(): Uint8Array
-  static decode(bytes: Uint8Array): VersionVector
-  get(peer_id: number | bigint | `${number}`): number | undefined
-  compare(other: VersionVector): number | undefined
-  setEnd(id: { peer: PeerID, counter: number }): void
-  setLast(id: { peer: PeerID, counter: number }): void
-  remove(peer: PeerID): void
-  length(): number
+  constructor(
+    value: Map<PeerID, number> | Uint8Array | VersionVector | undefined | null,
+  );
+  static parseJSON(version: Map<PeerID, number>): VersionVector;
+  toJSON(): Map<PeerID, number>;
+  encode(): Uint8Array;
+  static decode(bytes: Uint8Array): VersionVector;
+  get(peer_id: number | bigint | `${number}`): number | undefined;
+  compare(other: VersionVector): number | undefined;
+  setEnd(id: { peer: PeerID; counter: number }): void;
+  setLast(id: { peer: PeerID; counter: number }): void;
+  remove(peer: PeerID): void;
+  length(): number;
 }
 
-// Frontiers represent a specific version
-type Frontiers = OpId[]
+// Frontiers 表示具体版本
+type Frontiers = OpId[];
 
-// ID span for range queries
+// 范围查询使用的 ID 区间
 type IdSpan = {
-  peer: PeerID
-  counter: number
-  length: number
-}
+  peer: PeerID;
+  counter: number;
+  length: number;
+};
 ```
 
-### Change Types
+### 变更类型
 
 ```typescript no_run
-// Change metadata
+// 变更元数据
 interface Change {
-  peer: PeerID
-  counter: number
-  lamport: number
-  length: number
-  timestamp: number  // Unix timestamp in seconds
-  deps: OpId[]
-  message: string | undefined
+  peer: PeerID;
+  counter: number;
+  lamport: number;
+  length: number;
+  timestamp: number; // Unix timestamp in seconds
+  deps: OpId[];
+  message: string | undefined;
 }
 
-// Change modifier for pre-commit hooks
+// 预提交钩子使用的变更修饰器
 interface ChangeModifier {
-  setMessage(message: string): this
-  setTimestamp(timestamp: number): this
+  setMessage(message: string): this;
+  setTimestamp(timestamp: number): this;
 }
 ```
 
-### Cursor Types
-Stable cursors survive concurrent edits and resolve to absolute positions on demand. See [Cursor and Stable Positions](/docs/concepts/cursor_stable_positions) and [Cursor tutorial](/docs/tutorial/cursor).
+### 光标类型
+
+稳定光标能够在并发编辑下保留，并可按需解析到绝对位置。参见 [Cursor and Stable Positions](/docs/concepts/cursor_stable_positions) 以及 [Cursor tutorial](/docs/tutorial/cursor)。
 
 ```typescript no_run
-// Stable position in containers
+// 容器中的稳定位置
 class Cursor {
-  containerId(): ContainerID
-  pos(): OpId | undefined
-  side(): Side  // -1 | 0 | 1
-  encode(): Uint8Array
-  static decode(data: Uint8Array): Cursor
+  containerId(): ContainerID;
+  pos(): OpId | undefined;
+  side(): Side; // -1 | 0 | 1
+  encode(): Uint8Array;
+  static decode(data: Uint8Array): Cursor;
 }
 
-// Cursor side affinity
-type Side = -1 | 0 | 1
+// 光标侧向偏好
+type Side = -1 | 0 | 1;
 ```
 
-### Delta Type
-Delta is a popular rich-text operation format (e.g., Quill). LoroText can export/import Delta; see [Text](/docs/tutorial/text).
+### Delta 类型
+
+Delta 是常见的富文本操作格式（如 Quill）。LoroText 支持 Delta 的导入/导出，详情见 [Text](/docs/tutorial/text)。
 
 ```typescript no_run
-// Rich text delta operations
+// 富文本 Delta 操作
 type Delta<T> =
   | {
-      insert: T
-      attributes?: { [key in string]: {} }
-      retain?: undefined
-      delete?: undefined
+      insert: T;
+      attributes?: { [key in string]: {} };
+      retain?: undefined;
+      delete?: undefined;
     }
   | {
-      delete: number
-      attributes?: undefined
-      retain?: undefined
-      insert?: undefined
+      delete: number;
+      attributes?: undefined;
+      retain?: undefined;
+      insert?: undefined;
     }
   | {
-      retain: number
-      attributes?: { [key in string]: {} }
-      delete?: undefined
-      insert?: undefined
-    }
+      retain: number;
+      attributes?: { [key in string]: {} };
+      delete?: undefined;
+      insert?: undefined;
+    };
 ```
 
 ---
 
-## Utility Functions
+## 工具函数
 
-Small helpers for type checks and IDs. See [Container IDs](/docs/advanced/cid) and [Versioning Deep Dive](/docs/advanced/version_deep_dive) for frontiers/version encoding.
+用于类型检查与 ID 处理的辅助方法。关于 frontiers/版本编码，可参考 [Container IDs](/docs/advanced/cid) 与 [Versioning Deep Dive](/docs/advanced/version_deep_dive)。
 
-### Frontier Encoding
+### Frontier 编码
 
 <Method id="encodeFrontiers">
 ```typescript no_run
@@ -5130,22 +5615,25 @@ encodeFrontiers(frontiers: OpId[]): Uint8Array
 ```
 </Method>
 <Indent>
-Encode frontiers for efficient transmission.
+将 frontiers 编码以便高效传输。
 
-**Parameters:**
-- `frontiers` - Array of operation IDs representing frontiers
+**参数：**
 
-**Returns:** Encoded bytes
+- `frontiers` - 表示前沿的操作 ID 数组
 
-**Example:**
+**返回值：** 编码后的字节
+
+**示例：**
+
 ```ts threeslash
 import { LoroDoc, encodeFrontiers } from "loro-crdt";
 
 const doc = new LoroDoc();
 const frontiers = doc.frontiers();
 const encoded = encodeFrontiers(frontiers);
-// Send encoded to remote peers
+// 将编码结果发送给远端节点
 ```
+
 </Indent>
 
 <Method id="decodeFrontiers">
@@ -5154,14 +5642,16 @@ decodeFrontiers(bytes: Uint8Array): OpId[]
 ```
 </Method>
 <Indent>
-Decode frontiers from bytes.
+从字节数据解码 frontiers。
 
-**Parameters:**
-- `bytes` - Encoded frontier bytes
+**参数：**
 
-**Returns:** Array of operation IDs
+- `bytes` - 编码后的 frontier 字节
 
-**Example:**
+**返回值：** 操作 ID 数组
+
+**示例：**
+
 ```typescript no_run threeslash
 import { decodeFrontiers } from "loro-crdt";
 
@@ -5169,9 +5659,10 @@ declare const encodedData: Uint8Array;
 const frontiers = decodeFrontiers(encodedData);
 console.log(frontiers); // [{ peer: "1", counter: 10 }, ...]
 ```
+
 </Indent>
 
-### Debugging
+### 调试
 
 <Method id="setDebug">
 ```typescript no_run
@@ -5179,15 +5670,17 @@ setDebug(): void
 ```
 </Method>
 <Indent>
-Enable debug mode for detailed logging.
+开启调试模式，输出更详细的日志。
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { setDebug } from "loro-crdt";
 
-// Enable debug logging
+// 启用调试日志
 setDebug();
 ```
+
 </Indent>
 
 <Method id="LORO_VERSION">
@@ -5196,20 +5689,22 @@ LORO_VERSION(): string
 ```
 </Method>
 <Indent>
-Get the current Loro version.
+获取当前的 Loro 版本。
 
-**Returns:** Version string
+**返回值：** 版本字符串
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { LORO_VERSION } from "loro-crdt";
 
 const version = LORO_VERSION();
 console.log("Loro version:", version);
 ```
+
 </Indent>
 
-### Import Blob Metadata
+### 导入 Blob 元数据
 
 <Method id="decodeImportBlobMeta">
 ```typescript no_run
@@ -5217,15 +5712,17 @@ decodeImportBlobMeta(blob: Uint8Array, check_checksum: boolean): ImportBlobMetad
 ```
 </Method>
 <Indent>
-Decode metadata from an import blob.
+解析导入 blob 中的元数据。
 
-**Parameters:**
-- `blob` - The import blob bytes
-- `check_checksum` - Whether to verify checksum
+**参数：**
 
-**Returns:** Import blob metadata
+- `blob` - 导入 blob 的字节数据
+- `check_checksum` - 是否校验校验和
 
-**Example:**
+**返回值：** 导入 blob 的元数据
+
+**示例：**
+
 ```typescript no_run threeslash
 import { decodeImportBlobMeta } from "loro-crdt";
 
@@ -5233,19 +5730,21 @@ declare const blob: Uint8Array;
 const metadata = decodeImportBlobMeta(blob, true);
 console.log("Blob metadata:", metadata);
 ```
+
 </Indent>
 
 ---
 
 ## EphemeralStore
 
-Manages ephemeral state like cursor positions and user presence. See [Ephemeral Store](/docs/tutorial/ephemeral) for concepts and usage patterns. Each entry uses timestamp-based LWW (Last-Write-Wins) for conflict resolution.
+用于管理光标位置、在线状态等临时数据。概念与用法示例详见 [Ephemeral Store](/docs/tutorial/ephemeral)。每条记录都依赖基于时间戳的 LWW（Last-Write-Wins）来解决冲突。
 
-**⚠️ Important:** 
-- EphemeralStore is a separate CRDT without history - history/operations are NOT persisted
-- Perfect for temporary state: cursor positions, selections, typing indicators
-- Each peer's state auto-expires after the timeout period
-- Uses Last-Write-Wins
+**⚠️ 注意：**
+
+- EphemeralStore 是独立的 CRDT，不保留历史；历史和操作不会被持久化。
+- 非常适合存储光标位置、选区、输入指示等临时状态。
+- 每个节点的状态会在超时时间后自动过期。
+- 采用 Last-Write-Wins 规则。
 
 ### EphemeralStore
 
@@ -5255,18 +5754,21 @@ constructor(timeout?: number)
 ```
 </Method>
 <Indent>
-Creates a new EphemeralStore instance.
+创建新的 EphemeralStore 实例。
 
-**Parameters:**
-- `timeout` - Duration in milliseconds. A peer's state is considered outdated if its last update is older than this timeout. Default is 30000ms (30 seconds).
+**参数：**
 
-**Example:**
+- `timeout` - 超时时长（毫秒）。当节点的最后更新时间早于该超时值时，其状态被视为过期。默认 30000 毫秒（30 秒）。
+
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 
-// Create ephemeral store with 30 second timeout
+// 创建一个 30 秒超时的临时存储
 const store = new EphemeralStore(30000);
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.set">
@@ -5275,22 +5777,25 @@ set<K extends keyof T>(key: K, value: T[K]): void
 ```
 </Method>
 <Indent>
-Set an ephemeral value.
+设置临时值。
 
-**Parameters:**
-- `key` - The key to set
-- `value` - The value to store
+**参数：**
 
-**Example:**
+- `key` - 要设置的键
+- `value` - 要存储的值
+
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 
-// Usage example:
+// 使用示例：
 store.set("cursor", { line: 10, column: 5 });
 store.set("selection", { start: 0, end: 10 });
 store.set("user", { name: "Alice", color: "#ff0000" });
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.get">
@@ -5299,23 +5804,26 @@ get<K extends keyof T>(key: K): T[K] | undefined
 ```
 </Method>
 <Indent>
-Get an ephemeral value.
+读取临时值。
 
-**Parameters:**
-- `key` - The key to get
+**参数：**
 
-**Returns:** The stored value or undefined
+- `key` - 要读取的键
 
-**Example:**
+**返回值：** 存储的值或 undefined
+
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 store.set("cursor", { line: 10 });
 
-// Usage example:
+// 使用示例：
 const cursor = store.get("cursor");
 console.log(cursor); // { line: 10 }
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.delete">
@@ -5324,20 +5832,23 @@ delete<K extends keyof T>(key: K): void
 ```
 </Method>
 <Indent>
-Delete an ephemeral value.
+删除临时值。
 
-**Parameters:**
-- `key` - The key to delete
+**参数：**
 
-**Example:**
+- `key` - 要删除的键
+
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 store.set("cursor", { line: 10 });
 
-// Usage example:
+// 使用示例：
 store.delete("cursor");
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.getAllStates">
@@ -5346,21 +5857,23 @@ getAllStates(): Partial<T>
 ```
 </Method>
 <Indent>
-Get all ephemeral states.
+获取所有临时状态。
 
-**Returns:** All stored states
+**返回值：** 已存储的全部状态
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 store.set("cursor", { line: 10 });
 store.set("user", { name: "Alice" });
 
-// Usage example:
+// 使用示例：
 const allStates = store.getAllStates();
 console.log(allStates);
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.encode">
@@ -5369,23 +5882,26 @@ encode<K extends keyof T>(key: K): Uint8Array
 ```
 </Method>
 <Indent>
-Encode a specific key's state for transmission.
+编码指定键的状态，以便传输。
 
-**Parameters:**
-- `key` - The key to encode
+**参数：**
 
-**Returns:** Encoded bytes
+- `key` - 要编码的键
 
-**Example:**
+**返回值：** 编码后的字节
+
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 store.set("cursor", { line: 10 });
 
-// Usage example:
+// 使用示例：
 const encoded = store.encode("cursor");
-// Send encoded to remote peers
+// 将编码结果发送给远端节点
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.encodeAll">
@@ -5394,21 +5910,23 @@ encodeAll(): Uint8Array
 ```
 </Method>
 <Indent>
-Encode all states for transmission.
+编码全部状态，以便传输。
 
-**Returns:** Encoded bytes
+**返回值：** 编码后的字节
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 store.set("cursor", { line: 10 });
 store.set("user", { name: "Alice" });
 
-// Usage example:
+// 使用示例：
 const encoded = store.encodeAll();
-// Send encoded to remote peers
+// 将编码结果发送给远端节点
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.apply">
@@ -5417,20 +5935,23 @@ apply(bytes: Uint8Array): void
 ```
 </Method>
 <Indent>
-Apply remote updates.
+应用远端更新。
 
-**Parameters:**
-- `bytes` - Encoded updates from remote peer
+**参数：**
 
-**Example:**
+- `bytes` - 来自远端节点的编码更新
+
+**示例：**
+
 ```typescript no_run threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 
-// Usage example:
+// 使用示例：
 declare const remoteData: Uint8Array;
 store.apply(remoteData);
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.keys">
@@ -5439,21 +5960,23 @@ keys(): string[]
 ```
 </Method>
 <Indent>
-Get all keys in the store.
+获取存储中的所有键。
 
-**Returns:** Array of keys
+**返回值：** 键名数组
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 store.set("cursor", { line: 10 });
 store.set("user", { name: "Alice" });
 
-// Usage example:
+// 使用示例：
 const allKeys = store.keys();
 console.log(allKeys); // ["cursor", "user"]
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.subscribe">
@@ -5462,26 +5985,29 @@ subscribe(listener: EphemeralListener): () => void
 ```
 </Method>
 <Indent>
-Subscribe to all ephemeral state changes.
+订阅全部临时状态的变更。
 
-**Parameters:**
-- `listener` - Callback function for state changes
+**参数：**
 
-**Returns:** Unsubscribe function
+- `listener` - 处理状态变更的回调
 
-**Example:**
+**返回值：** 取消订阅函数
+
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 
-// Usage example:
+// 使用示例：
 const unsubscribe = store.subscribe((event) => {
   console.log("Ephemeral state changed:", event);
 });
 
-// Later, unsubscribe
+// 稍后可取消订阅
 unsubscribe();
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.subscribeLocalUpdates">
@@ -5490,29 +6016,32 @@ subscribeLocalUpdates(listener: EphemeralLocalListener): () => void
 ```
 </Method>
 <Indent>
-Subscribe to local ephemeral updates for syncing to remote peers.
+订阅本地临时更新，以便同步到远端节点。
 
-**Parameters:**
-- `listener` - Callback function that receives encoded updates
+**参数：**
 
-**Returns:** Unsubscribe function
+- `listener` - 接收编码更新的回调函数
 
-**Example:**
+**返回值：** 取消订阅函数
+
+**示例：**
+
 ```typescript no_run threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 
-// Usage example:
+// 使用示例：
 declare const websocket: { send: (data: Uint8Array) => void };
 
 const unsubscribe = store.subscribeLocalUpdates((data) => {
-  // Send to remote peers
+  // 发送给远端节点
   websocket.send(data);
 });
 
-// Later, unsubscribe
+// 稍后可取消订阅
 unsubscribe();
 ```
+
 </Indent>
 
 <Method id="EphemeralStore.destroy">
@@ -5521,24 +6050,26 @@ destroy(): void
 ```
 </Method>
 <Indent>
-Clean up and destroy the ephemeral store.
+清理并销毁临时存储。
 
-**Example:**
+**示例：**
+
 ```ts threeslash
 import { EphemeralStore } from "loro-crdt";
 const store = new EphemeralStore(30000);
 
-// Usage example:
+// 使用示例：
 store.destroy();
 ```
+
 </Indent>
 
-### Complete Example
+### 完整示例
 
 ```typescript no_run threeslash
 import { EphemeralStore } from "loro-crdt";
 
-// Assume we have:
+// 假设我们已有：
 declare const websocket: {
   send: (data: Uint8Array) => void;
   on: (event: string, handler: (data: any) => void) => void;
@@ -5547,23 +6078,23 @@ declare const websocket: {
 const store = new EphemeralStore(30000);
 const store2 = new EphemeralStore(30000);
 
-// Subscribe to local updates
+// 订阅本地更新
 store.subscribeLocalUpdates((data) => {
   store2.apply(data);
 });
 
-// Subscribe to all updates
+// 订阅全部更新
 store2.subscribe((event) => {
   console.log("event:", event);
 });
 
-// Set a value
+// 设置一个值
 store.set("key", "value");
 
-// Encode the value
+// 编码该值
 const encoded = store.encode("key");
 
-// Apply the encoded value
+// 应用编码结果
 store2.apply(encoded);
 ```
 

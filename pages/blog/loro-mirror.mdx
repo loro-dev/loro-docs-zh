@@ -7,9 +7,9 @@ image: "/images/loro-mirror.png"
 
 # Loro Mirror: 通过镜像到 CRDTs 使 UI 状态具有协作性
 
-import Caption from "../../../components/caption";
-import GitHub from "../../../components/github";
-import Authors, { Author } from "../../../components/authors";
+import Caption from "../../components/caption";
+import GitHub from "../../components/github";
+import Authors, { Author } from "../../components/authors";
 
 <Authors date="2025-09-22">
   <Author
@@ -237,7 +237,7 @@ const undo = useMemo(() => new UndoManager(doc), [doc]);
 - 通过更新或快照进行[离线优先同步](https://loro.dev/docs/tutorial/sync)，并通过任何传输（HTTP、WebSocket、P2P）进行确定性冲突解决
 - 跨客户端的[协作撤销/重做](https://loro.dev/docs/advanced/undo)
 
-import { ReactPlayer } from "../../../components/video";
+import { ReactPlayer } from "../../components/video";
 
 <ReactPlayer
   url="/static/recording-loro-todo.mp4"

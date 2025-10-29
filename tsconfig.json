@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2015",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,18 +15,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "paths": {
-      "@components/*": [
-        "./components/*"
-      ],
-      "@/components/*": [
-        "./components/*"
-      ],
-      "@/lib/utils/*": [
-        "./lib/utils/*"
-      ],
-      "flexsearch": [
-        "./node_modules/@types/flexsearch"
-      ]
+      "@components/*": ["./components/*"],
+      "@/components/*": ["./components/*"],
+      "@/lib/utils/*": ["./lib/utils/*"],
+      "flexsearch": ["./node_modules/@types/flexsearch"]
     },
     "plugins": [
       {
@@ -44,10 +32,8 @@
     "**/*.ts",
     "**/*.tsx",
     "gen-rss.js",
-    ".next/types/**/*.ts"
-, "theme.config.jsx"  ],
-  "exclude": [
-    "node_modules",
-    "deno_scripts"
-  ]
+    ".next/types/**/*.ts",
+    "theme.config.jsx"
+  ],
+  "exclude": ["node_modules", "deno_scripts", "loro-docs"]
 }

@@ -96,14 +96,14 @@ Loro 的事务主要用于将相关操作打包，并以整体事件的形式发
    doc2.setPeerId(2);
 
    // 对 doc1 与 doc2 进行一些操作
-doc1.getText("text").insert(0, "Alice");
-doc2.getText("text").insert(0, "Hello, Loro!");
-console.log(doc1.version().toJSON()); // Map(0) {}
-console.log(doc2.version().toJSON()); // Map(0) {}
-const updates = doc1.export({ mode: "snapshot" });
-doc2.import(updates); // doc2 会先提交自身待处理操作
-console.log(doc2.version().toJSON()); // Map(2) { "1" => 5, "2" => 12 }
-console.log(doc1.version().toJSON()); // Map(2) { "1" => 5 }
+   doc1.getText("text").insert(0, "Alice");
+   doc2.getText("text").insert(0, "Hello, Loro!");
+   console.log(doc1.version().toJSON()); // Map(0) {}
+   console.log(doc2.version().toJSON()); // Map(0) {}
+   const updates = doc1.export({ mode: "snapshot" });
+   doc2.import(updates); // doc2 会先提交自身待处理操作
+   console.log(doc2.version().toJSON()); // Map(2) { "1" => 5, "2" => 12 }
+   console.log(doc1.version().toJSON()); // Map(2) { "1" => 5 }
    ```
 
 ## Loro 中的事务
