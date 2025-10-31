@@ -1,0 +1,120 @@
+title: "Loro 协议"
+date: 2025/10/30
+description: "Loro 协议在一条 WebSocket 连接上复用 CRDT 同步工作负载，并提供开源的 loro-websocket、loro-adaptors，以及使用相同协议的 Rust 客户端和服务端实现。"
+image: "/images/blog-loro-protocol.png"
+
+---
+
+## Loro 协议
+
+import Authors, { Author } from "../../components/authors";
+
+<Authors date="2025-10-30">
+  <Author name="Zixuan Chen" link="https://www.loro.dev/" />
+</Authors>
+
+![](/images/blog-loro-protocol.png)
+
+开源的 Loro 协议项目包含 `loro-websocket` 包、`loro-adaptors` 中的适配器套件，以及能够在同一线路格式上互操作的 Rust 客户端与服务端实现。
+
+[**Loro 协议**](https://github.com/loro-dev/protocol) 是一个为实时 CRDT 同步设计的协议。可以在[这里](https://github.com/loro-dev/protocol/blob/main/protocol.md)详细了解其设计。
+
+它能够在单条 WebSocket 连接上高效运行多个相互独立的“房间”。
+
+这使你可以在一条连接上同步应用状态，例如 Loro 文档、临时光标位置以及端到端加密的文档。它也兼容 Yjs。
+
+### 快速开始：服务器与客户端示例
+
+该协议由 `loro-websocket` 客户端和用于测试的最小化 `SimpleServer` 实现。你可以使用 `loro-adaptors` 将这些组件与 CRDT 状态桥接起来。
+
+**服务器**
+
+在开发环境中，你可以在 Node.js 中运行来自 `loro-websocket` 的 `SimpleServer`。
+
+```tsx
+// server.ts
+import { SimpleServer } from "loro-websocket/server";
+
+const server = new SimpleServer({
+  port: 8787,
+  // SimpleServer 接受用于身份验证和数据持久化的钩子：
+  // authenticate: async (roomId, crdt, auth) => { ... },
+  // onLoadDocument: async (roomId, crdt) => { ... },
+  // onSaveDocument: async (roomId, crdt, data) => { ... },
+});
+
+server.start().then(() => {
+  console.log("SimpleServer listening on ws://localhost:8787");
+});
+```
+
+**客户端**
+
+在客户端侧，你只需连接一次，然后通过不同的适配器加入多个房间。
+
+```tsx
+// client.ts
+import { LoroWebsocketClient } from "loro-websocket";
+import { LoroAdaptor, LoroEphemeralAdaptor } from "loro-adaptors";
+
+// 1. 创建并连接客户端
+const client = new LoroWebsocketClient({ url: "ws://localhost:8787" });
+await client.waitConnected();
+console.log("Client connected!");
+
+// --- 房间 1：一个 Loro 文档 (%LOR) ---
+const docAdaptor = new LoroAdaptor();
+const docRoom = await client.join({
+  roomId: "doc:123",
+  crdtAdaptor: docAdaptor,
+});
+
+// 本地编辑现在会自动同步
+const text = docAdaptor.getDoc().getText("content");
+text.insert(0, "Hello, Loro!");
+docAdaptor.getDoc().commit();
+
+// --- 房间 2：同一套接字上的临时 Presence (%EPH) ---
+const ephAdaptor = new LoroEphemeralAdaptor();
+const presenceRoom = await client.join({
+  roomId: "doc:123", // 可以使用相同的 roomId，但 magic bytes 不同
+  crdtAdaptor: ephAdaptor,
+});
+
+// 临时状态会同步，但服务器不会持久化它
+ephAdaptor.getStore().set("cursor", { x: 100, y: 100 });
+```
+
+---
+
+### 功能
+
+#### 复用
+
+每条二进制消息都以前四个 magic bytes 标识数据类型，随后附带 `roomId`。这一结构让服务器可以将消息路由到正确的处理器。一个客户端可以加入：
+
+- `%LOR` (Loro Document)
+- `%EPH` (Loro 临时存储，用于光标和在线状态)
+- `%ELO` (端到端加密的 Loro 文档)
+- `%YJS` 和 `%YAW` (用于 Yjs 文档和 Awareness 的互操作)
+
+所有流量都在同一套接字上运行。
+
+#### 兼容性
+
+Loro 协议旨在适配 Cloudflare 等运行环境：
+
+- 分片：大型更新会自动拆分为不超过 256 KiB 的片段，并由接收方重新组装，从而应对对 WebSocket 消息大小有限制的平台。
+- 应用层 keepalive：协议定义了简单的 `"ping"` 与 `"pong"` 文本帧。它们绕过二进制封装，让客户端在浏览器或无服务器环境中检查连接存活性，此时传输层的 TCP keepalive 通常不可用。
+
+该仓库还提供与 TypeScript 包对应的 Rust 客户端和服务端。
+
+#### 实验性的端到端加密
+
+端到端加密的 Loro 已包含在 `loro-protocol` 中，但该功能目前仍处于实验阶段：线路格式和密钥管理 API 仍可能变化，暂不适合用于已经过生产级安全审计的场景。在客户端与 `EloLoroAdaptor` 搭配时，服务器会在不解密的情况下转发加密记录。
+
+### 当前状态与许可
+
+Loro 协议已经基本稳定。我们欢迎社区反馈和贡献，尤其是当前设计难以满足的用例。
+
+https://github.com/loro-dev/protocol 中的所有包均以宽松的 MIT 许可证开源发布。
