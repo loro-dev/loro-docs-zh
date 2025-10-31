@@ -40,11 +40,19 @@ function getInitialLanguage(): LanguageId {
   }
 
   const host = window.location.hostname.toLowerCase();
+  if (
+    host === "loro.dev" ||
+    host.startsWith("loro.dev") ||
+    host.startsWith("www.loro.dev")
+  ) {
+    return "en";
+  }
+
   if (host === "cn.loro.dev" || host.endsWith(".cn.loro.dev")) {
     return "zh";
   }
 
-  return "en";
+  return "zh";
 }
 
 function buildTargetUrl(domain: string) {
