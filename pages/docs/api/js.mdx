@@ -39,7 +39,7 @@ Loro 是一款功能强大的无冲突复制数据类型（CRDT）库，可用�
 
 **事件与事务**
 
-- 在 JS API 中，事件会在微任务之后异步触发
+- 在 JS API 中，事件会在提交 / 导入 / checkout 时同步触发（v1.8+）。仍停留在 <=1.7.x？请在读取批量事件前等待一个微任务。
 - import/export/checkout 会自动提交
 - Loro 事务不具备 ACID 特性——没有回滚 / 隔离
 
@@ -649,7 +649,7 @@ const forkedDoc = doc.forkAt(frontiers);
 
 ## 事件与事务
 
-响应变更，并将本地操作归组为事务。事件会在一个微任务之后异步派发。参见[事件处理](/docs/tutorial/event)与[事务模型](/docs/concepts/transaction_model)。
+响应变更，并将本地操作归组为事务。自 v1.8 起，事件会同步派发；较旧版本（<=1.7.x）需要等待一个微任务。参见[事件处理](/docs/tutorial/event)与[事务模型](/docs/concepts/transaction_model)。
 
 ### 订阅方法
 
@@ -697,12 +697,12 @@ const unsubscribe = doc.subscribe((event) => {
 // 稍后再取消订阅
 ```
 
-**⚠️ 注意：** 事件会在一个微任务完成后异步派发。
+**⚠️ 注意：** 自 v1.8 起事件会同步派发；如果仍使用 <=1.7.x，请在读取批量事件前等待一个微任务。
 
 ```ts no_run
 doc.commit();
-await Promise.resolve();
-// 现在事件已经派发完毕
+// v1.8+ 会立即派发事件
+// await Promise.resolve(); // 仅在 <=1.7.x 需要等待
 ```
 
 **📝 提示：** commit 之前的多个操作会合并为一个事件。详见[事件处理](/docs/tutorial/event)。

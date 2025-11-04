@@ -11,7 +11,7 @@ Loro 内置事件系统用于追踪文档变化。本节介绍事件的触发时
    - 显式调用 `LoroDoc.commit()`
    - 在导入或导出前自动提交
 
-   事件会在微任务结束后异步触发。如果需要在提交后立即处理事件，请等待一个微任务：
+   自 `loro-crdt@1.8.0` 起，事件会在提交周期内同步触发；如果你仍使用 <=1.7.x，则需要等待一个微任务才能看到回调：
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
@@ -24,12 +24,11 @@ doc.subscribe((event) => {
 const text = doc.getText("text");
 text.insert(0, "Hello");
 doc.commit();
-// 事件尚未触发
-await Promise.resolve();
-// 事件现已触发
+// v1.8+ 已同步触发事件
+// await Promise.resolve(); // 仅在 <=1.7.x 仍需等待
 ```
 
-3. **导入**：调用 `import()` 导入远端更新时，会触发对应事件，便于本地响应其他节点的变更：
+3. **导入**：调用 `import()` 导入远端更新时，会触发对应事件，便于本地响应其他节点的变更；在 v1.8+ 中会立即触发。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
@@ -40,19 +39,19 @@ doc.subscribe((event) => {
   console.log("Event:", event);
 });
 
-doc.import(remoteChanges); // 微任务后触发事件
-await Promise.resolve();
+doc.import(remoteChanges); // v1.8+ 会立即触发事件
+// await Promise.resolve(); // 仅在 <=1.7.x 仍需等待
 ```
 
-4. **版本切换**：调用 `doc.checkout(frontiers)` 切换到其他版本时，同样会在微任务后触发事件。
+4. **版本切换**：调用 `doc.checkout(frontiers)` 切换到其他版本时，同样会同步触发事件（v1.8+）。
 
 ```ts no_run twoslash
 import { LoroDoc } from "loro-crdt";
 // ---cut---
 const doc = new LoroDoc();
 const frontiers = doc.frontiers();
-doc.checkout(frontiers); // 微任务后触发事件
-await Promise.resolve();
+doc.checkout(frontiers); // v1.8+ 会立即触发事件
+// await Promise.resolve(); // 仅在 <=1.7.x 仍需等待
 ```
 
 ## 事务行为
