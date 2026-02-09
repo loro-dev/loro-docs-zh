@@ -7,7 +7,7 @@ description: "CRDT 基准测试，用于比较 Loro 与主流 CRDT 的性能"
 
 > 这些基准测试的主要作用是提示是否存在性能隐患，而不是用来判定哪一个项目更优秀。不同项目始终会做出不同的取舍。仅因为项目 A 在某些基准中表现更好就断言它优于项目 B 并不准确，因为项目 B 很可能在其他方面有着显著优势。
 
-可以通过 [crdt-benchmarks](https://github.com/https://twitter.com/zx_loro/crdt-benchmarks) 仓库复现这些测试。
+可以通过 [crdt-benchmarks](https://github.com/zxch3n/crdt-benchmarks) 仓库复现这些测试。
 
 - 基准测试在 MacBook Pro M1 2020（16GB RAM）上执行。
 - `loro-old` 指 2023-11-10 的 loro 版本，编译自
