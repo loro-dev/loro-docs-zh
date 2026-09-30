@@ -2,157 +2,155 @@
 <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
     <channel>
         <title>Loro Changelog</title>
-        <link>https://loro.dev/changelog/</link>
+        <link>https://cn.loro.dev/changelog/</link>
         <description>Changelog of Loro CRDT.</description>
-        <lastBuildDate>Mon, 22 Sep 2025 13:16:41 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 30 Sep 2026 01:35:47 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <item>
-            <title><![CDATA[Release Loro v1.8.0]]></title>
-            <link>https://loro.dev/changelog/v1.8.0</link>
-            <guid>https://loro.dev/changelog/v1.8.0</guid>
-            <pubDate>Sun, 21 Sep 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Events now fire <strong>synchronously</strong></p>
-<p>In the JavaScript package <code>loro-crdt@1.8.0</code>, we changed event emission from <strong>“after a microtask”</strong> to <strong>synchronous</strong> dispatch. This makes event handling simpler and less error‑prone.</p>
-<h3>Why we changed it</h3>
-<p>Historically, the JS binding emitted events <strong>after a microtask</strong>. The reason was to avoid Rust borrow/aliasing issues: if an event triggered inside <code>doc.commit()</code> re‑entered the same <code>doc</code>, Rust could panic because <code>commit()</code> holds a borrow and reusing the object would violate borrowing rules. Deferring events to a microtask avoided that re‑entrancy. (Background: Loro’s JS API exposes subscriptions via <code>doc.subscribe(...)</code>; the docs note that events used to arrive after a microtask. ([Loro][1]))</p>
-<p>However, this deferral made app logic fragile. There was a window between the mutation and the event callback. Example: the app receives the event from CRDT “delete the 3rd character of <code>Hi!</code>”, but during the microtask gap the app state changed <code>Hi!</code> → <code>Hi</code>. When the deferred event arrives, applying a “delete index 2” delta can be wrong. In practice, users had to maintain an awkward invariant: <strong>don’t mutate the app state during that microtask</strong> if you consume delta updates.</p>
-<h3>What’s new in 1.8.0</h3>
-<p>Events are now <strong>dispatched synchronously</strong>—that is, your listeners run <strong>before</strong> the top‑level JS call (e.g., <code>doc.commit()</code>) returns. To keep this safe with Rust’s borrowing:</p>
+            <title><![CDATA[发布 Loro v1.8.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.8.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.8.0</guid>
+            <pubDate>Mon, 22 Sep 2025 07:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>事件现在会<strong>同步</strong>触发</p>
+<p>在 JavaScript 包 <code>loro-crdt@1.8.0</code> 中，我们将事件触发方式从**“微任务之后”<strong>改为</strong>同步**派发，使事件处理更简单、更不易出错。</p>
+<h3>为什么要做这个调整</h3>
+<p>过去，JS 绑定会在<strong>微任务执行完毕后</strong>才发出事件。这样做是为了避免 Rust 的借用/别名问题：如果在 <code>doc.commit()</code> 内触发的事件再次进入同一个 <code>doc</code>，Rust 会因为 <code>commit()</code> 持有借用而在重复使用对象时触发 panic。把事件延迟到微任务阶段可以规避这种重入情况。（背景：Loro 的 JS API 通过 <code>doc.subscribe(...)</code> 暴露订阅能力，文档中也说明事件会在微任务之后才到达。([Loro][1]))</p>
+<p>然而，这种延迟让应用逻辑变得脆弱。突变和事件回调之间存在窗口。例如：CRDT 发出“删除 <code>Hi!</code> 中第 3 个字符”的事件，但在微任务间隔期间，应用状态把 <code>Hi!</code> 变成了 <code>Hi</code>。当延迟的事件到达时，应用一个“删除索引 2”的增量就可能出错。实际使用中，用户不得不维持一个怪异的不变式：如果你消费增量更新，就<strong>不要在那个微任务里修改应用状态</strong>。</p>
+<h3>1.8.0 有什么变化</h3>
+<p>现在事件会<strong>同步派发</strong>——也就是说，监听器会在顶层 JS 调用（例如 <code>doc.commit()</code>）返回之前运行。为了在 Rust 借用模型下保持安全：</p>
 <ul>
-<li>We keep a <strong>global queue</strong> of “pending (listener, event)” pairs.</li>
-<li>JS wrappers decorate APIs that can borrow the Rust doc (e.g., <code>commit</code>, import/export, checkout).</li>
-<li>The wrapper calls into WASM/Rust, <strong>returns from the borrow</strong>, then <strong>flushes the queue</strong> and clears it.</li>
-<li>Because callbacks run <strong>outside</strong> the borrowed region, listeners can freely call <code>doc</code> APIs without triggering borrow violations.</li>
+<li>我们维护一个<strong>全局队列</strong>，存放待处理的“监听器 + 事件”对。</li>
+<li>对可能借用 Rust 文档的 API（如 <code>commit</code>、导入/导出、checkout）增加 JS 包装器。</li>
+<li>包装器进入 WASM/Rust，释放借用后再刷新并清空队列。</li>
+<li>由于回调在借用范围之外执行，监听器可以自由调用 <code>doc</code> API 而不会触发借用违规。</li>
 </ul>
-<h3>What this means for your app</h3>
+<h3>这对你的应用意味着什么</h3>
 <ul>
-<li><strong>Simpler state updates.</strong> No more microtask gap; event ordering matches your mutation order.</li>
-<li><strong>Fewer footguns with deltas.</strong> You no longer need to uphold “don’t touch the doc during the microtask” when applying delta‑style updates.</li>
-<li><strong>Listeners can still safely use <code>doc</code>.</strong></li>
+<li><strong>状态更新更简单。</strong> 不再有微任务间隙；事件顺序与突变顺序一致。</li>
+<li><strong>增量处理风险更少。</strong> 应用增量更新时，无需再坚持“微任务期间别动 doc”的约束。</li>
+<li><strong>监听器依旧可以安全使用 <code>doc</code>。</strong></li>
 </ul>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.6.0]]></title>
-            <link>https://loro.dev/changelog/v1.6.0</link>
-            <guid>https://loro.dev/changelog/v1.6.0</guid>
-            <pubDate>Thu, 28 Aug 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Snapshot import speed is now 2x.</p>
-<p>This is implemented by skipping the scan when importing a snapshot, which avoids running the decompression during the import process (but we need to ensure the parent-child link is still accessible in Arena). It also skips the checksum check in the import_all method on MemKV because we already check the checksum in the header of the snapshot/update.</p>
+            <title><![CDATA[发布 Loro v1.6.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.6.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.6.0</guid>
+            <pubDate>Fri, 29 Aug 2025 07:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>快照导入速度现在是原来的 2 倍。</p>
+<p>这是通过在导入快照时跳过扫描来实现的，这避免了在导入过程中运行解压缩（但我们需要确保在 Arena 中仍然可以访问父子链接）。它还在 MemKV 的 import_all 方法中跳过了校验和检查，因为我们已经在快照/更新的头部检查了校验和。</p>
 <h2>v1.0.0 vs v1.6.0</h2>
-<p>You can find the benchmark <a href="https://github.com/loro-dev/latch-bench/tree/cmp-loro-160">here</a>.</p>
+<p>您可以在<a href="https://github.com/loro-dev/latch-bench/tree/cmp-loro-160">此处</a>找到基准测试。</p>
 <table>
 <thead>
 <tr>
-<th>name</th>
-<th>task</th>
-<th>time</th>
+<th>名称</th>
+<th>任务</th>
+<th>时间</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Shallow Snapshot on v1.0.0</td>
-<td>Import</td>
+<td>v1.0.0 上的浅快照</td>
+<td>导入</td>
 <td>150.667µs +- 1.823µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues</td>
+<td>导入+GetAllValues</td>
 <td>163.957µs +- 1.841µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit</td>
+<td>导入+GetAllValues+编辑</td>
 <td>173.971µs +- 2.03µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit+Export</td>
+<td>导入+GetAllValues+编辑+导出</td>
 <td>488.848µs +- 3.621µs</td>
 </tr>
 <tr>
-<td>Shallow Snapshot on v1.6.0</td>
-<td>Import</td>
+<td>v1.6.0 上的浅快照</td>
+<td>导入</td>
 <td>82.82µs +- 507ns</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues</td>
+<td>导入+GetAllValues</td>
 <td>90.376µs +- 393ns</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit</td>
+<td>导入+GetAllValues+编辑</td>
 <td>103.358µs +- 1.916µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit+Export</td>
+<td>导入+GetAllValues+编辑+导出</td>
 <td>419.463µs +- 2.316µs</td>
 </tr>
 <tr>
-<td>Snapshot on v1.0.0</td>
-<td>Import</td>
+<td>v1.0.0 上的快照</td>
+<td>导入</td>
 <td>466.425µs +- 3.879µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues</td>
+<td>导入+GetAllValues</td>
 <td>487.06µs +- 3.523µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit</td>
+<td>导入+GetAllValues+编辑</td>
 <td>541.477µs +- 9.067µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit+Export</td>
+<td>导入+GetAllValues+编辑+导出</td>
 <td>2.98382ms +- 80.537µs</td>
 </tr>
 <tr>
-<td>Snapshot on v1.6.0</td>
-<td>Import</td>
+<td>v1.6.0 上的快照</td>
+<td>导入</td>
 <td>201.934µs +- 854ns</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues</td>
+<td>导入+GetAllValues</td>
 <td>370.108µs +- 4.049µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit</td>
+<td>导入+GetAllValues+编辑</td>
 <td>386.497µs +- 3.509µs</td>
 </tr>
 <tr>
 <td></td>
-<td>Import+GetAllValues+Edit+Export</td>
+<td>导入+GetAllValues+编辑+导出</td>
 <td>2.362296ms +- 28.258µs</td>
 </tr>
 </tbody></table>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro Inspector v0.1.0]]></title>
-            <link>https://loro.dev/changelog/inspector-v0.1.0</link>
-            <guid>https://loro.dev/changelog/inspector-v0.1.0</guid>
-            <pubDate>Tue, 29 Apr 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Try it here: <a href="https://inspector.loro.dev/">Loro Inspector</a></p>
-<p>Now you can directly browse the current state and complete edit history of your Loro 
-documents in the browser. You can also use this tool to time travel to any version 
-in the history of your Loro document.</p>
+            <title><![CDATA[发布 Loro Inspector v0.1.0]]></title>
+            <link>https://cn.loro.dev/changelog/inspector-v0.1.0</link>
+            <guid>https://cn.loro.dev/changelog/inspector-v0.1.0</guid>
+            <pubDate>Wed, 30 Apr 2025 07:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>在线体验：<a href="https://inspector.loro.dev/">Loro Inspector</a></p>
+<p>现在，你可以直接在浏览器中查看 Loro 文档的当前状态和完整编辑历史。你也可以借助这款工具穿越到任意历史版本。</p>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.5.0]]></title>
-            <link>https://loro.dev/changelog/v1.5.0</link>
-            <guid>https://loro.dev/changelog/v1.5.0</guid>
-            <pubDate>Thu, 03 Apr 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>New</h2>
-<h3>1. New Hooks</h3>
-<p><code>doc.subscribePreCommit(listener)</code> - Modify commit options before processing:</p>
-<p>This hook is particularly useful because doc.commit() is often invoked implicitly in various methods such as doc.import, doc.export, doc.checkout, and doc.exportJsonUpdates. Without this hook, users attempting to add custom messages to each commit might miss these implicit commit triggers.</p>
+            <title><![CDATA[发布 Loro v1.5.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.5.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.5.0</guid>
+            <pubDate>Fri, 04 Apr 2025 07:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>新增</h2>
+<h3>1. 新的钩子</h3>
+<p><code>doc.subscribePreCommit(listener)</code> - 在处理前修改提交选项：</p>
+<p>这个钩子特别有用，因为 <code>doc.commit()</code> 通常在各种方法中被隐式调用，例如 <code>doc.import</code>、<code>doc.export</code>、<code>doc.checkout</code> 和 <code>doc.exportJsonUpdates</code>。没有这个钩子，试图为每个提交添加自定义消息的用户可能会错过这些隐式提交触发器。</p>
 <pre><code class="language-ts">const doc = new LoroDoc();
 doc.setPeerId(0);
 doc.subscribePreCommit((e) =&gt; {
@@ -162,7 +160,7 @@ doc.getList(&quot;list&quot;).insert(0, 100);
 doc.commit();
 expect(doc.getChangeAt({ peer: &quot;0&quot;, counter: 0 }).message).toBe(&quot;test&quot;);
 </code></pre>
-<p>Advanced Example - Creating a Merkle DAG:</p>
+<p>高级示例 - 创建一个 Merkle DAG：</p>
 <pre><code class="language-ts">const doc = new LoroDoc();
 doc.setPeerId(0);
 doc.subscribePreCommit((e) =&gt; {
@@ -188,8 +186,8 @@ expect(doc.getChangeAt({ peer: &quot;0&quot;, counter: 0 }).message).toBe(
   &quot;2af99cf93869173984bcf6b1ce5412610b0413d027a5511a8f720a02a4432853&quot;,
 );
 </code></pre>
-<p><code>doc.subscribeFirstCommitFromPeer(listener)</code> - Triggers on first peer interaction:</p>
-<p>This hook provides an ideal point to associate peer information (such as author identity) with the document.</p>
+<p><code>doc.subscribeFirstCommitFromPeer(listener)</code> - 在第一次对等交互时触发：</p>
+<p>这个钩子为将对等信息（例如作者身份）与文档关联提供了一个理想的点。</p>
 <pre><code class="language-ts">const doc = new LoroDoc();
 doc.setPeerId(0);
 doc.subscribeFirstCommitFromPeer((e) =&gt; {
@@ -200,32 +198,32 @@ doc.commit();
 expect(doc.getMap(&quot;users&quot;).get(&quot;0&quot;)).toBe(&quot;user-0&quot;);
 </code></pre>
 <h3>2. EphemeralStore</h3>
-<p>EphemeralStore is a better alternative to Awareness for ephemeral states:</p>
-<p>Awareness is commonly used as a state-based CRDT for handling ephemeral states in real-time collaboration scenarios, such as cursor positions and application component highlights. As application complexity grows, Awareness may be set in multiple places, from cursor positions to user presence. However, the current version of Awareness doesn&#39;t support partial state updates, which means even minor mouse movements require synchronizing the entire Awareness state.</p>
+<p>EphemeralStore 是 Awareness 用于临时状态的更好替代方案：</p>
+<p>Awareness 通常用作基于状态的 CRDT，用于处理实时协作场景中的临时状态，例如光标位置和应用程序组件高亮。随着应用程序复杂性的增长，Awareness 可能会在多个地方设置，从光标位置到用户在线状态。然而，当前版本的 Awareness 不支持部分状态更新，这意味着即使是轻微的鼠标移动也需要同步整个 Awareness 状态。</p>
 <pre><code class="language-ts">awareness.setLocalState({
   ...awareness.getLocalState(),
   x: 167,
 });
 </code></pre>
-<p>Since Awareness is primarily used in real-time collaboration scenarios where consistency requirements are relatively low, we can make it more flexible. We&#39;ve introduced EphemeralStore as an alternative to Awareness. Think of it as a simple key-value store that uses timestamp-based last-write-wins for conflict resolution. You can choose the appropriate granularity for your key-value pairs based on your application&#39;s needs, and only modified key-value pairs are synchronized.</p>
+<p>由于 Awareness 主要用于一致性要求相对较低的实时协作场景，我们可以使其更加灵活。我们引入了 EphemeralStore 作为 Awareness 的替代方案。可以把它想象成一个简单的键值存储，它使用基于时间戳的最后写入获胜来解决冲突。您可以根据应用程序的需求为键值对选择适当的粒度，并且只同步修改后的键值对。</p>
 <pre><code class="language-ts">    EphemeralStore,
     EphemeralListener,
     EphemeralStoreEvent,
 } from &quot;loro-crdt&quot;;
 
 const store = new EphemeralStore();
-// Set ephemeral data
+// 设置临时数据
 store.set(&quot;user-alice&quot;, {
     anchor: 10,
     focus: 20,
     user: &quot;Alice&quot;
 });
 
-// Encode only the data for `loro-prosemirror`
+// 仅编码 `loro-prosemirror` 的数据
 const encoded = store.encode(&quot;user-alice&quot;)
 const newStore = new EphemeralStore();
 newStore.subscribe((e: EphemeralStoreEvent) =&gt; {
-    // Listen to changes from `local`, `remote`, or `timeout` events
+    // 监听来自 `local`、`remote` 或 `timeout` 事件的更改
 });
 
 newStore.apply(encoded);
@@ -236,238 +234,236 @@ console.log(newStore.get(&quot;user-alice&quot;))
 //     user: &quot;Alice&quot;
 // }
 </code></pre>
-<h2>Fix</h2>
+<h2>修复</h2>
 <ul>
-<li>Fixed text styling at end &quot;\n&quot; character</li>
-<li>Added JSON support for current transaction operations</li>
-<li>For environments that support multi-threading such as Rust and Swift, LoroDoc can now be directly and safely 
-shared and accessed in parallel across multiple threads without triggering the previous WouldBlock panic.</li>
+<li>修复了在末尾“\n”字符处的文本样式问题</li>
+<li>为当前事务操作添加了 JSON 支持</li>
+<li>对于支持多线程的环境，例如 Rust 和 Swift，LoroDoc 现在可以直接且安全地在多个线程之间并行共享和访问，而不会触发之前的 WouldBlock panic。</li>
 </ul>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.4.7]]></title>
-            <link>https://loro.dev/changelog/v1.4.7</link>
-            <guid>https://loro.dev/changelog/v1.4.7</guid>
-            <pubDate>Mon, 31 Mar 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>New</h2>
+            <title><![CDATA[发布 Loro v1.4.7]]></title>
+            <link>https://cn.loro.dev/changelog/v1.4.7</link>
+            <guid>https://cn.loro.dev/changelog/v1.4.7</guid>
+            <pubDate>Tue, 01 Apr 2025 07:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>新增</h2>
 <ul>
-<li>You can get the version of Loro by <code>LORO_VERSION</code></li>
-<li><code>setNextCommitOrigin(origin: string)</code>: Set the origin of the next commit.</li>
-<li><code>setNextCommitTimestamp(timestamp: number)</code>: Set the timestamp of the next commit.</li>
-<li><code>setNextCommitOptions(options: CommitOption)</code>: Set the options of the next commit.</li>
-<li><code>clearNextCommitOptions()</code>: Clear the options of the next commit.</li>
-<li><code>configDefaultTextStyle(style: TextStyle)</code>: Configures the default text style for the document.</li>
-<li><code>getUncommittedOpsAsJson()</code>: Get the pending operations from the current transaction in JSON format</li>
+<li>您可以通过 <code>LORO_VERSION</code> 获取 Loro 的版本</li>
+<li><code>setNextCommitOrigin(origin: string)</code>: 设置下一次提交的来源。</li>
+<li><code>setNextCommitTimestamp(timestamp: number)</code>: 设置下一次提交的时间戳。</li>
+<li><code>setNextCommitOptions(options: CommitOption)</code>: 设置下一次提交的选项。</li>
+<li><code>clearNextCommitOptions()</code>: 清除下一次提交的选项。</li>
+<li><code>configDefaultTextStyle(style: TextStyle)</code>: 配置文档的默认文本样式。</li>
+<li><code>getUncommittedOpsAsJson()</code>: 以 JSON 格式获取当前事务中待处理的操作。</li>
 </ul>
-<h2>Fix</h2>
+<h2>修复</h2>
 <ul>
-<li>fix: memory leak issue <a href="https://github.com/loro-dev/loro/pull/647">#647</a></li>
-<li>fix: mark err on detached LoroText <a href="https://github.com/loro-dev/loro/pull/659">#659</a></li>
-<li>fix: detached loro text issues <a href="https://github.com/loro-dev/loro/pull/665">#665</a></li>
-<li>fix: entity index when the tree is empty <a href="https://github.com/loro-dev/loro/pull/670">#670</a></li>
-</ul>
-]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release Loro v1.4.0]]></title>
-            <link>https://loro.dev/changelog/v1.4.0</link>
-            <guid>https://loro.dev/changelog/v1.4.0</guid>
-            <pubDate>Wed, 12 Feb 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>New</h2>
-<ul>
-<li>add <code>unsubscribe()</code> for Subscription.</li>
-</ul>
-<h2>Fix</h2>
-<ul>
-<li>fix: getting values by path in LoroTree <a href="https://github.com/loro-dev/loro/pull/643">#643</a></li>
-<li>fix: should be able to call subscription after diffing [#637]</li>
-<li>fix: update long text may fail <a href="https://github.com/loro-dev/loro/pull/633">#633</a></li>
-<li>fix: map.keys() may return keys from deleted entries <a href="https://github.com/loro-dev/loro/pull/618">#618</a></li>
+<li>修复：内存泄漏问题 <a href="https://github.com/loro-dev/loro/pull/647">#647</a></li>
+<li>修复：在分离的 LoroText 上标记错误 <a href="https://github.com/loro-dev/loro/pull/659">#659</a></li>
+<li>修复：分离的 loro 文本问题 <a href="https://github.com/loro-dev/loro/pull/665">#665</a></li>
+<li>修复：树为空时的实体索引 <a href="https://github.com/loro-dev/loro/pull/670">#670</a></li>
 </ul>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.3.0]]></title>
-            <link>https://loro.dev/changelog/v1.3.0</link>
-            <guid>https://loro.dev/changelog/v1.3.0</guid>
-            <pubDate>Wed, 08 Jan 2025 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>New</h2>
+            <title><![CDATA[发布 Loro v1.4.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.4.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.4.0</guid>
+            <pubDate>Thu, 13 Feb 2025 08:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>新增</h2>
 <ul>
-<li>UndoManager&#39;s <code>onPush</code> now can access the change event.</li>
-<li>add getShallowValue for each container.</li>
+<li>为订阅添加 <code>unsubscribe()</code>。</li>
+</ul>
+<h2>修复</h2>
+<ul>
+<li>修复：在 LoroTree 中通过路径获取值 <a href="https://github.com/loro-dev/loro/pull/643">#643</a></li>
+<li>修复：应该可以在 diffing 后调用订阅 [#637]</li>
+<li>修复：更新长文本可能会失败 <a href="https://github.com/loro-dev/loro/pull/633">#633</a></li>
+<li>修复：map.keys() 可能会返回已删除条目的键 <a href="https://github.com/loro-dev/loro/pull/618">#618</a></li>
+</ul>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[发布 Loro v1.3.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.3.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.3.0</guid>
+            <pubDate>Thu, 09 Jan 2025 08:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>新增</h2>
+<ul>
+<li>UndoManager 的 <code>onPush</code> 现在可以访问更改事件。</li>
+<li>为每个容器添加 getShallowValue。</li>
 </ul>
 <h3>LoroDoc</h3>
 <ul>
-<li><code>toJsonWithReplacer(replacer: (k, v)=&gt;Value)</code>: Convert the document to a JSON value with a custom replacer function.</li>
-<li><code>revertTo(frontiers: Frontiers)</code>: Revert the document to the given frontiers.</li>
-<li><code>findIdSpansBetween(from: Frontiers, to: Frontiers)</code>: Find the op id spans that between the <code>from</code> version and the <code>to</code> version.</li>
-<li><code>exportJsonInIdSpan(idSpan: IdSpan)</code>: Export the readable [<code>Change</code>]s in the given [<code>IdSpan</code>].</li>
+<li><code>toJsonWithReplacer(replacer: (k, v)=&gt;Value)</code>: 使用自定义替换函数将文档转换为 JSON 值。</li>
+<li><code>revertTo(frontiers: Frontiers)</code>: 将文档恢复到给定的 frontiers。</li>
+<li><code>findIdSpansBetween(from: Frontiers, to: Frontiers)</code>: 查找 <code>from</code> 版本和 <code>to</code> 版本之间的操作 id 范围。</li>
+<li><code>exportJsonInIdSpan(idSpan: IdSpan)</code>: 导出给定 [<code>IdSpan</code>] 中的可读 [<code>Change</code>]。</li>
 </ul>
-<h2>Fix</h2>
+<h2>修复</h2>
 <ul>
-<li>fix: prevent merging remote changes based on local <code>changeMergeInterval</code> config <a href="https://github.com/loro-dev/loro/pull/643">#643</a></li>
-<li>fix: should commit before travel_change_ancestors <a href="https://github.com/loro-dev/loro/pull/599">#599</a></li>
-<li>fix: panic when detach then attach <a href="https://github.com/loro-dev/loro/pull/592">#592</a></li>
-<li>fix: move child in current parent <a href="https://github.com/loro-dev/loro/pull/589">#589</a></li>
-<li>fix: panic when returned non-boolean value from text.iter(f) <a href="https://github.com/loro-dev/loro/pull/578">#578</a></li>
+<li>修复：防止基于本地 <code>changeMergeInterval</code> 配置合并远程更改 <a href="https://github.com/loro-dev/loro/pull/643">#643</a></li>
+<li>修复：在 travel_change_ancestors 之前应该提交 <a href="https://github.com/loro-dev/loro/pull/599">#599</a></li>
+<li>修复：分离然后附加时出现 panic <a href="https://github.com/loro-dev/loro/pull/592">#592</a></li>
+<li>修复：在当前父节点中移动子节点 <a href="https://github.com/loro-dev/loro/pull/589">#589</a></li>
+<li>修复：从 text.iter(f) 返回非布尔值时出现 panic <a href="https://github.com/loro-dev/loro/pull/578">#578</a></li>
 </ul>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.2.0]]></title>
-            <link>https://loro.dev/changelog/v1.2.0</link>
-            <guid>https://loro.dev/changelog/v1.2.0</guid>
-            <pubDate>Mon, 09 Dec 2024 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>New</h2>
+            <title><![CDATA[发布 Loro v1.2.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.2.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.2.0</guid>
+            <pubDate>Tue, 10 Dec 2024 08:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>新增</h2>
 <ul>
-<li>Add <code>isDeleted()</code> method to all container types (Text, Map, List, Tree, etc.)</li>
+<li>为所有容器类型（Text、Map、List、Tree 等）添加 <code>isDeleted()</code> 方法</li>
 </ul>
 <h3>LoroDoc</h3>
 <ul>
-<li><code>changeCount()</code>: Get the number of changes in the oplog.</li>
-<li><code>opCount()</code>: Get the number of ops in the oplog.</li>
+<li><code>changeCount()</code>: 获取 oplog 中的更改数。</li>
+<li><code>opCount()</code>: 获取 oplog 中的操作数。</li>
 </ul>
 <h3>VersionVector</h3>
 <ul>
-<li><code>setEnd(id: ID)</code>: Set the exclusive ending point. target id will NOT be included by self.</li>
-<li><code>setLast(id: ID)</code>: Set the inclusive ending point. target id will be included.</li>
-<li><code>remove(peer: PeerID)</code>: Remove the specific peer id.</li>
-<li><code>length()</code>: Get the number of peers in the VersionVector.</li>
+<li><code>setEnd(id: ID)</code>: 设置独占结束点。目标 id 将不被 self 包含。</li>
+<li><code>setLast(id: ID)</code>: 设置包含结束点。目标 id 将被包含。</li>
+<li><code>remove(peer: PeerID)</code>: 移除特定的 peer id。</li>
+<li><code>length()</code>: 获取 VersionVector 中的 peer 数。</li>
 </ul>
-<h2>Change</h2>
+<h2>变更</h2>
 <ul>
-<li>Return <code>ImportStatus</code> in the <code>importUpdateBatch</code> method.</li>
-<li>Fractional index is enabled by default now.</li>
+<li>在 <code>importUpdateBatch</code> 方法中返回 <code>ImportStatus</code>。</li>
+<li>现在默认启用小数索引。</li>
 </ul>
-<h2>Fix</h2>
+<h2>修复</h2>
 <ul>
-<li>fix: getOrCreateContainer should not throw if value is null <a href="https://github.com/loro-dev/loro/pull/576">#576</a></li>
-<li>fix: dead loop when importing updates <a href="https://github.com/loro-dev/loro/pull/570">#570</a></li>
+<li>修复：当值为 null 时，getOrCreateContainer 不应抛出异常 <a href="https://github.com/loro-dev/loro/pull/576">#576</a></li>
+<li>修复：导入更新时出现死循环 <a href="https://github.com/loro-dev/loro/pull/570">#570</a></li>
 </ul>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.1.0]]></title>
-            <link>https://loro.dev/changelog/v1.1.0</link>
-            <guid>https://loro.dev/changelog/v1.1.0</guid>
-            <pubDate>Fri, 08 Nov 2024 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>New</h2>
+            <title><![CDATA[发布 Loro v1.1.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.1.0</link>
+            <guid>https://cn.loro.dev/changelog/v1.1.0</guid>
+            <pubDate>Sat, 09 Nov 2024 08:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>新增</h2>
 <h3>LoroDoc</h3>
 <ul>
-<li><code>forkAt(frontiers: Frontiers)</code>: Fork the document at the given frontiers.</li>
-<li><code>getChangedContainersIn(id: ID, len: number)</code>: Gets container IDs modified in the given ID range.</li>
+<li><code>forkAt(frontiers: Frontiers)</code>: 在给定的 frontiers 处 fork 文档。</li>
+<li><code>getChangedContainersIn(id: ID, len: number)</code>: 获取在给定 ID 范围内修改的容器 ID。</li>
 <li>``</li>
 </ul>
 <h3>LoroText</h3>
 <ul>
-<li><code>getEditorOf(pos: number)</code>: Get the editor of the text at the given position.</li>
-<li><code>push(s: string)</code>: Push a string to the end of the text.</li>
+<li><code>getEditorOf(pos: number)</code>: 获取给定位置文本的编辑器。</li>
+<li><code>push(s: string)</code>: 将字符串推送到文本末尾。</li>
 </ul>
 <h3>LoroMap</h3>
 <ul>
-<li><code>getLastEditor(key: string)</code>: Get the peer id of the last editor on the given entry</li>
+<li><code>getLastEditor(key: string)</code>: 获取给定条目上最后一个编辑器的 peer id</li>
 </ul>
 <h3>LoroList</h3>
 <ul>
-<li><code>getIdAt(pos: number)</code>: Get the ID of the list item at the given position.</li>
-<li><code>pushContainer(child: Container)</code>: Push a container to the end of the list.</li>
+<li><code>getIdAt(pos: number)</code>: 获取给定位置列表项的 ID。</li>
+<li><code>pushContainer(child: Container)</code>: 将容器推送到列表末尾。</li>
 </ul>
 <h3>LoroMovableList</h3>
 <ul>
-<li><code>getCreatorAt(pos: number)</code>: Get the creator of the list item at the given position.</li>
-<li><code>getLastMoverAt(pos: number)</code>: Get the last mover of the list item at the given position.</li>
-<li><code>getLastEditorAt(pos: number)</code>: Get the last editor of the list item at the given position.</li>
-<li><code>pushContainer(child: Container)</code>: Push a container to the end of the list.</li>
+<li><code>getCreatorAt(pos: number)</code>: 获取给定位置列表项的创建者。</li>
+<li><code>getLastMoverAt(pos: number)</code>: 获取给定位置列表项的最后一个移动者。</li>
+<li><code>getLastEditorAt(pos: number)</code>: 获取给定位置列表项的最后一个编辑器。</li>
+<li><code>pushContainer(child: Container)</code>: 将容器推送到列表末尾。</li>
 </ul>
 <h3>LoroTree</h3>
 <ul>
-<li><code>toJSON()</code>: Get JSON format of the LoroTreeNode.</li>
+<li><code>toJSON()</code>: 获取 LoroTreeNode 的 JSON 格式。</li>
 </ul>
-<h2>Fix</h2>
+<h2>修复</h2>
 <ul>
-<li>fix get correct encode blob info <a href="https://github.com/loro-dev/loro/pull/545">#545</a></li>
-<li>fix: avoid creating non-root containers that doesn&#39;t exist by get_container api <a href="https://github.com/loro-dev/loro/pull/541">#541</a></li>
-<li>fix: define the fork behavior when the doc is detached <a href="https://github.com/loro-dev/loro/pull/537">#537</a></li>
+<li>修复获取正确的编码 blob 信息 <a href="https://github.com/loro-dev/loro/pull/545">#545</a></li>
+<li>修复：避免通过 get_container api 创建不存在的非根容器 <a href="https://github.com/loro-dev/loro/pull/541">#541</a></li>
+<li>修复：定义文档分离时的 fork 行为 <a href="https://github.com/loro-dev/loro/pull/537">#537</a></li>
 </ul>
 ]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release Loro v1.0.0]]></title>
-            <link>https://loro.dev/changelog/v1.0.0-beta</link>
-            <guid>https://loro.dev/changelog/v1.0.0-beta</guid>
-            <pubDate>Sun, 20 Oct 2024 16:00:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>We are very excited to announce the release of Loro v1.0, a major milestone.</p>
-<p>It has a stable encoding format, faster document import and export speed, better version control capabilities, and a shallow snapshot. For more information, please check <a href="https://loro.dev/blog/v1.0">the blog</a>.</p>
-<p>The following are the specific API changes:</p>
-<h2>New</h2>
+            <title><![CDATA[发布 Loro v1.0.0]]></title>
+            <link>https://cn.loro.dev/changelog/v1.0.0-beta</link>
+            <guid>https://cn.loro.dev/changelog/v1.0.0-beta</guid>
+            <pubDate>Mon, 21 Oct 2024 07:00:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>我们非常激动地宣布 Loro v1.0 的发布，这是一个重要的里程碑。</p>
+<p>它具有稳定的编码格式、更快的文档导入和导出速度、更好的版本控制功能以及浅快照。有关更多信息，请查看<a href="https://loro.dev/blog/v1.0">博客</a>。</p>
+<p>以下是具体的 API 更改：</p>
+<h2>新增</h2>
 <h3>LoroDoc</h3>
 <ul>
-<li><code>getChange(id: ID)</code>: get <code>ChangeMeta</code> by <code>ID</code>.</li>
-<li><code>setDetachedEditing(flag: boolean)</code>: Enables editing in detached mode, which is disabled by default.</li>
-<li><code>isDetachedEditingEnabled()</code>: Whether the editing is enabled in detached mode.</li>
-<li><code>setNextCommitMessage(msg: string)</code>: Set the commit message of the next commit.</li>
-<li><code>shallowSinceVV()</code>: The doc only contains the history since this version.</li>
-<li><code>shallowSinceFrontiers()</code>: The doc only contains the history since this version.</li>
-<li><code>export(mode: ExportMode)</code>: Export the document based on the specified ExportMode. see more details <a href="/docs/tutorial/encoding">here</a>.</li>
-<li><code>getDeepValueWithID()</code>: Get deep value of the document with container id.</li>
-<li><code>subscribeLocalUpdates(callback:(bytes: Uint8Array) =&gt; void)</code>: Subscribe to updates from local edits.</li>
-<li><code>getPathToContainer(id: ContainerID)</code>: Get the path from the root to the container.</li>
-<li><code>JSONPath(jsonPath: string)</code>: Evaluate JSONPath against a LoroDoc.</li>
-<li><code>forkAt(frontiers: Frontiers): LoroDoc</code>: Creates a new LoroDoc at a specified version (Frontiers)</li>
-<li><code>getPendingTxnLength():number</code>: Get the number of operations in the pending transaction.</li>
-<li><code>travelChangeAncestors(ids: ID[], callback: (meta: ChangeMeta)-&gt;bool)</code>: Iterate over all changes including the input id in order, and stop iterating if the callback returns false.</li>
+<li><code>getChange(id: ID)</code>: 通过 <code>ID</code> 获取 <code>ChangeMeta</code>。</li>
+<li><code>setDetachedEditing(flag: boolean)</code>: 启用分离模式下的编辑，默认禁用。</li>
+<li><code>isDetachedEditingEnabled()</code>: 分离模式下的编辑是否已启用。</li>
+<li><code>setNextCommitMessage(msg: string)</code>: 设置下一次提交的提交消息。</li>
+<li><code>shallowSinceVV()</code>: 文档仅包含此版本之后的历史记录。</li>
+<li><code>shallowSinceFrontiers()</code>: 文档仅包含此版本之后的历史记录。</li>
+<li><code>export(mode: ExportMode)</code>: 根据指定的 ExportMode 导出文档。更多详情请参阅<a href="/docs/tutorial/encoding">此处</a>。</li>
+<li><code>getDeepValueWithID()</code>: 获取带有容器 ID 的文档的深层值。</li>
+<li><code>subscribeLocalUpdates(callback:(bytes: Uint8Array) =&gt; void)</code>: 订阅本地编辑的更新。</li>
+<li><code>getPathToContainer(id: ContainerID)</code>: 获取从根到容器的路径。</li>
+<li><code>JSONPath(jsonPath: string)</code>: 对 LoroDoc 执行 JSONPath。</li>
+<li><code>forkAt(frontiers: Frontiers): LoroDoc</code>: 在指定版本 (Frontiers) 创建一个新的 LoroDoc</li>
+<li><code>getPendingTxnLength():number</code>: 获取待处理事务中的操作数。</li>
+<li><code>travelChangeAncestors(ids: ID[], callback: (meta: ChangeMeta)-&gt;bool)</code>: 按顺序遍历所有更改，包括输入 id，如果回调返回 false，则停止遍历。</li>
 </ul>
 <h3>LoroText</h3>
 <ul>
-<li><code>updateByLine(text: string)</code>: Update the current text based on the provided text line by line like git.</li>
+<li><code>updateByLine(text: string)</code>: 像 git 一样，逐行根据提供的文本更新当前文本。</li>
 </ul>
 <h3>LoroList</h3>
 <ul>
-<li><code>toArray(): ValueOrContainer[]</code>: Get elements of the list. If the value is a child container, the corresponding <code>Container</code> will be returned.</li>
-<li><code>clear()</code>: Delete all elements in the list.</li>
+<li><code>toArray(): ValueOrContainer[]</code>: 获取列表的元素。如果值是子容器，则返回相应的 <code>Container</code>。</li>
+<li><code>clear()</code>: 删除列表中的所有元素。</li>
 </ul>
 <h3>LoroMovableList</h3>
 <ul>
-<li><code>toArray(): ValueOrContainer[]</code>: Get elements of the list. If the value is a child container, the corresponding <code>Container</code> will be returned.</li>
-<li><code>clear()</code>: Delete all elements in the list.</li>
+<li><code>toArray(): ValueOrContainer[]</code>: 获取列表的元素。如果值是子容器，则返回相应的 <code>Container</code>。</li>
+<li><code>clear()</code>: 删除列表中的所有元素。</li>
 </ul>
 <h3>LoroMap</h3>
 <ul>
-<li><code>clear()</code>: Delete all key-value pairs in the map.</li>
+<li><code>clear()</code>: 删除 map 中的所有键值对。</li>
 </ul>
 <h3>LoroTree</h3>
 <ul>
-<li><code>enableFractionalIndex(jitter: number)</code>: Set whether to generate fractional index for Tree Position.</li>
-<li><code>disableFractionalIndex()</code>: Disable the fractional index generation for Tree Position when
-you don&#39;t need the Tree&#39;s siblings to be sorted. The fractional index will be always default.</li>
-<li><code>isFractionalIndexEnabled()</code>: Whether the tree enables the fractional index generation.</li>
-<li><code>isNodeDeleted(id: TreeID)</code>: Return <code>undefined</code> if the node is not exist, otherwise return <code>true</code> if the node is deleted.</li>
-<li><code>getNodes(prop: getNodesProp): LoroTreeNode[]</code>: Get the flat array of the forest. If <code>with_deleted</code> is true, the deleted nodes will be included.</li>
+<li><code>enableFractionalIndex(jitter: number)</code>: 设置是否为树位置生成小数索引。</li>
+<li><code>disableFractionalIndex()</code>: 当您不需要对树的兄弟节点进行排序时，禁用树位置的小数索引生成。小数索引将始终为默认值。</li>
+<li><code>isFractionalIndexEnabled()</code>: 树是否启用了小数索引生成。</li>
+<li><code>isNodeDeleted(id: TreeID)</code>: 如果节点不存在，则返回 <code>undefined</code>，否则如果节点已删除，则返回 <code>true</code>。</li>
+<li><code>getNodes(prop: getNodesProp): LoroTreeNode[]</code>: 获取森林的扁平数组。如果 <code>with_deleted</code> 为 true，则将包括已删除的节点。</li>
 </ul>
 <h3>UndoManager</h3>
 <ul>
-<li><code>clear()</code>: Clear the Undo and Redo stack of <code>UndoManager</code></li>
+<li><code>clear()</code>: 清除 <code>UndoManager</code> 的撤销和重做堆栈</li>
 </ul>
-<h2>Changes</h2>
+<h2>变更</h2>
 <h3>LoroDoc</h3>
 <ul>
-<li>Move <code>setFractionalIndexJitter()</code> to <code>LoroTree</code>, you can set whether to enable or disable it for each <code>Tree Container</code>.</li>
-<li><code>import()</code>, <code>importWith()</code> and <code>importJsonUpdates</code> will return <code>ImportStatus</code> for indicating which ops have been successfully applied and which ops are pending.</li>
-<li>New Subscription for event.</li>
-<li>In Loro 1.0, <code>doc.version()</code> <code>doc.frontiers()</code> <code>doc.oplogVersion()</code> and <code>doc.oplogFrontiers()</code> even if ops has not been committed, it indicates the latest version of all operations.</li>
-<li>rename <code>Loro</code> to <code>LoroDoc</code>.</li>
+<li>将 <code>setFractionalIndexJitter()</code> 移动到 <code>LoroTree</code>，您可以为每个 <code>Tree Container</code> 设置是启用还是禁用它。</li>
+<li><code>import()</code>、<code>importWith()</code> 和 <code>importJsonUpdates</code> 将返回 <code>ImportStatus</code>，以指示哪些操作已成功应用，哪些操作正在等待。</li>
+<li>新的事件订阅。</li>
+<li>在 Loro 1.0 中，即使操作尚未提交，<code>doc.version()</code> <code>doc.frontiers()</code> <code>doc.oplogVersion()</code> 和 <code>doc.oplogFrontiers()</code> 也表示所有操作的最新版本。</li>
+<li>将 <code>Loro</code> 重命名为 <code>LoroDoc</code>。</li>
 </ul>
 <h3>LoroTree</h3>
 <ul>
-<li><code>contains(id: TreeID)</code>: Return true even if the node exists in the internal state and has been deleted.</li>
-<li><code>nodes()</code>: deleted nodes will be included now, you can use <code>isDeleted()</code> to filter.</li>
-<li><code>toJSON()</code>: Now use the hierarchical approach to express the tree structure.</li>
+<li><code>contains(id: TreeID)</code>: 即使节点存在于内部状态中并已被删除，也返回 true。</li>
+<li><code>nodes()</code>: 现在将包括已删除的节点，您可以使用 <code>isDeleted()</code> 进行过滤。</li>
+<li><code>toJSON()</code>: 现在使用分层方法来表示树结构。</li>
 </ul>
-<h2>Deprecation</h2>
+<h2>弃用</h2>
 <h3>LoroDoc</h3>
 <ul>
-<li><code>exportFrom(version)</code> and <code>exportSnapshot()</code> are deprecated, use <code>export(mode: ExportMode)</code> instead.</li>
+<li><code>exportFrom(version)</code> 和 <code>exportSnapshot()</code> 已被弃用，请改用 <code>export(mode: ExportMode)</code>。</li>
 </ul>
 ]]></content:encoded>
         </item>

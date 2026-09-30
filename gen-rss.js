@@ -4,7 +4,7 @@ const { Feed } = require("feed");
 const matter = require("gray-matter");
 const { marked } = require("marked");
 
-const BASE_URL = "https://loro.dev";
+const BASE_URL = "https://cn.loro.dev";
 
 const stripMdxComponents = (content) =>
   content
@@ -81,7 +81,7 @@ async function generateFeed({
     .forEach((item) => feed.addItem(item));
 
   const outputPath = path.join(__dirname, "public", output);
-  await fs.writeFile(outputPath, feed.rss2());
+  await fs.writeFile(outputPath, feed.rss2().replace(/^[\t ]+$/gm, ""));
   console.log(`generated ${output}`);
 }
 

@@ -4,6 +4,7 @@ import { useConfig } from "nextra-theme-docs";
 import Image from "next/image";
 import Footer from "./components/landing/Footer";
 import LanguageDropdown from "./components/LanguageDropdown";
+import { getSeoUrls } from "./lib/seo";
 
 export default {
   logo: (
@@ -36,7 +37,7 @@ export default {
   navbar: {
     extraContent: <LanguageDropdown />,
   },
-  docsRepositoryBase: "https://github.com/loro-dev/loro-docs/tree/main",
+  docsRepositoryBase: "https://github.com/loro-dev/loro-docs-zh/tree/main",
   footer: {
     text: "Loro 2024 ©",
     component: Footer,
@@ -44,14 +45,7 @@ export default {
   head: () => {
     const config = useConfig();
     const { asPath } = useRouter();
-    const rawPath =
-      !asPath || asPath === "/"
-        ? "/"
-        : asPath.startsWith("/")
-          ? asPath
-          : `/${asPath}`;
-    const normalizedPath = rawPath.split("#")[0] || "/";
-    const canonicalUrl = `https://loro.dev${normalizedPath}`;
+    const { canonicalUrl, englishUrl, hasTranslation } = getSeoUrls(asPath);
     // Nextra v3 moves reserved fields like `title`, `description`, `image`
     // out of `frontMatter` into top-level config. Fallback to frontMatter for
     // older content that still sets them there.
@@ -73,18 +67,29 @@ export default {
         <meta name="msapplication-TileColor" content="#fff" />
         <meta name="theme-color" content="#fff" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta httpEquiv="Content-Language" content="en" />
+        <meta httpEquiv="Content-Language" content="zh-CN" />
         <meta name="description" content={metaDescription} />
-        <meta name="og:description" content={metaDescription} />
+        <meta property="og:description" content={metaDescription} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={metaImage || DEFAULT_IMAGE} />
-        <meta name="twitter:site:domain" content="loro.dev" />
+        <meta name="twitter:site:domain" content="cn.loro.dev" />
         <meta name="twitter:site" content="@loro_dev" />
-        <meta name="twitter:url" content="https://loro.dev" />
+        <meta name="twitter:url" content={canonicalUrl} />
         <meta property="og:title" content={pageTitle} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:locale" content="zh_CN" />
         <meta property="og:image" content={metaImage || DEFAULT_IMAGE} />
         <meta name="apple-mobile-web-app-title" content="Loro" />
-        <link rel="alternate" hrefLang="en" href={canonicalUrl} />
+        <link rel="canonical" href={canonicalUrl} />
+        {hasTranslation && (
+          <link rel="alternate" hrefLang="en" href={englishUrl} />
+        )}
+        {hasTranslation && (
+          <link rel="alternate" hrefLang="zh" href={canonicalUrl} />
+        )}
+        {hasTranslation && (
+          <link rel="alternate" hrefLang="x-default" href={englishUrl} />
+        )}
       </>
     );
   },
