@@ -12,7 +12,7 @@ import Authors, { Author } from "../../components/authors";
 
 <Author
   name="Zixuan Chen"
-  link="https://twitter.com/https://twitter.com/zx_loro"
+  link="https://twitter.com/zx_loro"
 />
 <Author name="Liang Zhao" link="https://github.com/Leeeon233" />
 
@@ -47,7 +47,7 @@ Git 的协议不支持实时协作。当存在并发编辑时，Git 需要手动
 
 CRDTs 通常还提供一种更简单、更易于使用的同步方法，因为对于像 Loro 这样的基于操作的 CRDTs，只要两个对等方接收到的 CRDT 操作集一致，这两个对等方的 CRDT 文档状态就一致。您不必担心幂等性、操作应用顺序和网络异常处理。对于 Loro 的 CRDT 文档，只需两轮数据交换即可传输两个文档之间缺失的操作，以实现最终一致性：
 
-> 您可以在[此处](https://github.com/https://twitter.com/zx_loro/loro-blog-examples)找到本博客中的所有代码示例
+> 您可以在[此处](https://github.com/zxch3n/loro-blog-examples)找到本博客中的所有代码示例
 
 ```jsx
 import { LoroDoc, VersionVector } from "npm:loro-crdt@1.0.0-beta.3";
@@ -139,7 +139,7 @@ Loro 现在支持[富文本 CRDT](https://loro.dev/blog/loro-richtext)，它增�
 
 Loro 还支持类型之间的嵌套，因此您可以通过它们对 JSON 文档上的编辑进行建模：
 
-> 您可以在[此处](https://github.com/https://twitter.com/zx_loro/loro-blog-examples)找到本博客中的所有代码示例
+> 您可以在[此处](https://github.com/zxch3n/loro-blog-examples)找到本博客中的所有代码示例
 
 ```tsx
 import {
@@ -454,7 +454,7 @@ Loro 1.0 版本的文档导入速度比 0.16 版本提高了 10 到 100 倍，�
 - _Edit_ 指的是进行本地修改。如您所见，它对所用时间影响不大，因为 Loro 不需要为本地操作加载完整的 CRDT 数据结构。
 - _Export_ 指的是再次导出完整的文档数据。我们希望将来能进一步减少此处花费的时间，因为我们可以继续重用导入中未修改块的编码。
 
-以下显示了在应用[Automerge 论文](https://github.com/automerge/automerge-perf/tree/master/edit-by-index)中的编辑历史 **100 次**后文档的性能。您可以在[此处](https://github.com/https://twitter.com/zx_loro/automerge-paper-bench)重现结果。
+以下显示了在应用[Automerge 论文](https://github.com/automerge/automerge-perf/tree/master/edit-by-index)中的编辑历史 **100 次**后文档的性能。您可以在[此处](https://github.com/zxch3n/automerge-paper-bench)重现结果。
 该文档包含：
 
 - 18,231,500 次单字符插入操作

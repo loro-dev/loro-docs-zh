@@ -1,6 +1,6 @@
-import styles from "./api-reference.module.css";
-import Indent from "./indent";
-import Method from "./method";
+import styles from "../../../components/api-reference/api-reference.module.css";
+import Indent from "../../../components/api-reference/Indent";
+import Method from "../../../components/api-reference/Method";
 import CopyRawMdxButton from "@/components/CopyRawMdxButton";
 
 <div className={styles.apiReference}>
@@ -39,7 +39,7 @@ Loro 是一款功能强大的无冲突复制数据类型（CRDT）库，可用�
 
 **事件与事务**
 
-- 在 JS API 中，事件会在提交 / 导入 / checkout 时同步触发（v1.8+）。仍停留在 <=1.7.x？请在读取批量事件前等待一个微任务。
+- 在 JS API 中，事件会在提交 / 导入 / checkout 时同步触发（v1.8+）。仍停留在 `<=1.7.x`？请在读取批量事件前等待一个微任务。
 - import/export/checkout 会自动提交
 - Loro 事务不具备 ACID 特性——没有回滚 / 隔离
 
@@ -649,7 +649,7 @@ const forkedDoc = doc.forkAt(frontiers);
 
 ## 事件与事务
 
-响应变更，并将本地操作归组为事务。自 v1.8 起，事件会同步派发；较旧版本（<=1.7.x）需要等待一个微任务。参见[事件处理](/docs/tutorial/event)与[事务模型](/docs/concepts/transaction_model)。
+响应变更，并将本地操作归组为事务。自 v1.8 起，事件会同步派发；较旧版本（`<=1.7.x`）需要等待一个微任务。参见[事件处理](/docs/tutorial/event)与[事务模型](/docs/concepts/transaction_model)。
 
 ### 订阅方法
 
@@ -697,7 +697,7 @@ const unsubscribe = doc.subscribe((event) => {
 // 稍后再取消订阅
 ```
 
-**⚠️ 注意：** 自 v1.8 起事件会同步派发；如果仍使用 <=1.7.x，请在读取批量事件前等待一个微任务。
+**⚠️ 注意：** 自 v1.8 起事件会同步派发；如果仍使用 `<=1.7.x`，请在读取批量事件前等待一个微任务。
 
 ```ts no_run
 doc.commit();
@@ -2013,7 +2013,7 @@ const redacted = redactJsonUpdates(json, { [doc.peerIdStr]: [0, 999999] });
 
 ### LoroText
 
-支持带格式协作编辑的富文本容器，可处理重叠标记（加粗、斜体、链接）与稳定光标。其合并语义能够避免并发时出现交错伪影（借鉴 Fugue 与 Eg-walker 的思路）；你只需调用简单的索引 API，由 Loro 负责索引转换。更多内容请参阅[文本](/docs/tutorial/text)、[Eg-walker](/docs/advanced/event_graph_walker)以及富文本博文：https://loro.dev/blog/loro-richtext。
+支持带格式协作编辑的富文本容器，可处理重叠标记（加粗、斜体、链接）与稳定光标。其合并语义能够避免并发时出现交错伪影（借鉴 Fugue 与 Eg-walker 的思路）；你只需调用简单的索引 API，由 Loro 负责索引转换。更多内容请参阅[文本](/docs/tutorial/text)、[Eg-walker](/docs/advanced/event_graph_walker)以及[富文本博文](/blog/loro-richtext)。
 
 **⚠️ 重点：UTF-16 字符串编码**
 

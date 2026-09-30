@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://loro.dev
+Host: https://cn.loro.dev
 
 # Sitemaps
-Sitemap: https://loro.dev/sitemap.xml
+Sitemap: https://cn.loro.dev/sitemap.xml

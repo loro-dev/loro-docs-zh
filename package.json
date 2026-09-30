@@ -3,14 +3,16 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "postbuild": "next-sitemap",
+    "build": "node gen-rss.js && next build",
+    "postbuild": "next-sitemap && node scripts/check-built-seo.mjs",
     "start": "next start",
     "test": "cd deno_scripts && deno run -A ./run_code_blocks.ts ..",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "extract-llms": "deno run -A ./deno_scripts/extract-llms.ts",
-    "changelog": "node gen-rss.js"
+    "changelog": "node gen-rss.js",
+    "test:seo": "node --test scripts/seo.test.mjs",
+    "test:seo:build": "node scripts/check-built-seo.mjs"
   },
   "repository": {
     "type": "git",
